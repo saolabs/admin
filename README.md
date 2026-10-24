@@ -2,7 +2,9 @@
 
 Gói quản trị dùng chung cho ứng dụng Saola/Laravel: quản lý người dùng, phân quyền và thiết lập website; hỗ trợ đa ngôn ngữ và khai báo Resource/Settings để giảm viết lại giao diện `.sao`.
 
-**Alpha 0.1.0-alpha.1:** đã có shell responsive, Page/Resource renderer chỉ đọc, auth/Gate, lang DB, dictionary/JSON preview-draft-publish, install/publish/doctor và Settings schema/DB/API và form dùng chung có revision. [Danh sách user](docs/USERS.md) lấy model của guard host, scope/Policy, tìm kiếm/phân trang và dùng chung renderer. Chưa có mutation User/role, UI dịch/AI ; phạm vi alpha xem [RELEASE](RELEASE.md).
+**Alpha 0.1.0-alpha.1:** đã có shell responsive, Page/Resource renderer chỉ đọc, auth/Gate, lang DB, dictionary/JSON preview-draft-publish, install/publish/doctor và Settings schema/DB/API và form dùng chung có revision. [Danh sách user](docs/USERS.md) lấy model của guard host, scope/Policy, tìm kiếm/phân trang và dùng chung renderer. Chưa có mutation User/role, UI dịch/AI; phạm vi alpha xem [RELEASE](RELEASE.md).
+
+Đã có trên [Packagist](https://packagist.org/packages/saola/admin); [kiểm chứng phát hành](docs/RELEASE_VERIFICATION.md).
 
 Quy ước tên: `admin.pages.settings`, `app/bundle.ts`; các bảng mặc định `saola_settings`, `saola_locales`, `saola_translation_*`, `saola_language_batches`. Prefix DB có thể bỏ/đổi. Xem [NAMING](docs/NAMING.md) về đường nâng cấp an toàn.
 

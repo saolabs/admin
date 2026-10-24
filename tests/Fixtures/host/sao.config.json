@@ -1,0 +1,39 @@
+{
+    "packages": {},
+    "paths": {
+        "resources": "resources",
+        "saoView": "resources/saola",
+        "bladeView": "resources/views",
+        "compiled": "resources/js/saola",
+        "public": "public/static/saola",
+        "sharedApp": "_app"
+    },
+    "output": {
+        "default": "app/js",
+        "contexts": {
+            "admin": "admin/js"
+        }
+    },
+    "contexts": {
+        "admin": {
+            "name": "Admin Panel",
+            "app": [
+                "admin/app"
+            ],
+            "views": {
+                "admin": "admin/views"
+            },
+            "blade": {
+                "admin": "admin"
+            },
+            "compiled": {
+                "views": "admin/views",
+                "app": "admin/app",
+                "registry": "admin/registry.js"
+            }
+        }
+    },
+    "compiler": {
+        "idMode": "terse"
+    }
+}

@@ -1,0 +1,91 @@
+/* Saola admin base skin. Original CSS; shell regions follow the supplied starter template. */
+body:has(.saola-admin) { margin: 0; }
+.saola-admin {
+    --sa-admin-sidebar: #263649;
+    --sa-admin-accent: #5263db;
+    --sa-admin-bg: #f3f5f8;
+    --sa-admin-surface: #fff;
+    --sa-admin-text: #253044;
+    --sa-admin-muted: #64748b;
+    --sa-admin-border: #e3e8ef;
+    --sa-admin-radius: 10px;
+    --sa-admin-sidebar-width: 248px;
+    display: flex; min-height: 100vh; background: var(--sa-admin-bg); color: var(--sa-admin-text);
+    font: 14px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    text-align: start;
+}
+.saola-admin, .saola-admin * { box-sizing: border-box; }
+.saola-admin button, .saola-admin input { font: inherit; }
+.saola-admin button, .saola-admin a { -webkit-tap-highlight-color: transparent; }
+.saola-admin button:focus-visible, .saola-admin a:focus-visible { outline: 3px solid #8ba9ff; outline-offset: 3px; }
+.sa-admin-sidebar { width: var(--sa-admin-sidebar-width); flex-shrink: 0; background: var(--sa-admin-sidebar); color: #d9e3f0; padding: 28px 18px; }
+.sa-admin-brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 30px; font-size: 18px; font-weight: 700; color: white; }
+.sa-admin-mark { width: 32px; height: 32px; flex-shrink: 0; background: url('../images/mark.svg') center / contain no-repeat; }
+.sa-admin-nav-label { text-transform: uppercase; font-size: 10px; letter-spacing: .14em; opacity: .65; padding-inline: 12px; }
+.sa-admin-nav-item { display: block; color: inherit; text-decoration: none; padding: 11px 14px; border-radius: 6px; margin-block: 5px; }
+.sa-admin-nav-item:hover, .sa-admin-nav-item.is-active { background: #ffffff12; color: white; }
+.sa-admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sa-admin-topbar { min-height: 74px; padding: 18px 36px; background: var(--sa-admin-surface); border-bottom: 1px solid var(--sa-admin-border); display: flex; align-items: center; gap: 16px; }
+.sa-admin-context { font-weight: 650; }
+.sa-admin-menu-toggle { display: none; }
+.sa-admin-languages { margin-inline-start: auto; display: flex; gap: 8px; }
+.sa-admin-languages button, .sa-admin-menu-toggle { cursor: pointer; border: 1px solid var(--sa-admin-border); color: var(--sa-admin-text); background: var(--sa-admin-surface); border-radius: 6px; padding: 5px 12px; }
+.sa-admin-languages button:hover { color: var(--sa-admin-accent); }
+.sa-admin-content { flex: 1; padding: 34px 36px; max-width: 1400px; width: 100%; margin-inline: auto; }
+.sa-admin-heading { margin-bottom: 28px; }
+.sa-admin-eyebrow { font-size: 11px; text-transform: uppercase; color: var(--sa-admin-accent); letter-spacing: .13em; font-weight: 700; }
+.sa-admin-heading h1 { font-size: clamp(24px, 3vw, 32px); line-height: 1.3; margin: 7px 0 12px; font-weight: 650; }
+.sa-admin-heading > p:last-child { color: var(--sa-admin-muted); max-width: 65ch; }
+.sa-admin-card { background: var(--sa-admin-surface); border: 1px solid var(--sa-admin-border); border-radius: var(--sa-admin-radius); margin-bottom: 22px; overflow: hidden; box-shadow: 0 2px 7px #25304403; }
+.sa-admin-card h2 { font-size: 14px; font-weight: 650; margin: 0; padding: 19px 24px; border-bottom: 1px solid var(--sa-admin-border); }
+.sa-admin-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin: 0; padding: 24px; }
+.sa-admin-field dt { color: var(--sa-admin-muted); font-size: 12px; margin-bottom: 5px; }
+.sa-admin-field dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.sa-admin-table-scroll { overflow-x: auto; }
+.sa-admin-table { border-collapse: collapse; width: 100%; text-align: start; }
+.sa-admin-table th { background: #f8fafc; color: var(--sa-admin-muted); font-size: 12px; font-weight: 600; text-align: start; }
+.sa-admin-table td, .sa-admin-table th { padding: 14px 24px; border-bottom: 1px solid var(--sa-admin-border); }
+.sa-admin-table tbody tr:last-child td { border-bottom: 0; }
+.sa-admin-badge { display: inline-flex; padding: 3px 10px; border-radius: 5px; color: #3d4da8; background: #eef0ff; font-size: 12px; font-weight: 650; }
+.sa-admin-empty { color: var(--sa-admin-muted); padding: 16px 24px; }
+.sa-admin-alert { background: #fff5da; border: 1px solid #efdc9f; color: #73571d; padding: 12px 16px; border-radius: 6px; }
+.sa-admin-footer { color: var(--sa-admin-muted); font-size: 12px; padding: 18px 36px; border-top: 1px solid var(--sa-admin-border); }
+.sa-admin-skip { position: absolute; inset-inline-start: -10000px; top: 8px; z-index: 10; }
+.sa-admin-skip:focus { inset-inline-start: 16px; background: white; padding: 10px; }
+@media (max-width: 800px) {
+    .saola-admin { flex-direction: column; }
+    .sa-admin-sidebar { width: 100%; display: none; }
+    .sa-admin-sidebar.is-open { display: block; }
+    .sa-admin-brand { padding-bottom: 12px; }
+    .sa-admin-menu-toggle { display: inline-block; }
+    .sa-admin-content, .sa-admin-topbar { padding: 20px; }
+    .sa-admin-footer { padding: 18px 20px; }
+}
+
+.sa-admin-settings-groups { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 0 20px; }
+.sa-admin-settings-groups a { color: var(--sa-admin-muted); text-decoration: none; padding: 7px 14px; border-radius: 6px; }
+.sa-admin-settings-groups a.is-active { color: var(--sa-admin-accent); background: #e9edff; font-weight: 650; }
+.sa-admin-form-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--sa-admin-border); }
+.sa-admin-form-toolbar span, .sa-admin-form-field small { color: var(--sa-admin-muted); font-size: 12px; }
+.sa-admin-form-toolbar select { padding: 7px 12px; font: inherit; border: 1px solid var(--sa-admin-border); border-radius: 6px; background: var(--sa-admin-surface); }
+.sa-admin-form-fields { padding: 24px; margin: 0; border: 0; display: grid; gap: 22px; }
+.sa-admin-form-field { display: grid; gap: 7px; }
+.sa-admin-form-field label { font-weight: 600; }
+.sa-admin-form-field input:not([type=checkbox]) { padding: 10px 12px; border: 1px solid var(--sa-admin-border); border-radius: 6px; width: 100%; max-width: 640px; background: var(--sa-admin-surface); color: var(--sa-admin-text); }
+.sa-admin-form-field input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--sa-admin-accent); }
+.sa-admin-form-field input:focus-visible { outline: 2px solid var(--sa-admin-accent); outline-offset: 2px; }
+.sa-admin-field-error { color: #a22235; margin: 0; }
+.sa-admin-form-actions { padding: 18px 24px; border-top: 1px solid var(--sa-admin-border); display: flex; flex-wrap: wrap; gap: 10px; }
+.sa-admin-form-actions button { padding: 9px 16px; border-radius: 6px; border: 1px solid var(--sa-admin-border); background: var(--sa-admin-surface); color: var(--sa-admin-text); cursor: pointer; }
+.sa-admin-form-actions button[type=submit] { background: var(--sa-admin-accent); color: white; border-color: var(--sa-admin-accent); }
+.saola-admin button:disabled { opacity: .55; cursor: default; }
+.sa-admin-card form > .sa-admin-alert { margin-inline: 24px; }
+.sa-admin-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+.sa-admin-list-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 18px 24px; border-bottom: 1px solid var(--sa-admin-border); }
+.sa-admin-list-filters input, .sa-admin-list-filters select, .sa-admin-list-filters button { font: inherit; padding: 7px 10px; border: 1px solid var(--sa-admin-border); border-radius: 6px; color: var(--sa-admin-text); background: var(--sa-admin-surface); max-width: 100%; }
+.sa-admin-list-filters input { min-width: 0; }
+.sa-admin-list-filters button { cursor: pointer; background: var(--sa-admin-accent); color: white; }
+.sa-admin-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 24px; border-top: 1px solid var(--sa-admin-border); }
+.sa-admin-pagination span { margin-inline-end: auto; color: var(--sa-admin-muted); }
+.sa-admin-pagination a { color: var(--sa-admin-accent); }

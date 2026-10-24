@@ -1,0 +1,23 @@
+{
+    "package": "saola/admin",
+    "version": "0.1.0-alpha.1",
+    "contract": 1,
+    "namespace": "admin",
+    "css": "assets/css/admin.css",
+    "bootstrap": "app/bundle.ts",
+    "renderers": {
+        "resource": "components.resource",
+        "shell": "layouts.shell",
+        "settings": "components.settings-form"
+    },
+    "renames": {
+        "app/saola_admin/bundle.ts": "app/bundle.ts",
+        "app/saola_admin/settings-form.ts": "app/settings-form.ts",
+        "views/saola_admin/components/resource.sao": "views/components/resource.sao",
+        "views/saola_admin/components/settings-form.sao": "views/components/settings-form.sao",
+        "views/saola_admin/layouts/shell.sao": "views/layouts/shell.sao",
+        "views/saola_admin/pages/resource.sao": "views/pages/resource.sao",
+        "views/saola_admin/pages/settings.sao": "views/pages/settings.sao",
+        "views/saola_admin/partials/head.sao": "views/partials/head.sao"
+    }
+}

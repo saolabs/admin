@@ -1,0 +1,45 @@
+<?php
+
+return ['admin' => [
+    'auth' => ['keep_login' => 'Duy trì đăng nhập'],
+    'shell' => [
+        'title' => 'Quản trị', 'workspace' => 'Không gian quản trị', 'navigation' => 'Điều hướng', 'menu' => 'Menu',
+        'skip' => 'Đến nội dung', 'language' => 'Ngôn ngữ giao diện', 'unsaved' => 'Hãy lưu hoặc bỏ thay đổi trước khi đổi ngôn ngữ.',
+        'language_error' => 'Không thể nạp ngôn ngữ này.',
+    ],
+    'workspace' => [
+        'title' => 'Tổng quan', 'description' => 'Thông tin website và các ngôn ngữ giao diện đã công bố.',
+        'website' => 'Website', 'locale' => 'Ngôn ngữ', 'revision' => 'Phiên bản đã công bố',
+    ],
+    'settings' => [
+        'title' => 'Thiết lập',
+        'description_hint' => 'Chỉnh sửa thiết lập đã đăng ký. Ngôn ngữ giao diện và ngôn ngữ nội dung độc lập.',
+        'groups' => 'Nhóm thiết lập',
+        'content_locale' => 'Ngôn ngữ nội dung',
+        'locale_hint' => 'Chọn ngôn ngữ nội dung cần chỉnh sửa.',
+        'read_only' => 'Bạn có quyền xem nhóm thiết lập này.',
+        'stored' => 'Giá trị đã lưu.',
+        'fallback' => 'Đang kế thừa mặc định; chỉnh sửa để lưu giá trị riêng.',
+        'localized' => 'Theo ngôn ngữ.',
+        'shared' => 'Dùng chung mọi ngôn ngữ.',
+        'save' => 'Lưu thay đổi',
+        'saving' => 'Đang lưu…',
+        'discard' => 'Bỏ thay đổi',
+        'reload' => 'Tải lại từ máy chủ',
+        'saved' => 'Đã lưu thiết lập.',
+        'reloaded' => 'Đã nạp thiết lập mới nhất.',
+        'reload_required' => 'Hãy nạp thiết lập mới nhất trước khi lưu.',
+        'unsaved' => 'Hãy lưu hoặc bỏ thay đổi trước khi rời trang hay đổi ngôn ngữ.',
+        'conflict' => 'Thiết lập trên máy chủ đã thay đổi. Dữ liệu nhập được giữ lại. Hãy bỏ thay đổi rồi tải lại trước khi sửa tiếp.',
+        'forbidden' => 'Phiên đăng nhập hoặc quyền đã thay đổi. Dữ liệu nhập được giữ lại; hãy đăng nhập và tải lại.',
+        'failed' => 'Chưa xác nhận được kết quả yêu cầu. Dữ liệu nhập được giữ lại.',
+        'invalid' => 'Hãy kiểm tra các trường được đánh dấu. Dữ liệu nhập được giữ lại.',
+        'invalid_value' => 'Giá trị không hợp lệ.',
+        'general' => 'Thiết lập website', 'website_name' => 'Tên website', 'description' => 'Mô tả', 'contact' => 'Thông tin liên hệ nội bộ'],
+    'users' => ['title' => 'Người dùng', 'description' => 'Danh sách người dùng của website. Tìm kiếm và số lượng cùng tuân theo phạm vi truy cập.', 'id' => 'Mã', 'name' => 'Họ tên', 'email' => 'Email'],
+    'resource' => [
+        'details' => 'Thông tin', 'records' => 'Danh sách', 'empty' => 'Chưa có dữ liệu để hiển thị.',
+        'search' => 'Tìm kiếm', 'sort' => 'Sắp xếp theo', 'direction' => 'Thứ tự', 'ascending' => 'Tăng dần', 'descending' => 'Giảm dần',
+        'per_page' => 'Mỗi trang', 'apply' => 'Áp dụng', 'pagination' => 'Phân trang', 'total' => 'Tổng số', 'page' => 'Trang', 'previous' => 'Trước', 'next' => 'Tiếp',
+    ],
+]];

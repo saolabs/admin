@@ -1,0 +1,45 @@
+<?php
+
+return ['admin' => [
+    'auth' => ['keep_login' => 'Keep me signed in'],
+    'shell' => [
+        'title' => 'Administration', 'workspace' => 'Workspace', 'navigation' => 'Navigation', 'menu' => 'Menu',
+        'skip' => 'Skip to content', 'language' => 'Interface language', 'unsaved' => 'Save or discard your changes before switching language.',
+        'language_error' => 'This language could not be loaded.',
+    ],
+    'workspace' => [
+        'title' => 'Overview', 'description' => 'Website information and published interface languages.',
+        'website' => 'Website', 'locale' => 'Language', 'revision' => 'Published revision',
+    ],
+    'settings' => [
+        'title' => 'Settings',
+        'description_hint' => 'Edit registered website settings. Interface language and content language are independent.',
+        'groups' => 'Settings groups',
+        'content_locale' => 'Content language',
+        'locale_hint' => 'Choose the content language to edit.',
+        'read_only' => 'You have read access to this group.',
+        'stored' => 'Stored value.',
+        'fallback' => 'Inherited default; editing creates an explicit value.',
+        'localized' => 'Per language.',
+        'shared' => 'Shared across languages.',
+        'save' => 'Save changes',
+        'saving' => 'Saving…',
+        'discard' => 'Discard changes',
+        'reload' => 'Reload from server',
+        'saved' => 'Settings saved.',
+        'reloaded' => 'Latest settings loaded.',
+        'reload_required' => 'Reload the latest settings before saving.',
+        'unsaved' => 'Save or discard your changes before leaving or switching language.',
+        'conflict' => 'Settings changed on the server. Your input is kept. Discard, then reload before editing again.',
+        'forbidden' => 'Your session or permissions changed. Your input is kept; sign in and reload.',
+        'failed' => 'The request could not be confirmed. Your input is kept.',
+        'invalid' => 'Check the highlighted fields. Your input is kept.',
+        'invalid_value' => 'This value is not valid.',
+        'general' => 'Website settings', 'website_name' => 'Website name', 'description' => 'Description', 'contact' => 'Private contact details'],
+    'users' => ['title' => 'Users', 'description' => 'Host user directory. Search and counts use the same access scope.', 'id' => 'ID', 'name' => 'Name', 'email' => 'Email'],
+    'resource' => [
+        'details' => 'Details', 'records' => 'Records', 'empty' => 'No records to display.',
+        'search' => 'Search', 'sort' => 'Sort by', 'direction' => 'Sort direction', 'ascending' => 'Ascending', 'descending' => 'Descending',
+        'per_page' => 'Per page', 'apply' => 'Apply', 'pagination' => 'Pagination', 'total' => 'Total', 'page' => 'Page', 'previous' => 'Previous', 'next' => 'Next',
+    ],
+]];

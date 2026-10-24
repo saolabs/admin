@@ -1,0 +1,13 @@
+{
+  "name": "saola-admin-workbench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:preview": "node workbench/build-preview.mjs"
+  },
+  "devDependencies": {
+    "@saolabs/builder": "https://github.com/saolabs/builder/archive/refs/tags/v1.2.0.tar.gz",
+    "@saolabs/client": "https://github.com/saolabs/client/archive/refs/tags/v1.3.0.tar.gz",
+    "vite": "^7.1.0"
+  }
+}

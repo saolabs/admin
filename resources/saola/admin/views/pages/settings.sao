@@ -1,0 +1,11 @@
+@vars(editor: any = {}, navigation: any[] = [], currentPage: string = '', brand: string = '', locales: any[] = [], dictionaryPattern: string = '')
+@await
+<template>
+    @serverside
+        @section('meta:title', text(editor['titleKey']))
+    @endserverside
+    @extends(__base__ + 'layouts.shell', {navigation: navigation, currentPage: currentPage, brand: brand, locales: locales, dictionaryPattern: dictionaryPattern})
+    @block('content')
+        @include(__base__ + 'components.settings-form', {editor: editor})
+    @endblock
+</template>

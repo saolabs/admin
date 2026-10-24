@@ -1,0 +1,53 @@
+@viewtype('layout')
+@vars(navigation: any[] = [], currentPage: string = '', brand: string = '', locales: any[] = [], dictionaryPattern: string = '')
+@state(menuOpen: boolean = false, notice: string = '')
+<template>
+    @pageStart
+    <div class="saola-admin">
+        <a class="sa-admin-skip" href="#admin-content">{{ __('admin.shell.skip') }}</a>
+        <aside id="sa-admin-navigation" @class({'sa-admin-sidebar', 'is-open': menuOpen})>
+            <div class="sa-admin-brand"><span class="sa-admin-mark" aria-hidden="true"></span>{{ brand }}</div>
+            <p class="sa-admin-nav-label">{{ __('admin.shell.navigation') }}</p>
+            <nav aria-label="{{ __('admin.shell.navigation') }}">
+                @foreach(navigation as item)
+                    @key(item['key'])
+                    <a href="{{ item['url'] }}" @class({'sa-admin-nav-item', 'is-active': item['key'] === currentPage})>{{ text(item['titleKey']) }}</a>
+                @endforeach
+            </nav>
+        </aside>
+        <div class="sa-admin-main">
+            <header class="sa-admin-topbar">
+                <button id="admin-menu-toggle" class="sa-admin-menu-toggle" type="button" aria-controls="sa-admin-navigation" aria-expanded="{{ menuOpen ? 'true' : 'false' }}" @click(toggleMenu())>{{ __('admin.shell.menu') }}</button>
+                <span class="sa-admin-context">{{ __('admin.shell.title') }}</span>
+                <div class="sa-admin-languages" aria-label="{{ __('admin.shell.language') }}">
+                    @foreach(locales as language)
+                        @key(language['code'])
+                        <button type="button" @click(changeLanguage(language['code']))>{{ language['code'] }}</button>
+                    @endforeach
+                </div>
+            </header>
+            <main id="admin-content" class="sa-admin-content" tabindex="-1">
+                @if(notice !== '')
+                    <p class="sa-admin-alert" role="alert">{{ text(notice) }}</p>
+                @endif
+                @useBlock('content')
+            </main>
+            <footer class="sa-admin-footer">{{ brand }}</footer>
+        </div>
+    </div>
+    @pageEnd
+</template>
+<script setup lang="ts">
+    function toggleMenu() { setMenuOpen(!menuOpen); }
+    async function changeLanguage(locale: string) {
+        setNotice('');
+        try {
+            const changed = await App.Helper.changeLanguage(locale, async (code: string) => {
+                const response = await fetch(dictionaryPattern.replace('_locale_', encodeURIComponent(code)), {credentials: 'same-origin', headers: {Accept: 'application/json'}});
+                if (!response.ok) throw new Error('Dictionary request failed');
+                return response.json();
+            }, () => App.make<any>('AdminUI')?.canChangeLanguage() ?? true);
+            if (!changed) setNotice('admin.shell.unsaved');
+        } catch { setNotice('admin.shell.language_error'); }
+    }
+</script>

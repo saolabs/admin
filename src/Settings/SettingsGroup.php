@@ -6,7 +6,7 @@ namespace Saola\Admin\Settings;
 
 use InvalidArgumentException;
 
-/** Stateless schema. Secrets and uploads belong to dedicated adapters. */
+/** Stateless schema. 'secret' fields are write-only: stored encrypted, never read back (see DatabaseSettingsStore). */
 final readonly class SettingsGroup
 {
     public function __construct(
@@ -26,9 +26,10 @@ final readonly class SettingsGroup
         foreach ($fields as $name => $field) {
             $type = $field['type'] ?? null;
             if (!is_string($name) || !preg_match('/^[a-z][a-z0-9_]*$/D', $name)
-                || !in_array($type, ['text', 'textarea', 'url', 'select', 'boolean', 'integer'], true)
+                || !in_array($type, ['text', 'textarea', 'url', 'select', 'boolean', 'integer', 'secret'], true)
                 || !is_string($field['labelKey'] ?? null) || $field['labelKey'] === ''
                 || !is_bool($field['localized'] ?? false) || !is_bool($field['public'] ?? false)
+                || ($type === 'secret' && (($field['localized'] ?? false) || ($field['public'] ?? false)))
                 || !is_bool($field['hidden'] ?? false) || !is_bool($field['relative'] ?? false) || !is_bool($field['media'] ?? false)
                 || ($field['media'] ?? false) && $type !== 'url'
                 || !array_key_exists('default', $field)) throw new InvalidArgumentException('Invalid settings field: '.(string) $name);
@@ -53,7 +54,7 @@ final readonly class SettingsGroup
     public function validType(string $type, mixed $value): bool
     {
         return match ($type) {
-            'text', 'textarea', 'url', 'select' => is_string($value), 'boolean' => is_bool($value), 'integer' => is_int($value), default => false,
+            'text', 'textarea', 'url', 'select', 'secret' => is_string($value), 'boolean' => is_bool($value), 'integer' => is_int($value), default => false,
         };
     }
 

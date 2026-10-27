@@ -1,3 +1,7 @@
+# saola/admin v0.1.0-alpha.3
+
+Settings: new write-only `secret` field type (encrypted with APP_KEY, masked on every read, never public or localized; blank keeps the stored value).
+
 # saola/admin v0.1.0-alpha.2
 
 Host-screen mechanism (`panel.host_modules`, `HostScreenController`), one-table permission `matrix` input (`Resource::fieldMatrix`), `.sao` themes in script-first layout, `admin` prefix as the default panel path. Requires `@saolabs/client` v1.4.0 (adds `App.Admin`); v1.3.0 is not enough.

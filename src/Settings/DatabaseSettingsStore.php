@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Saola\Admin\Settings;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
@@ -36,7 +38,11 @@ final class DatabaseSettingsStore implements SettingsStore
                 foreach (array_keys($stored['localized'] ?? []) as $locale) {
                     if (array_key_exists($key, $stored['localized'][$locale] ?? [])) $localized[$locale][$key] = $stored['localized'][$locale][$key];
                 }
-            } elseif (array_key_exists($key, $stored['values'] ?? [])) $values[$key] = $stored['values'][$key];
+            } elseif (array_key_exists($key, $stored['values'] ?? [])) {
+                // A stored secret is reported as present but empty: the value itself never leaves the server.
+                if ($field['type'] === 'secret') { if (($stored['values'][$key] ?? '') !== '') $values[$key] = ''; }
+                else $values[$key] = $stored['values'][$key];
+            }
         }
         $policy = $group->hasLocalizedFields() ? $this->policy() : ['locales' => [], 'default' => ''];
         return ['group' => $group->key, 'schemaVersion' => $group->version, 'revision' => (int) ($row->revision ?? 0),
@@ -55,14 +61,19 @@ final class DatabaseSettingsStore implements SettingsStore
             // continue to project only the active schema. A temporary unregistration
             // must not destroy values when an unrelated field is saved.
             $stored = json_decode($this->db->table($this->table)->where('group_key', $group->key)->value('document'), true, 64, JSON_THROW_ON_ERROR);
-            $values = array_replace($stored['values'] ?? [], $patch['values'] ?? []);
+            $incoming = $patch['values'] ?? [];
+            foreach ($incoming as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'secret') $incoming[$key] = $value === '' ? '' : Crypt::encryptString($value);
+            $values = array_replace($stored['values'] ?? [], $incoming);
             $localized = $stored['localized'] ?? [];
             foreach ($patch['localized'] ?? [] as $locale => $fields) $localized[$locale] = array_replace($localized[$locale] ?? [], $fields);
             $changed = $this->db->table($this->table)->where('group_key', $group->key)->where('revision', $revision)
                 ->where('schema_version', $group->version)->update(['document' => json_encode(['values' => $values, 'localized' => $localized], JSON_THROW_ON_ERROR), 'revision' => $revision + 1]);
             if ($changed !== 1) throw new ConflictHttpException('Settings changed; reload before saving.');
             // Return this transaction's version, rather than a later concurrent read.
-            $projected = array_replace($current['values'], $patch['values'] ?? []);
+            $masked = $patch['values'] ?? [];
+            foreach ($masked as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'secret') { if ($value === '') unset($masked[$key]); else $masked[$key] = ''; }
+            $projected = array_replace($current['values'], $masked);
+            foreach ($patch['values'] ?? [] as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'secret' && $value === '') unset($projected[$key]);
             $translated = $current['localized'];
             foreach ($patch['localized'] ?? [] as $locale => $fields) $translated[$locale] = array_replace($translated[$locale] ?? [], $fields);
             return array_replace($current, ['revision' => $revision + 1, 'values' => $projected, 'localized' => $translated]);
@@ -76,12 +87,22 @@ final class DatabaseSettingsStore implements SettingsStore
         if ($group->hasLocalizedFields() && !in_array($locale, $document['contentLocales'], true)) throw new \InvalidArgumentException('Unsupported content locale.');
         foreach ($group->fields as $key => $field) {
             if ($publicOnly && !($field['public'] ?? false)) continue;
+            if ($field['type'] === 'secret') { $values[$key] = $this->secret($group, $key) ?? $field['default']; continue; }
             if ($field['localized'] ?? false) {
                 // Empty string is an intentional translation. Fallback never writes data.
                 $values[$key] = $document['localized'][$locale][$key] ?? $document['localized'][$document['defaultLocale']][$key] ?? $field['default'];
             } else $values[$key] = $document['values'][$key] ?? $field['default'];
         }
         return $values;
+    }
+
+    /** Server-side only (mailer, API clients): the decrypted secret, or null when unset or unreadable (e.g. APP_KEY rotated). */
+    private function secret(SettingsGroup $group, string $key): ?string
+    {
+        $stored = json_decode((string) $this->db->table($this->table)->where('group_key', $group->key)->value('document'), true, 64) ?: [];
+        $cipher = $stored['values'][$key] ?? '';
+        if ($cipher === '') return null;
+        try { return Crypt::decryptString($cipher); } catch (DecryptException) { return null; }
     }
 
     private function policy(): array { return $this->localePolicy ? ($this->localePolicy)() : ['locales' => $this->locales, 'default' => $this->defaultLocale]; }

@@ -74,7 +74,7 @@
                         @elseif(field['type'] === 'integer')
                             <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="number" step="1" min="{{ field['min'] }}" max="{{ field['max'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeNumber(field['key'], $event))>
                         @else
-                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="text" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
+                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="{{ field['type'] === 'secret' ? 'password' : 'text' }}" autocomplete="{{ field['type'] === 'secret' ? 'new-password' : 'off' }}" placeholder="{{ field['type'] === 'secret' && field['present'] ? '••••••••' : '' }}" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
                         @endif
                         <small id="hint-{{ field['key'] }}">
                             @if(field['localized'] && !field['present'] && field['value'] !== '')

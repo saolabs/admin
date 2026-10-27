@@ -116,4 +116,41 @@ class SettingsTest extends TestCase
         $this->expectException(\Symfony\Component\HttpKernel\Exception\ConflictHttpException::class);
         $store->read($this->group(2));
     }
+
+    public function test_secret_fields_are_encrypted_at_rest_masked_everywhere_and_kept_when_unrelated_fields_save(): void
+    {
+        $group = new SettingsGroup('mail', 'settings.mail', 'read-settings', 'write-settings', [
+            'host' => ['labelKey' => 'settings.host', 'type' => 'text', 'default' => ''],
+            'password' => ['labelKey' => 'settings.password', 'type' => 'secret', 'default' => ''],
+        ]);
+        $this->app->make(SettingsRegistry::class)->register($group);
+        $store = $this->app->make(SettingsStore::class);
+        $this->assertArrayNotHasKey('password', $store->read($group)['values']);
+
+        $saved = $store->update($group, 0, ['values' => ['host' => 'smtp.test', 'password' => 'hunter2-secret']]);
+        $this->assertSame('', $saved['values']['password']);
+        $this->assertSame('', $store->read($group)['values']['password']);
+        $this->assertStringNotContainsString('hunter2', \DB::table('saola_settings')->where('group_key', 'mail')->value('document'));
+        $this->assertSame('hunter2-secret', $store->values($group)['password']);
+        $this->assertArrayNotHasKey('password', $store->values($group, null, true));
+
+        $store->update($group, 1, ['values' => ['host' => 'other.test']]);
+        $this->assertSame('hunter2-secret', $store->values($group)['password']);
+
+        $this->actingAs(new GenericUser(['id' => 1]));
+        $this->getJson('/control/settings/mail')->assertOk()->assertJsonPath('data.values.password', '');
+        $this->assertStringNotContainsString('hunter2', (string) $this->get('/control/settings?group=mail')->getContent());
+
+        $store->update($group, 2, ['values' => ['password' => '']]);
+        $this->assertSame('', $store->values($group)['password']);
+        $this->assertArrayNotHasKey('password', $store->read($group)['values']);
+    }
+
+    public function test_secret_fields_cannot_be_localized_or_public(): void
+    {
+        foreach (['localized', 'public'] as $flag) {
+            try { new SettingsGroup('x', 't', 'r', 'w', ['k' => ['labelKey' => 'l', 'type' => 'secret', 'default' => '', $flag => true]]); $this->fail($flag); }
+            catch (\InvalidArgumentException) { $this->addToAssertionCount(1); }
+        }
+    }
 }

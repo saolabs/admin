@@ -62,7 +62,7 @@ SAOLA_ADMIN_PREVIEW_DIR="$admin_preview_root" vendor/bin/phpunit --filter test_s
 npm run build:preview -- "$admin_preview_root"
 ```
 
-Bộ dependency cho alpha: core >=2.4, compiler >=3.0; frontend dùng GitHub tags client v1.3.0 và builder v1.2.0, đã pin trong package-lock.json của workbench. Không coi npm registry đã có các phiên bản này. Compiler 3 đổi bare `__()` trong `.sao` sang `text()`; view dùng Laravel translator phải chuyển sang `trans()`/`choice()` trước khi nâng.
+Bộ dependency cho alpha: core >=2.4, compiler >=3.0; frontend dùng GitHub tags client v1.4.0 và builder v1.2.0, đã pin trong package-lock.json của workbench. Không coi npm registry đã có các phiên bản này. Compiler 3 đổi bare `__()` trong `.sao` sang `text()`; view dùng Laravel translator phải chuyển sang `trans()`/`choice()` trước khi nâng.
 
 Tests/package build không cần sibling checkout; fixture host nằm trong tests/Fixtures/host và không được installer chép vào website. CI kiểm PHP 8.3/8.5 × Laravel 12/13, build nguồn publish với các gói đã tải và Composer archive. Xem [release và cách cài alpha](RELEASE.md), [installation](docs/INSTALLATION.md). MySQL/Postgres concurrency, UI/mobile trên host thực và chức năng User/role ghi vẫn cần nghiệm thu trước bản ổn định.
 

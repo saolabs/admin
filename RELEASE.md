@@ -2,6 +2,8 @@
 
 Host-screen mechanism (`panel.host_modules`, `HostScreenController`), one-table permission `matrix` input (`Resource::fieldMatrix`), `.sao` themes in script-first layout, `admin` prefix as the default panel path. Requires `@saolabs/client` v1.4.0 (adds `App.Admin`); v1.3.0 is not enough.
 
+Install this release with `composer require saola/admin:0.1.0-alpha.2`, compiler `^3.0`, client GitHub tag `v1.4.0` and builder GitHub tag `v1.2.0`. Existing publications keep their customized files through the source publisher. Run publication dry-run, migrate, language sync and rebuild explicitly. The alpha.1 and previously unreleased sections below are historical scope notes; their source additions are included in alpha.2.
+
 # saola/admin v0.1.0-alpha.1
 
 First installable alpha: source ownership/publishing, admin shell and read-only Resource renderer, DB translations with JSON preview/draft/publish, schema-based Settings editor and scoped host User directory. User create/update/password, role/grant UI, translation UI/AI, upload and audit are not part of this alpha. Panel and user directory are disabled by default.

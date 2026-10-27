@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  COMPOSER_ROOT_VERSION: 0.1.0-alpha.1
+  COMPOSER_ROOT_VERSION: 0.1.0-alpha.2
 
 jobs:
   php:

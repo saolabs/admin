@@ -12,7 +12,7 @@ Project thêm service/provider trong `resources/saola/admin/app/bootstrap.ts`, v
 
 Host đã có `.publish-state.json` tiếp tục dùng publisher. Muốn chuyển, trước hết đối chiếu bản đã publish và giữ riêng những thay đổi có chủ đích, rồi đặt `contexts.admin.source: "package"`; không xóa customization tự động. `source: "published"` giữ đường cũ. Cần nâng bộ phiên bản đã kiểm cùng nhau; các tag alpha cũ không tự có P4. Nghiệm thu cài từ registry và trình duyệt trên project sạch vẫn thuộc cổng phát hành.
 
-Cập nhật 24/10/2026. Đây là hướng dẫn tích hợp alpha `0.1.0-alpha.1`; phạm vi và các phiên bản đi cùng được ghi ở [RELEASE](../RELEASE.md). Core cần `BundleManifest` hỗ trợ CSS theo context; compiler cần hạ `__()` sang `text()` và giữ props runtime của `@extends`; client cần scoped dictionary, `changeLanguage` và `Router.addNavigationGuard` cho form. Alpha yêu cầu core ^2.4, compiler ^3.0 cho build; client v1.3.0 và builder v1.2.0 được lấy từ GitHub tags đã kiểm, chưa tuyên bố có trên npm registry.
+Cập nhật 27/10/2026. Đây là hướng dẫn tích hợp alpha `0.1.0-alpha.2`; phạm vi và các phiên bản đi cùng được ghi ở [RELEASE](../RELEASE.md). Core cần `BundleManifest` hỗ trợ CSS theo context; compiler cần hạ `__()` sang `text()` và giữ props runtime của `@extends`; client cần scoped dictionary, `changeLanguage` và `Router.addNavigationGuard` cho form. Alpha yêu cầu core ^2.4, compiler ^3.0 cho build; client v1.4.0 và builder v1.2.0 được lấy từ GitHub tags đã kiểm, chưa tuyên bố có trên npm registry.
 
 Source sau alpha.1 bổ sung [màn hình Ngôn ngữ và mặc định DB](LANGUAGE_MANAGEMENT.md), chưa có trong tag alpha.1. Khi nâng lên bản có tính năng này cần migrate schema bổ sung, publish/build source và sync nhãn mới; cấu hình quyền riêng theo tài liệu.
 
@@ -24,12 +24,12 @@ Xem [NAMING.md](NAMING.md) cho tên view/client/bảng, prefix tùy chọn và n
 
 Host dùng User/guard/login hiện có. Cấu hình Gate `access-admin` hoặc đổi `saola-admin.panel.ability`; chưa có grant mặc định hoặc operator tự tạo. Gate phải ủy quyền về Policy/saola-permission của host. Để dùng settings, khai báo thêm `view-site-settings` và `update-site-settings`, hoặc cấu hình ability khác. Chỉ có quyền vào panel không đồng nghĩa có quyền đọc/ghi settings.
 
-Sau khi Packagist nhận repository/tag, cài `composer require saola/admin:0.1.0-alpha.1` và `composer require --dev saola/compiler:^3.0`. Trước khi được index, dùng Composer VCS repository theo [RELEASE](../RELEASE.md).
+Sau khi Packagist nhận repository/tag, cài `composer require saola/admin:0.1.0-alpha.2` và `composer require --dev saola/compiler:^3.0`. Trước khi được index, dùng Composer VCS repository theo [RELEASE](../RELEASE.md).
 
 Toolchain frontend có thể cài trực tiếp từ các tag GitHub, không cần tài khoản npm:
 
 ```bash
-npm install https://github.com/saolabs/client/archive/refs/tags/v1.3.0.tar.gz
+npm install https://github.com/saolabs/client/archive/refs/tags/v1.4.0.tar.gz
 npm install --save-dev https://github.com/saolabs/builder/archive/refs/tags/v1.2.0.tar.gz
 ```
 

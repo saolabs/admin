@@ -1,3 +1,7 @@
+# saola/admin v0.1.0-alpha.5
+
+- Users: base `Saola\Admin\Users\UserResource` (name, email, password, trash). A host extends it, adds its own columns and registers the subclass in `panel.pages` with `users.enabled=false`; see docs/USERS.md.
+
 # saola/admin v0.1.0-alpha.4
 
 - Theme view names follow the source path: `admin.themes.<theme>.*` (was `admin.<theme>.*`); host sao.config.json must use the `admin.themes.*` keys and `admin/themes/<theme>` Blade directories. Shared screens stay in `pages/`; `modules/` is for host screens (`panel.host_modules`).

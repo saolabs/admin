@@ -23,6 +23,21 @@ Host cần cả ba lớp: panel guard/Gate, ability `view-admin-users` (có cấ
 
 Model mặc định lấy từ `panel.guard` → auth guard → provider.model, không hardcode `App\Models\User`. `users.model` là override backend tường minh. Adapter Eloquent cần model triển khai Authenticatable, primary key dạng scalar (số/chuỗi UUID/ULID đã lưu), ba cột key/name/email khác nhau và tồn tại. Name/email có thể map sang display_name/login_email; không suy ra tên cột từ request, không tự thêm cột. Giá trị directory lấy từ raw column, không chạy accessor/cast trình bày của model, không serialize model/appends/relations. Giữ query global scopes nhưng thay select/order/eager loads bằng projection ba cột và thứ tự ổn định theo key.
 
+## Thêm thông tin cho user (kế thừa, không sửa gói)
+
+Gói có sẵn `Saola\Admin\Users\UserResource` (name, email, password, thùng rác). Project kế thừa, thêm cột riêng rồi đăng ký lớp con trong `panel.pages`; để `users.enabled=false`:
+
+```php
+class UserResource extends \Saola\Admin\Users\UserResource
+{
+    public function fields(): array { return [...parent::fields(), 'phone' => ['labelKey' => 'app.users.phone', 'type' => 'text', 'maxLength' => 30]]; }
+    public function columns(): array { return [...parent::columns(), ['key' => 'phone', 'labelKey' => 'app.users.phone']]; }
+    public function rules(Request $request, ?Model $record): array { return [...parent::rules($request, $record), 'phone' => ['nullable', 'string', 'max:30']]; }
+}
+```
+
+Model lấy từ guard (hoặc `users.model`), phạm vi từ `users.query_scope`. Đổi độ dài mật khẩu bằng `passwordMin()`, quyền xem bằng `ability()`.
+
 ## Scope quyết định bản ghi và tổng số
 
 `UserQueryScope` là class của host, bắt buộc cho Eloquent adapter khi bật directory. Không đoán tenant/team/ownership từ tên cột. Host khai scope trước tìm kiếm, count và pagination:

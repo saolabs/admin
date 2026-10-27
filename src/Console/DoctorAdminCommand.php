@@ -91,7 +91,7 @@ final class DoctorAdminCommand extends Command
                 $disk = config('saola-admin.media.disk', 'local');
                 if (!is_array(config('filesystems.disks.'.$disk))) $errors[] = 'Media filesystem disk is missing: '.$disk;
             }
-            foreach (config('saola-admin.panel.pages', []) as $class) {
+            foreach (app(\Saola\Admin\Pages\PageRegistry::class)->classes() as $class) {
                 $resource = app($class);
                 if (!$resource instanceof \Saola\Admin\Resources\Resource) continue;
                 $resource->schema();

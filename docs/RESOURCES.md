@@ -4,6 +4,44 @@ Mốc 26/10/2026, source sau alpha.1, chưa phát hành tag mới. `Saola\Admin\
 
 Ý tưởng giữ sự tiện dụng của hệ cũ ai-services: cấu hình form/list một lần rồi dùng bộ màn hình chung. Thiết kế mới dùng model, scope và Policy của host; không đưa repository/controller kế thừa của hệ cũ vào package. `Page`/`ResourceDocument` chỉ đọc hiện có vẫn hoạt động. Settings, language exchange và media giữ contract riêng, không ép tất cả thành CRUD.
 
+## Thêm tính năng: thêm file, không sửa config (28/10/2026)
+
+Trang được **tự phát hiện**: mọi class `Page` (kể cả `Resource`) không trừu tượng trong `app/Modules/*/Resources` và `app/Modules/*/Pages` tự đăng ký. Không còn danh sách `panel.pages` hay `panel.icons` phải sửa (vẫn đọc nếu có, cho trang nằm ngoài quy ước; đổi thư mục quét bằng `panel.discover`).
+
+| Việc | Cách làm |
+| --- | --- |
+| CRUD mới | `php artisan admin:make:resource Shop/Product` sinh `app/Modules/Shop/Resources/ProductResource.php`, trường lấy từ cột bảng của model; in ra khoá nhãn cần thêm. Sau đó `admin:lang:sync`. |
+| Màn hình riêng | `php artisan admin:make:screen Shop/reports` sinh Page, controller và `resources/saola/admin/views/modules/reports/index.sao`; in ra dòng route cần thêm vào `ModuleServiceProvider` của module. |
+| Mục menu | `navigation()` trên class: `['icon' => 'ri-store-line', 'order' => 20, 'hidden' => false]`. Nhóm con dùng `GroupedPage`. Menu sắp theo `order` (mặc định 100), nhóm theo con đầu tiên. |
+| Quyền | `abilityPrefix()` = `'shop.products'` thì gói kiểm `shop.products.view/create/update/delete/restore`, không cần Policy. Model có Policy đăng ký thì Policy thắng (luật riêng như "nhân sự không sửa chủ"). |
+| Màn hình riêng gắn route | Page implements `ModulePage` (`module()` = đoạn thứ hai của tên route `admin.{module}.*`); `HostScreenController` tự tìm trang, không cần `pageKeys()`. |
+
+Stub có thể ghi đè ở `stubs/admin.resource.stub`, `stubs/admin.screen.{page,controller,view}.stub` của project. Tiền tố ability/nhãn mặc định đặt một lần cho cả project ở `saola-admin.generator` (`ability_prefix`, `lang_prefix`).
+
+### Tùy biến khi cần: view của project, cùng chạy SSR, hydrate và CSR
+
+Các view dưới đây nằm cạnh `modules/` (thư mục của `panel.host_modules`), vào chung bundle và cây Blade, nên theme `@include` được ở cả server lẫn client. Đổi theme không phải viết lại chúng nếu chỉ ghép component của theme (`__base__ + 'components.…'`).
+
+| Muốn | Thêm file | Khai báo |
+| --- | --- | --- |
+| Loại input mới | `resources/saola/admin/views/inputs/{template}.sao` | `Input::make('color-hex', 'shop.color', ['type' => 'text'])`: `type` có sẵn giữ validate, `template` lạ trỏ tới file |
+| Ô danh sách riêng | `resources/saola/admin/views/columns/{renderer}.sao` (nhận `value`, `row`, `column`) | `['key' => 'name', 'labelKey' => …, 'renderer' => 'person']`; `columnValue()` có thể trả map phẳng các giá trị scalar |
+| Cả màn hình của một Resource | `resources/saola/admin/views/resources/{key}.sao` (nhận `resource`, có `resource['mode']` = list/create/edit) | Không cần: có file là dùng. Gọi lại `@include(__base__ + 'components.manager', {resource: resource})` để chỉ bọc thêm |
+
+Input riêng phải gắn controller chung để form ghi nhận thay đổi, giống input của theme:
+
+```blade
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+<template>
+    <input class="form-control" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" value="{{ field['value'] }}" @disabled(locked || field['readOnly']) @input(input($event))>
+</template>
+```
+
+Giá trị vẫn được escape; ô và input riêng không nhận HTML thô từ dữ liệu.
+
 ## Bắt đầu bằng một Resource của project
 
 ```php
@@ -51,7 +89,7 @@ final class CategoryResource extends Resource
 }
 ```
 
-Đăng ký `CategoryResource::class` trong `saola-admin.panel.pages`. Khai báo Gate `manage-categories`, đăng ký model Policy và nguồn `lang/{locale}/catalog.php` qua LanguageSources của host, cho phép nhãn cần dùng trong scope dictionary admin rồi sync. Tên file/catalog không buộc thêm namespace vendor; giá trị `titleKey`/`labelKey` là key lồng tùy ý. `.sao` dùng `__()`/`text()`, compiler hạ `__()` thành `text()`; không thay Laravel `__()`.
+Đặt file trong `app/Modules/{Module}/Resources/` để tự đăng ký (hoặc liệt kê trong `saola-admin.panel.pages` nếu nằm chỗ khác). Khai báo Gate `manage-categories`, đăng ký model Policy và nguồn `lang/{locale}/catalog.php` qua LanguageSources của host, cho phép nhãn cần dùng trong scope dictionary admin rồi sync. Tên file/catalog không buộc thêm namespace vendor; giá trị `titleKey`/`labelKey` là key lồng tùy ý. `.sao` dùng `__()`/`text()`, compiler hạ `__()` thành `text()`; không thay Laravel `__()`.
 
 Host tạo migration/model `Category` của mình. Muốn thùng rác, model dùng Eloquent `SoftDeletes` và bảng có `deleted_at`. Không có SoftDeletes thì chỉ list/create/edit, không tự xóa cứng thay thế. Installer không sửa bảng hoặc gắn trait vào model của host. Chạy migration package có bảng `saola_resource_events` trên connection mặc định; tên bảng có cấu hình `resources.audit_table`.
 

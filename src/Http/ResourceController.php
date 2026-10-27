@@ -28,6 +28,8 @@ final class ResourceController extends BaseWebController
         return $this->response(array_replace(app(PanelData::class)->prepare($request, $page), [
             'page' => $resource->document($request)->toArray(),
             'management' => $editor ? $this->store($resource)->editor($resource, $request, $record) : $this->store($resource)->listing($resource, $request),
+            // resources/saola/admin/views/resources/{key}.sao, when the project has one, replaces the shared manager for this Resource.
+            'screen' => \Saola\Admin\Themes\HostViews::existing('resources', $resource->key()) ?? '',
         ]), '@RAW:pages.resource');
     }
     public function index(Request $request, string $resource)

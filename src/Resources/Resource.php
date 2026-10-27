@@ -6,11 +6,14 @@ namespace Saola\Admin\Resources;
 
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
 use Illuminate\Http\Request;
-use Saola\Admin\Pages\{Page, AuthorizesPage, ResourceDocument};
+use Saola\Admin\Pages\{Page, AuthorizesPage, NavigablePage, ResourceDocument};
 
 /** Register one definition as a Page. The host owns model, scope, rules and domain hooks. */
-abstract class Resource implements Page, AuthorizesPage
+abstract class Resource implements Page, AuthorizesPage, NavigablePage
 {
+    /** Built-in list cells; any other renderer name is the project's view admin.columns.{renderer} (HostViews). */
+    public const RENDERERS = ['text', 'badge', 'image', 'link', 'boolean', 'number', 'date'];
+
     abstract public function model(): string;
     abstract public function fields(): array;
     abstract public function query(Request $request): Builder;
@@ -24,8 +27,24 @@ abstract class Resource implements Page, AuthorizesPage
     public function columnValue(string $key, Model $record, Request $request): mixed { return $record->getRawOriginal($key); }
 
     public function store(): string { return EloquentResourceStore::class; }
-    public function allows(Request $request): bool { return \Illuminate\Support\Facades\Gate::forUser($request->user())->allows('viewAny', $this->model()); }
+    public function allows(Request $request): bool { return $this->can($request, 'viewAny', $this->model()); }
+
+    /**
+     * Abilities "{prefix}.view|create|update|delete|restore" stand in for a model Policy, so a plain CRUD needs no Policy class.
+     * A registered Policy for the model always wins (custom rules such as "staff cannot edit owners").
+     */
+    public function abilityPrefix(): string { return ''; }
+    public function ability(): string { return $this->abilityPrefix() === '' ? '' : $this->abilityPrefix().'.view'; }
+    /** $operation is a Policy method name: viewAny, viewTrash, view, create, update, delete, restore, forceDelete. */
+    public function can(Request $request, string $operation, Model|string $target): bool
+    {
+        $gate = \Illuminate\Support\Facades\Gate::forUser($request->user());
+        if ($this->abilityPrefix() === '' || $gate->getPolicyFor($target) !== null) return $gate->allows($operation, $target);
+        $ability = ['viewAny' => 'view', 'viewTrash' => 'view', 'view' => 'view', 'create' => 'create', 'update' => 'update', 'delete' => 'delete', 'restore' => 'restore'][$operation] ?? null;
+        return $ability !== null && $gate->allows($this->abilityPrefix().'.'.$ability);
+    }
     public function descriptionKey(): string { return ''; }
+    public function navigation(): array { return []; }
     public function searchable(): array { return []; }
     public function sortable(): array { return array_values(array_filter(array_column($this->columns(), 'key'), fn ($key) => $this->fields()[$key]['persist'] ?? true)); }
     public function columns(): array
@@ -80,7 +99,7 @@ abstract class Resource implements Page, AuthorizesPage
         foreach ($columns as $column) {
             $key = $column['key'] ?? '';
             if (!in_array($key, $keys, true) || ($fields[$key]['writeOnly'] ?? false) || !is_string($column['labelKey'] ?? null)
-                || !in_array($column['renderer'] ?? 'text', ['text', 'badge', 'image', 'link', 'boolean', 'number', 'date'], true)) throw new \LogicException('Invalid Resource column.');
+                || !in_array($column['renderer'] ?? 'text', self::RENDERERS, true) && !preg_match('/^[a-z][a-z0-9-]{0,40}$/D', (string) $column['renderer'])) throw new \LogicException('Invalid Resource column.');
             if (isset($column['decimals']) && (!is_int($column['decimals']) || $column['decimals'] < 0 || $column['decimals'] > 6)) throw new \LogicException('Invalid Resource number precision.');
         }
         foreach (array_merge($this->searchable(), $this->sortable()) as $key) {

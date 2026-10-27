@@ -6,7 +6,11 @@
 <template>
     <div class="sa-admin-input" data-input-template="{{ field['template'] ?? field['type'] }}">
         <label id="resource-label-{{ field['key'] }}" for="resource-field-{{ field['key'] }}">{{ text(field['labelKey']) }} @if(field['required'] && !field['readOnly'])<span class="sa-admin-required" aria-hidden="true">*</span>@endif</label>
-        @include(inputKinds.includes(field['template']) ? __base__ + 'components.inputs.' + field['template'] : __base__ + 'components.inputs.text', {field: field, error: error, locked: locked, onChange: onChange, onMedia: onMedia, mediaAvailable: mediaAvailable})
+        @if((field['view'] ?? '') !== '')
+            @include(field['view'], {field: field, error: error, locked: locked, onChange: onChange, onMedia: onMedia, mediaAvailable: mediaAvailable})
+        @else
+            @include(inputKinds.includes(field['template']) ? __base__ + 'components.inputs.' + field['template'] : __base__ + 'components.inputs.text', {field: field, error: error, locked: locked, onChange: onChange, onMedia: onMedia, mediaAvailable: mediaAvailable})
+        @endif
         <small id="resource-help-{{ field['key'] }}">{{ (field['helpKey'] ?? '') ? text(field['helpKey']) : '' }}</small>
         <p id="resource-error-{{ field['key'] }}" class="sa-admin-field-error">{{ error }}</p>
     </div>

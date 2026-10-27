@@ -105,6 +105,8 @@
                                                 @if(row['values'][column['key']] !== '')<a href="{{ row['values'][column['key']] }}" rel="noopener noreferrer">{{ row['values'][column['key']] }}</a>@endif
                                             @elseif((column['renderer'] ?? 'text') === 'boolean')
                                                 <span class="sa-admin-badge">{{ row['values'][column['key']] === '1' ? text('admin.input.yes') : text('admin.input.no') }}</span>
+                                            @elseif((column['view'] ?? '') !== '')
+                                                @include(column['view'], {value: row['values'][column['key']], row: row, column: column})
                                             @elseif((column['renderer'] ?? 'text') === 'badge')<span class="sa-admin-badge">{{ row['values'][column['key']] }}</span>
                                             @else<span>{{ row['values'][column['key']] }}</span>@endif
                                         </td>

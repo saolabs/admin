@@ -25,7 +25,7 @@ Model mặc định lấy từ `panel.guard` → auth guard → provider.model, 
 
 ## Thêm thông tin cho user (kế thừa, không sửa gói)
 
-Gói có sẵn `Saola\Admin\Users\UserResource` (name, email, password, thùng rác). Project kế thừa, thêm cột riêng rồi đăng ký lớp con trong `panel.pages`; để `users.enabled=false`:
+Gói có sẵn `Saola\Admin\Users\UserResource` (name, email, password, thùng rác). Project kế thừa, thêm cột riêng và đặt lớp con trong `app/Modules/Users/Resources/` (tự phát hiện); để `users.enabled=false`:
 
 ```php
 class UserResource extends \Saola\Admin\Users\UserResource

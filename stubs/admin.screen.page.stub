@@ -1,0 +1,19 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Http\Request;
+use Saola\Admin\Pages\{LinkedPage, ModulePage, NavigablePage, ResourceDocument};
+
+/** Sidebar entry and access rule of the {{ module }} screen (routes admin.{{ module }}.*, views modules/{{ module }}/*). */
+final class {{ class }} implements LinkedPage, ModulePage, NavigablePage
+{
+    public function key(): string { return '{{ module }}'; }
+    public function titleKey(): string { return '{{ lang }}.title'; }
+    public function ability(): string { return '{{ ability }}.view'; }
+    public function module(): string { return '{{ module }}'; }
+    /** The screen's own index route (admin.{{ module }}.index), wherever the admin context mounts it. */
+    public function url(): string { return route('admin.{{ module }}.index', [], false); }
+    public function navigation(): array { return ['icon' => 'folder', 'order' => 100]; }
+    public function document(Request $request): ResourceDocument { return new ResourceDocument($this->titleKey(), ''); }
+}

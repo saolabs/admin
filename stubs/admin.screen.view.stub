@@ -1,0 +1,24 @@
+@await
+<script setup lang="ts">
+    @vars(items: any[] = [], navigation: any[] = [], currentPage: string = '', brand: string = '', branding: any = {}, locales: any[] = [], dictionaryPattern: string = '', uiLocale: string = '', account: any = {})
+
+    App.Admin.controllers.page($view, () => currentPage);
+</script>
+
+<template>
+    @serverside
+        @section('meta:title', text('{{ lang }}.title'))
+    @endserverside
+    @extends(__base__ + 'layouts.shell', {navigation: navigation, currentPage: currentPage, brand: brand, branding: branding, locales: locales, dictionaryPattern: dictionaryPattern, uiLocale: uiLocale, account: account})
+    @block('heading')
+        <h1 id="admin-page-title">{{ text('{{ lang }}.title') }}</h1>
+    @endblock
+    @block('content')
+        <div class="card"><div class="card-body">
+            @foreach(items as item)
+                @key(item['id'])
+                <p>{{ item['name'] }}</p>
+            @endforeach
+        </div></div>
+    @endblock
+</template>

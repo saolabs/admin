@@ -13,8 +13,8 @@ use Saola\Admin\Resources\Resource;
 
 /**
  * Base list/form/trash for the host's user table: name, email and password.
- * A host extends it, adds its own columns and registers the subclass in `panel.pages`
- * (keep `users.enabled=false`); nothing here needs to be edited or copied.
+ * A host extends it in app/Modules/Users/Resources (discovered automatically), adds its own columns
+ * and keeps `users.enabled=false`; nothing here needs to be edited or copied.
  */
 abstract class UserResource extends Resource
 {

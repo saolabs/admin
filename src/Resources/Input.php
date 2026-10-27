@@ -20,14 +20,17 @@ final class Input
 
     public static function make(string $template, string $labelKey, array $attributes = []): array
     {
-        return self::normalize(array_replace($attributes, ['type' => self::TEMPLATES[$template] ?? $template, 'template' => $template, 'labelKey' => $labelKey]));
+        return self::normalize(array_replace($attributes, ['type' => self::TEMPLATES[$template] ?? $attributes['type'] ?? $template, 'template' => $template, 'labelKey' => $labelKey]));
     }
 
     public static function normalize(array $field): array
     {
         $template = $field['template'] ?? $field['type'] ?? 'text';
-        $type = self::TEMPLATES[$template] ?? null;
-        if (!$type || !in_array($field['type'] ?? $type, [$type, $template], true)) throw new \LogicException('Invalid Resource input template/type.');
+        // A template the package does not know is the project's own view (admin.inputs.{template}); its declared type keeps validation.
+        $custom = !isset(self::TEMPLATES[$template]);
+        $type = $custom ? (in_array($field['type'] ?? null, self::TEMPLATES, true) && preg_match('/^[a-z][a-z0-9-]{0,40}$/D', $template) ? $field['type'] : null) : self::TEMPLATES[$template];
+        if (!$type || !$custom && !in_array($field['type'] ?? $type, [$type, $template], true)) throw new \LogicException('Invalid Resource input template/type.');
+        if ($custom) $field['view'] = \Saola\Admin\Themes\HostViews::name('inputs', $template);
         $field = array_replace(['type' => $type, 'template' => $template, 'maxLength' => in_array($type, ['textarea', 'markdown', 'richtext', 'json'], true) ? 20000 : 2048,
             'rows' => 6, 'maxItems' => 50, 'itemMaxLength' => 100, 'section' => 'main', 'span' => in_array($type, ['textarea', 'markdown', 'richtext', 'json', 'image', 'media'], true) ? 'full' : 'half',
             'placeholderKey' => '', 'helpKey' => '', 'options' => []], $field, ['type' => $type, 'template' => $template]);

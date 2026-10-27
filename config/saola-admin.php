@@ -27,6 +27,9 @@ return [
         'settings_route' => null,
         'logout_route' => null, // Host POST/DELETE route. Never turn logout into a GET link.
     ],
+    // Defaults of admin:make:resource / admin:make:screen: abilities "{ability_prefix}.{key}", labels "{lang_prefix}.{key}".
+    // Unset: abilities admin.{key}, labels {module}.{key}. Set once per project, never per feature.
+    'generator' => ['ability_prefix' => null, 'lang_prefix' => null],
     'users' => [
         'enabled' => false,
         'model' => null, // Resolve from panel.guard -> auth provider; host may bind UserDirectory instead.

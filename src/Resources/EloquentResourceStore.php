@@ -20,7 +20,7 @@ class EloquentResourceStore implements ResourceStore
     {
         $resource->schema();
         $this->gate($request)->authorize($resource->ability());
-        $this->gate($request)->authorize('viewAny', $resource->model());
+        abort_unless($resource->can($request, 'viewAny', $resource->model()), 403);
     }
     private function query(Resource $resource, Request $request): Builder
     {
@@ -84,7 +84,7 @@ class EloquentResourceStore implements ResourceStore
         $this->authorize($resource, $request);
         $params = $request->validate(['status' => ['sometimes', Rule::in(['active', 'trash'])], 'locale' => ['sometimes', 'string', 'max:40']]);
         $status = $params['status'] ?? 'active'; $locale = $params['locale'] ?? app()->getLocale();
-        $trashView = $resource->supportsTrash() && $this->gate($request)->allows('viewTrash', $resource->model());
+        $trashView = $resource->supportsTrash() && $resource->can($request, 'viewTrash', $resource->model());
         abort_if($status === 'trash' && !$trashView, 403);
         $fields = $resource->schema(); $target = $resource->model();
         $visible = fn (string $key) => !isset($fields[$key]) || $this->canField($fields[$key], 'read', $request, $target);
@@ -133,15 +133,21 @@ class EloquentResourceStore implements ResourceStore
                     try { $value = $value ? \Illuminate\Support\Carbon::parse($value)->format('Y-m-d') : ''; }
                     catch (\Throwable) { $value = ''; }
                 }
+                // A project cell view (custom renderer) may take a flat map of scalars, e.g. avatar + name + email from columnValue().
+                if (is_array($value) && !in_array($column['renderer'] ?? 'text', Resource::RENDERERS, true)) {
+                    foreach ($value as $part) if (!is_scalar($part) && $part !== null) throw new \LogicException('Resource cells must be scalar.');
+                    $values[$column['key']] = array_map(fn ($part) => $part === null ? '' : (string) $part, $value);
+                    continue;
+                }
                 if (!is_scalar($value) && $value !== null) throw new \LogicException('Resource cells must be scalar.');
                 $values[$column['key']] = $value === null ? '' : (string) $value;
             }
-            if (!$this->trashed($resource, $record) && $this->gate($request)->allows('view', $record)) {
-                $actions[] = ['operation' => 'edit', 'labelKey' => $this->gate($request)->allows('update', $record) ? 'admin.resource.edit' : 'admin.resource.view', 'url' => $resource->path().'/'.rawurlencode($id).'/edit'.$suffix];
+            if (!$this->trashed($resource, $record) && $resource->can($request, 'view', $record)) {
+                $actions[] = ['operation' => 'edit', 'labelKey' => $resource->can($request, 'update', $record) ? 'admin.resource.edit' : 'admin.resource.view', 'url' => $resource->path().'/'.rawurlencode($id).'/edit'.$suffix];
             }
             foreach ($status === 'trash' ? ['restore', 'purge'] : ['trash'] as $operation) {
                 $policy = ['trash' => 'delete', 'restore' => 'restore', 'purge' => 'forceDelete'][$operation];
-                if ($resource->supportsTrash() && ($operation !== 'purge' || $resource->supportsPurge()) && $this->gate($request)->allows($policy, $record)) {
+                if ($resource->supportsTrash() && ($operation !== 'purge' || $resource->supportsPurge()) && $resource->can($request, $policy, $record)) {
                     $actions[] = ['operation' => $operation, 'labelKey' => 'admin.resource.'.$operation, 'url' => ''];
                 }
             }
@@ -152,6 +158,7 @@ class EloquentResourceStore implements ResourceStore
             'search_by' => $query->searchBy, 'sort' => $query->sort, 'direction' => $query->direction, 'per_page' => $query->perPage, 'page' => $number], $overrides), '', '&', PHP_QUERY_RFC3986);
         $sortLabels = array_column($resource->columns(), 'labelKey', 'key');
         foreach ($columns as &$column) {
+            if (!in_array($column['renderer'] ?? 'text', Resource::RENDERERS, true)) $column['view'] = \Saola\Admin\Themes\HostViews::name('columns', $column['renderer']);
             $column['sortUrl'] = in_array($column['key'], $sorts, true) ? $url(1, ['sort' => $column['key'], 'direction' => $column['key'] === $query->sort && $query->direction === 'asc' ? 'desc' : 'asc']) : '';
         }
         unset($column);
@@ -166,7 +173,7 @@ class EloquentResourceStore implements ResourceStore
             'selectable' => (bool) array_filter($rows, fn ($row) => $row['selectable']),
             'status' => $status, 'trashUrl' => $trashView ? $url(1, ['status' => 'trash']) : '', 'activeUrl' => $url(1, ['status' => 'active']),
             'resetUrl' => $resource->path().'?'.http_build_query(['locale' => $locale, 'status' => $status]),
-            'createUrl' => $this->gate($request)->allows('create', $target) ? $resource->path().'/create'.$suffix : '',
+            'createUrl' => $resource->can($request, 'create', $target) ? $resource->path().'/create'.$suffix : '',
             'counts' => ['active' => $activeCount, 'trash' => $trashCount],
             'listing' => ['action' => $resource->path(), 'locale' => $locale, 'q' => $query->search, 'searchBy' => $query->searchBy, 'sort' => $query->sort, 'direction' => $query->direction,
                 'filtered' => $query->search !== '' || $query->searchBy !== '' || $query->sort !== $sorts[0] || $query->direction !== 'asc' || $query->perPage !== 25,
@@ -182,10 +189,10 @@ class EloquentResourceStore implements ResourceStore
     {
         $this->authorize($resource, $request);
         $record = $id === null ? null : $this->record($resource, $request, $id);
-        if ($record) { abort_if($this->trashed($resource, $record), 404); $this->gate($request)->authorize('view', $record); }
-        else $this->gate($request)->authorize('create', $resource->model());
+        if ($record) { abort_if($this->trashed($resource, $record), 404); abort_unless($resource->can($request, 'view', $record), 403); }
+        else abort_unless($resource->can($request, 'create', $resource->model()), 403);
         $target = $record ?? $resource->model();
-        $canSave = $record ? $this->gate($request)->allows('update', $record) : true; $fields = [];
+        $canSave = $record ? $resource->can($request, 'update', $record) : true; $fields = [];
         foreach ($resource->schema() as $key => $field) {
             $writeOnly = $field['writeOnly'] ?? false;
             $write = $canSave && !($field['readOnly'] ?? false) && $this->canField($field, 'write', $request, $target);
@@ -206,7 +213,7 @@ class EloquentResourceStore implements ResourceStore
                 'nullable' => (bool) ($field['nullable'] ?? false), 'helpKey' => $field['helpKey'] ?: ($record && $writeOnly && ($field['optionalOnUpdate'] ?? false) ? 'admin.resource.keep_password' : ''),
                 'tagText' => $type === 'tags' ? implode(', ', $value) : '', 'previewUrl' => $type === 'image' ? SafeUrlRule::safe($value) : '',
                 'commands' => in_array($type, ['markdown', 'richtext'], true) ? array_map(fn ($command) => ['key' => $command, 'labelKey' => 'admin.input.'.$command], ['bold', 'italic', 'heading', 'list', 'link', 'code']) : [],
-                'section' => $field['section'], 'span' => $field['span'], 'placeholderKey' => $field['placeholderKey'], 'rows' => $field['rows'],
+                'section' => $field['section'], 'span' => $field['span'], 'view' => $field['view'] ?? '', 'placeholderKey' => $field['placeholderKey'], 'rows' => $field['rows'],
                 'min' => $field['min'] ?? '', 'max' => $field['max'] ?? '', 'step' => $field['step'] ?? ($type === 'integer' ? 1 : 'any'),
                 'maxItems' => $field['maxItems'], 'itemMaxLength' => $field['itemMaxLength'], 'matrix' => $matrix ? Matrix::project($matrix, is_array($value) ? $value : []) : null,
                 'options' => array_map(fn ($option) => $option + ['selected' => is_array($value) ? in_array($option['value'], $value, true) : (string) $value === $option['value']], $options)];
@@ -276,7 +283,7 @@ class EloquentResourceStore implements ResourceStore
     }
     public function create(Resource $resource, Request $request): array
     {
-        $this->authorize($resource, $request); $this->gate($request)->authorize('create', $resource->model());
+        $this->authorize($resource, $request); abort_unless($resource->can($request, 'create', $resource->model()), 403);
         abort_if(array_diff(array_keys($request->json()->all()), ['values', 'requestId']), 422);
         $data = $request->validate(['requestId' => ['required', 'uuid']]);
         // Receipt lookup precedes validation (e.g. unique email is already taken by this same request).
@@ -286,7 +293,7 @@ class EloquentResourceStore implements ResourceStore
         if ($receipt) {
             abort_unless(hash_equals($receipt->input_hash, $hash), 409);
             $record = $this->record($resource, $request, $receipt->record_key);
-            $this->gate($request)->authorize('view', $record);
+            abort_unless($resource->can($request, 'view', $record), 403);
             return ['schema' => 1, 'redirect' => $resource->path(), 'id' => (string) $record->getKey(), 'replayed' => true];
         }
         $values = $this->values($resource, $request, null);
@@ -311,7 +318,7 @@ class EloquentResourceStore implements ResourceStore
         $data = $request->validate(['revision' => ['required', 'string', 'size:64']]);
         return $this->connection($resource)->transaction(function () use ($resource, $request, $id, $data) {
             $record = $this->record($resource, $request, $id, true); abort_if($this->trashed($resource, $record), 409);
-            $this->gate($request)->authorize('update', $record);
+            abort_unless($resource->can($request, 'update', $record), 403);
             abort_unless(hash_equals($this->revision($resource, $record), $data['revision']), 409);
             $values = $this->values($resource, $request, $record);
             $resource->beforeMutation('update', $record, $request); $resource->save($record, $values, $request);
@@ -330,7 +337,7 @@ class EloquentResourceStore implements ResourceStore
             $items = $data['items']; usort($items, fn ($a, $b) => strcmp($a['id'], $b['id'])); $records = [];
             foreach ($items as $item) {
                 $record = $this->record($resource, $request, $item['id'], true);
-                $this->gate($request)->authorize(['trash' => 'delete', 'restore' => 'restore', 'purge' => 'forceDelete'][$operation], $record);
+                abort_unless($resource->can($request, ['trash' => 'delete', 'restore' => 'restore', 'purge' => 'forceDelete'][$operation], $record), 403);
                 abort_unless(hash_equals($this->revision($resource, $record), $item['revision']), 409);
                 abort_if($this->trashed($resource, $record) !== ($operation !== 'trash'), 409);
                 $records[] = $record;

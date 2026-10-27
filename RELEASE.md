@@ -1,3 +1,12 @@
+# saola/admin v0.1.0-alpha.6
+
+- Pages are discovered: every instantiable `Page`/`Resource` under `app/Modules/*/{Resources,Pages}` registers itself; `panel.pages`/`panel.icons` become optional. Menu data lives on the class (`NavigablePage::navigation()`: icon, order, hidden).
+- `Resource::abilityPrefix()` authorizes `{prefix}.view|create|update|delete|restore` without a Policy (a registered Policy still wins).
+- `ModulePage::module()` lets `HostScreenController` find a screen's Page; `pageKeys()` is now optional.
+- Project views: custom inputs (`views/inputs/{template}`), list cells (`views/columns/{renderer}`) and a whole Resource screen (`views/resources/{key}`), SSR + hydrate + CSR.
+- Generators `admin:make:resource Module/Name` (fields from the table) and `admin:make:screen Module/slug`, overridable stubs, `saola-admin.generator` prefixes.
+- Republish theme sources (`admin:publish`): `components/input.sao`, `components/manager.sao` and `pages/resource.sao` changed in both themes.
+
 # saola/admin v0.1.0-alpha.5
 
 - Users: base `Saola\Admin\Users\UserResource` (name, email, password, trash). A host extends it, adds its own columns and registers the subclass in `panel.pages` with `users.enabled=false`; see docs/USERS.md.

@@ -26,6 +26,8 @@ use Saola\Core\Engines\ViewContextManager;
 use Saola\Admin\Console\PublishAdminCommand;
 use Saola\Admin\Console\InstallAdminCommand;
 use Saola\Admin\Console\DoctorAdminCommand;
+use Saola\Admin\Console\MakeResourceCommand;
+use Saola\Admin\Console\MakeScreenCommand;
 
 final class AdminServiceProvider extends ServiceProvider
 {
@@ -86,7 +88,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->publishes([__DIR__.'/../lang' => $this->app->langPath('vendor/admin')], 'saola-admin-lang');
         $this->publishes([__DIR__.'/../config/saola-admin.php' => config_path('saola-admin.php')], 'saola-admin-config');
         $this->commands([SyncLanguageCommand::class, ExportLanguageCommand::class, ImportLanguageCommand::class, ApplyLanguageCommand::class,
-            PublishAdminCommand::class, InstallAdminCommand::class, DoctorAdminCommand::class]);
+            PublishAdminCommand::class, InstallAdminCommand::class, DoctorAdminCommand::class, MakeResourceCommand::class, MakeScreenCommand::class]);
         $scope = config('saola-admin.panel.language_scope', 'admin');
         if (config('sao.i18n.client_scopes.'.$scope) === null) {
             config(['sao.i18n.client_scopes.'.$scope => ['keys' => ['admin'], 'ability' => config('saola-admin.panel.ability'), 'guard' => config('saola-admin.panel.guard')]]);
@@ -96,7 +98,9 @@ final class AdminServiceProvider extends ServiceProvider
             \Saola\Admin\Settings\DefaultSettings::register($registry);
         });
         $this->app->afterResolving(PageRegistry::class, function (PageRegistry $registry) {
-            foreach (config('saola-admin.panel.pages', []) as $class) $registry->register($class);
+            // Discovered pages (app/Modules/*/{Resources,Pages}) plus any listed explicitly; adding a page file never edits config.
+            $discovered = \Saola\Admin\Pages\PageDiscovery::classes(config('saola-admin.panel.discover', \Saola\Admin\Pages\PageDiscovery::DEFAULT_PATTERNS));
+            foreach (array_unique([...config('saola-admin.panel.pages', []), ...$discovered]) as $class) $registry->register($class);
             if (config('saola-admin.users.enabled', false)) $registry->register(\Saola\Admin\Users\UsersPage::class);
         });
         if (config('saola-admin.panel.enabled', false)) {

@@ -38,7 +38,8 @@ final class PanelData
         foreach ($navigation as &$item) {
             $icons = config('saola-admin.panel.icons', []);
             $defaultIcon = ['workspace' => 'dashboard', 'users' => 'users', 'categories' => 'list', 'media' => 'media', 'languages' => 'language', 'settings' => 'settings'][$item['key']] ?? 'folder';
-            $icon = $icons[$item['key']] ?? $defaultIcon;
+            $icon = $item['icon'] ?? $icons[$item['key']] ?? $defaultIcon;
+            unset($item['icon']);
             $item['iconPath'] = NavigationIcons::path(is_string($icon) ? $icon : $defaultIcon);
             // A host may name any Remix icon class directly (ri-*); everything else uses the small named set.
             $item['iconClass'] = is_string($icon) && preg_match('/^ri-[a-z0-9-]{2,40}$/D', $icon) ? $icon : match ($icon) {

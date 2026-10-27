@@ -117,7 +117,7 @@ Nguồn của từng theme hiện nằm trong `admin/themes/{name}`. Namespace l
 | `components/`, `layouts/`, `partials/` | Thành phần dùng lại, khung shell, phần đầu trang | Gói | `admin.themes.<theme>.components.*` … |
 | `modules/` của **host** (`saola-admin.panel.host_modules`) | Màn hình nghiệp vụ riêng của ứng dụng, tên view khớp tên route (`admin.providers.index` → `providers/index.sao`) | Host | `<host_modules>.providers.index` |
 
-CRUD tiêu chuẩn không cần view: host khai `Resource` (model, cột, trường, quy tắc, quyền) và đăng ký vào `panel.pages`, gói dựng danh sách, form, thùng rác và thao tác hàng loạt bằng `pages/resource`. `HostScreenController` lấy module và action từ tên route để chọn view trong `host_modules`.
+CRUD tiêu chuẩn không cần view: host khai `Resource` (model, cột, trường, quy tắc, quyền) trong `app/Modules/*/Resources` (tự phát hiện), gói dựng danh sách, form, thùng rác và thao tác hàng loạt bằng `pages/resource`. `HostScreenController` lấy module và action từ tên route để chọn view trong `host_modules`. Input, ô danh sách và cả màn hình của từng Resource có thể là view của project: xem [RESOURCES.md](RESOURCES.md#tùy-biến-khi-cần-view-của-project-cùng-chạy-ssr-hydrate-và-csr).
 
 ## Input: mỗi type một file
 

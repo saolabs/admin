@@ -25,7 +25,7 @@ def request(path, method='GET', body=None, token=None, accept='application/json'
 status, raw, headers = request('/control/settings?locale=en&content_locale=vi')
 assert status == 200, ('editor', status)
 page = json.loads(raw)
-assert page['view'] == 'admin.pages.settings'
+assert page['view'] == 'admin.classic.pages.settings'
 assert page['data']['uiLocale'] == 'en'
 assert page['data']['account']['name'] == 'Workbench Operator'
 assert page['data']['account']['initials'] == 'WO' and page['data']['account']['logoutUrl'] == ''
@@ -71,7 +71,8 @@ assert status == 200
 users = json.loads(raw)['data']['page']
 assert len(users['rows']) == 10 and users['listing']['total'] == 27
 assert users['rows'][0] == {'id': '1', 'name': 'Member 01', 'email': 'member1@example.test'}
-assert 'password' not in raw.decode() and 'no-store' in headers['Cache-Control']
+assert all(set(row) == {'id', 'name', 'email'} for row in users['rows']), 'Only directory columns may be exposed'
+assert 'never-send-hash' not in raw.decode() and 'no-store' in headers['Cache-Control']
 status, raw, _ = request(users['listing']['next'])
 assert status == 200 and json.loads(raw)['data']['page']['rows'][0]['id'] == '11'
 status, raw, _ = request('/control/users?q=outside')
@@ -181,7 +182,7 @@ def media_upload(csrf=None):
     except urllib.error.HTTPError as error: return error.code, error.read()
 
 status, raw, _ = request('/control/media?locale=vi')
-assert status == 200 and json.loads(raw)['view'] == 'admin.pages.media'
+assert status == 200 and json.loads(raw)['view'] == 'admin.classic.pages.media'
 media_editor = json.loads(raw)['data']['mediaEditor']; token = media_editor['csrfToken']
 assert media_upload()[0] == 419
 status, raw = media_upload(token)

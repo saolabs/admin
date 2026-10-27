@@ -1,0 +1,34 @@
+<script setup lang="ts">
+    import type {UiDialog} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiDialog> = {})
+    @state(open: boolean = data['open'] ?? false, active: string = data['active'] ?? '', expanded: string[] = data['expanded'] ?? [], visible: boolean = true)
+
+    App.Admin.controllers.ui($view, () => data, 'dialog');
+</script>
+
+<template>
+    <div id="{{ data['id'] }}" @keydown(keydown($event))>
+        <button type="button" class="btn btn-{{ data['color'] ?? 'primary' }}" data-ui-trigger aria-haspopup="dialog" aria-expanded="{{ open ? 'true' : 'false' }}" aria-controls="{{ data['id'] }}-panel" @click(toggle($event))>{{ data['label'] ?? '' }}</button>
+        @if(open)
+            @if((data['variant'] ?? '') === 'drawer')
+                <div class="offcanvas-backdrop fade show" @click(backdrop($event))></div>
+                <div id="{{ data['id'] }}-panel" class="offcanvas offcanvas-{{ (data['placement'] ?? '') === 'start' ? 'start' : ((data['placement'] ?? '') === 'top' ? 'top' : ((data['placement'] ?? '') === 'bottom' ? 'bottom' : 'end')) }} show" role="dialog" aria-modal="true" aria-labelledby="{{ data['id'] }}-title" tabindex="-1">
+                    <div class="offcanvas-header"><h5 class="offcanvas-title" id="{{ data['id'] }}-title">{{ data['title'] ?? '' }}</h5><button type="button" class="btn-close" aria-label="{{ data['closeLabel'] ?? '' }}" @click(close())></button></div>
+                    <div class="offcanvas-body"><p>{{ data['text'] ?? '' }}</p>@useBlock('body')</div>
+                </div>
+            @else
+                <div class="modal-backdrop fade show"></div>
+                <div class="modal fade show d-block" role="presentation" @click(backdrop($event))>
+                    <div class="modal-dialog {{ (data['size'] ?? '') === 'lg' ? 'modal-lg' : ((data['size'] ?? '') === 'sm' ? 'modal-sm' : ((data['size'] ?? '') === 'xl' ? 'modal-xl' : '')) }} {{ (data['centered'] ?? false) ? 'modal-dialog-centered' : '' }} {{ (data['scrollable'] ?? false) ? 'modal-dialog-scrollable' : '' }}">
+                        <div id="{{ data['id'] }}-panel" class="modal-content" role="dialog" aria-modal="true" aria-labelledby="{{ data['id'] }}-title" tabindex="-1">
+                            <div class="modal-header"><h5 class="modal-title" id="{{ data['id'] }}-title">{{ data['title'] ?? '' }}</h5><button type="button" class="btn-close" aria-label="{{ data['closeLabel'] ?? '' }}" @click(close())></button></div>
+                            <div class="modal-body"><p>{{ data['text'] ?? '' }}</p>@useBlock('body')</div>
+                            @if((data['actions'] ?? []).length > 0)<div class="modal-footer">@foreach(data['actions'] as action)@key(action['label'])@include(__base__ + 'components.ui.button', {data: action, on$action: (id, event) => $view.emit('action', id, event)})@endforeach</div>@endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endif
+    </div>
+</template>

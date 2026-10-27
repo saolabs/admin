@@ -1,5 +1,7 @@
 # Quy ước tên admin và bảng dùng chung
 
+Source hiện tại đã tách giao diện thành `admin/{theme-name}/` trong **gói admin**. [Contract theme, build và đường nâng cấp](THEMES.md) là hướng dẫn hiện hành cho vị trí file, view context và CSS. Các mô tả skin nguyên bản/đường dẫn phẳng bên dưới là lịch sử của theme Classic trước lần tách này.
+
 Chốt 24/10/2026: `admin` dùng cho context, giao diện và client; bảng dùng chung mặc định chỉ có prefix `saola_`, có thể cấu hình hoặc bỏ.
 
 ```text
@@ -14,7 +16,7 @@ resources/saola/admin/
     components/{resource,settings-form}.sao
     partials/head.sao
   assets/{css,images}/
-  admin.manifest.json
+  context.manifest.json
 ```
 
 | Phần | Tên hiện tại |
@@ -26,7 +28,7 @@ resources/saola/admin/
 | Client bootstrap | `app/bootstrap.ts` import `./bundle` |
 | Dictionary scope / endpoint | `admin` / `/saola/languages/admin/{locale}` (scope có cấu hình) |
 | Gate vào panel | `access-admin` (ability có cấu hình, không tự cấp grant) |
-| Bảng chung | `saola_settings`, `saola_locales`, `saola_translation_keys`, `saola_translation_values`, `saola_language_batches` |
+| Bảng chung | `saola_settings`, `saola_locales`, `saola_translation_keys`, `saola_translation_values`, `saola_language_batches`, `saola_language_settings` |
 
 Tên file lang/owner/package không làm prefix translation key. CSS giữ selector scope `.saola-admin` và token `--sa-admin-*` để style không tác động class chung của host; đây không là một tầng namespace view, thư mục hoặc tên bảng.
 

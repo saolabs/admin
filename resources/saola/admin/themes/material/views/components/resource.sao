@@ -1,0 +1,94 @@
+<script setup lang="ts">
+    @vars(page: any = {})
+
+    App.Admin.controllers.resource($view, () => ({page}));
+</script>
+
+<template>
+    @if(page['fields'].length > 0)
+    <section class="card sa-admin-card" aria-label="{{ __('admin.resource.details') }}">
+        <h2 class="card-header fs-15">{{ __('admin.resource.details') }}</h2>
+        <dl class="sa-admin-fields">
+            @foreach(page['fields'] as field)
+                @key(field['key'])
+                <div class="sa-admin-field">
+                    <dt>{{ text(field['labelKey']) }}</dt>
+                    <dd>{{ field['value'] }}</dd>
+                </div>
+            @endforeach
+        </dl>
+    </section>
+    @endif
+    @if(page['columns'].length > 0)
+        <section class="card sa-admin-card" aria-label="{{ __('admin.resource.records') }}">
+            @if(page['fields'].length > 0)
+                <h2 class="card-header fs-15">{{ __('admin.resource.records') }}</h2>
+            @endif
+            @if(page['listing'] ?? null)
+                <form class="sa-admin-list-filters" action="{{ page['listing']['action'] }}" method="get" @submit.prevent(filter($event))>
+                    <input type="hidden" name="locale" value="{{ page['listing']['locale'] }}">
+                    <label for="resource-search">{{ __('admin.resource.search') }}</label>
+                    <input class="form-control" id="resource-search" name="q" type="search" maxlength="100" value="{{ page['listing']['search'] }}">
+                    <label for="resource-sort">{{ __('admin.resource.sort') }}</label>
+                    <select class="form-select" id="resource-sort" name="sort">
+                        @foreach(page['listing']['sortOptions'] as option)
+                            <option value="{{ option['key'] }}" @selected(option['key'] === page['listing']['sort'])>{{ text(option['labelKey']) }}</option>
+                        @endforeach
+                    </select>
+                    <label for="resource-direction" class="visually-hidden sa-admin-visually-hidden">{{ __('admin.resource.direction') }}</label>
+                    <select class="form-select" id="resource-direction" name="direction">
+                        <option value="asc" @selected(page['listing']['direction'] === 'asc')>{{ __('admin.resource.ascending') }}</option>
+                        <option value="desc" @selected(page['listing']['direction'] === 'desc')>{{ __('admin.resource.descending') }}</option>
+                    </select>
+                    <label for="resource-size">{{ __('admin.resource.per_page') }}</label>
+                    <select class="form-select" id="resource-size" name="per_page">
+                        @foreach(page['listing']['pageSizes'] as size)
+                            <option value="{{ size }}" @selected(size === page['listing']['perPage'])>{{ size }}</option>
+                        @endforeach
+                    </select>
+                    <button class="btn btn-light" type="submit">{{ __('admin.resource.apply') }}</button>
+                </form>
+            @endif
+            <div class="table-responsive sa-admin-table-scroll">
+                <table class="table table-hover align-middle mb-0 sa-admin-table">
+                    <thead><tr>
+                        @foreach(page['columns'] as column)
+                            @key(column['key'])
+                            <th scope="col">{{ text(column['labelKey']) }}</th>
+                        @endforeach
+                    </tr></thead>
+                    <tbody>
+                        @foreach(page['rows'] as row)
+                            <tr>
+                                @foreach(page['columns'] as column)
+                                    @key(column['key'])
+                                    <td>
+                                        @if(column['renderer'] === 'badge')
+                                            <span class="badge bg-primary-subtle text-primary sa-admin-badge">{{ row[column['key']] }}</span>
+                                        @else
+                                            {{ row[column['key']] }}
+                                        @endif
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @if(page['rows'].length === 0)
+                    <p class="text-muted text-center p-4 sa-admin-empty">{{ __('admin.resource.empty') }}</p>
+                @endif
+            </div>
+            @if(page['listing'] ?? null)
+                <nav class="sa-admin-pagination" aria-label="{{ __('admin.resource.pagination') }}">
+                    <span>{{ __('admin.resource.total') }}: {{ page['listing']['total'] }} · {{ __('admin.resource.page') }} {{ page['listing']['page'] }} / {{ page['listing']['lastPage'] }}</span>
+                    @if(page['listing']['previous'])
+                        <a rel="prev" href="{{ page['listing']['previous'] }}">{{ __('admin.resource.previous') }}</a>
+                    @endif
+                    @if(page['listing']['next'])
+                        <a rel="next" href="{{ page['listing']['next'] }}">{{ __('admin.resource.next') }}</a>
+                    @endif
+                </nav>
+            @endif
+        </section>
+    @endif
+</template>

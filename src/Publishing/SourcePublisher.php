@@ -18,7 +18,7 @@ final class SourcePublisher
     {
         $this->safeRoot($this->source);
         $this->safeRoot($this->target);
-        $manifest = $this->manifest($this->source.'/admin.manifest.json');
+        $manifest = $this->manifest($this->manifestFile());
         $upstream = $this->inventory();
         $state = is_file($this->target.'/'.self::STATE) ? $this->manifest($this->target.'/'.self::STATE) : [];
         if ($state && (($state['package'] ?? '') !== 'saola/admin' || ($state['contract'] ?? null) !== 1 || !is_array($state['files'] ?? null))) {
@@ -28,12 +28,10 @@ final class SourcePublisher
         $actions = []; $conflicts = []; $integration = []; $files = $old;
         $renames = $manifest['renames'] ?? [];
         if (!is_array($renames)) throw new RuntimeException('Invalid admin source renames.');
-        $renameTargets = [];
         foreach ($renames as $previous => $nextPath) {
             if (!is_string($previous) || !is_string($nextPath)) throw new RuntimeException('Invalid admin source rename.');
             $this->path($previous); $this->path($nextPath);
-            if (isset($upstream[$previous]) || !isset($upstream[$nextPath]) || isset($renameTargets[$nextPath])) throw new RuntimeException('Invalid or ambiguous admin source rename.');
-            $renameTargets[$nextPath] = true;
+            if (isset($upstream[$previous]) || !isset($upstream[$nextPath])) throw new RuntimeException('Invalid admin source rename.');
             $legacy = $this->target.'/'.$previous;
             $this->safeRoot($legacy);
             if (!is_file($legacy)) continue;
@@ -41,13 +39,19 @@ final class SourcePublisher
             if ($base === null || hash_file('sha256', $legacy) !== $base) {
                 $conflicts[$previous] = 'Renamed source has local changes or no ownership; preserve a patch and merge it into '.$nextPath.' after publishing the original baseline.';
             }
-            if (str_starts_with($previous, 'app/')) {
+            if (str_starts_with($previous, 'app/') || str_starts_with($previous, '_shared/app/')) {
                 $bootstrap = $this->target.'/app/bootstrap.ts';
                 $this->safeRoot($bootstrap);
-                $reference = './'.substr($previous, 4, -3);
-                if (is_file($bootstrap) && str_contains(file_get_contents($bootstrap), $reference)
-                    && hash_file('sha256', $bootstrap) !== ($old['app/bootstrap.ts'] ?? null)) {
-                    $conflicts['app/bootstrap.ts'] = 'Custom bootstrap references '.$reference.'; merge the new ./bundle import before publishing.';
+                $references = str_starts_with($previous, 'app/')
+                    ? ['./'.substr($previous, 4, -3)]
+                    : ['../'.substr($previous, 0, -3), '@sao/admin/'.substr($previous, 0, -3), '@admin/'.substr($previous, 0, -3)];
+                if (is_file($bootstrap) && hash_file('sha256', $bootstrap) !== ($old['app/bootstrap.ts'] ?? null)) {
+                    foreach ($references as $reference) {
+                        if (str_contains(file_get_contents($bootstrap), $reference)) {
+                            $conflicts['app/bootstrap.ts'] = 'Custom bootstrap references '.$reference.'; migrate imports to app/ before publishing.';
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -172,7 +176,7 @@ final class SourcePublisher
 
     private function path(string $path): void
     {
-        if (!preg_match('~^(?:admin\.manifest\.json|(?:app|views|assets)/[A-Za-z0-9_./-]+)$~D', $path)
+        if (!preg_match('~^(?:(?:admin|context)\.manifest\.json|(?:app|views|assets|build)/[A-Za-z0-9_./-]+|_shared/app/[A-Za-z0-9_./-]+|(?:themes/)?[a-z][a-z0-9-]*/(?:theme\.manifest\.json|(?:app|views|assets)/[A-Za-z0-9_./-]+))$~D', $path)
             || in_array('..', explode('/', $path), true) || in_array('.', explode('/', $path), true) || str_contains($path, '//')) {
             throw new RuntimeException('Invalid admin source path: '.$path);
         }
@@ -186,12 +190,23 @@ final class SourcePublisher
         }
     }
 
+    /** `context.manifest.json` là tên chuẩn; `admin.manifest.json` là tên cũ, còn được đọc một bản phát hành. */
+    private function manifestFile(): string
+    {
+        $current = $this->source.'/context.manifest.json';
+
+        return is_file($current) ? $current : $this->source.'/admin.manifest.json';
+    }
+
     private function manifest(string $path): array
     {
         $this->safeRoot($path);
         $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($data) || ($data['package'] ?? '') !== 'saola/admin' || ($data['contract'] ?? null) !== 1 || !is_string($data['version'] ?? null)) {
             throw new RuntimeException('Invalid admin UI manifest.');
+        }
+        if (isset($data['context']) && $data['context'] !== 'admin') {
+            throw new RuntimeException('Admin UI manifest belongs to another context.');
         }
         return $data;
     }

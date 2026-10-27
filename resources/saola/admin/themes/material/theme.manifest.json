@@ -1,0 +1,8 @@
+{
+    "name": "material",
+    "contract": 1,
+    "view_context": "admin.material",
+    "views": "views",
+    "bootstrap": "app/bootstrap.ts",
+    "css": "assets/css/admin.css"
+}

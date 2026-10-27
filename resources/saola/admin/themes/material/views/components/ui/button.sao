@@ -1,0 +1,21 @@
+<script setup lang="ts">
+    import type {UiButton} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiButton> = {})
+    @computed(href: string = ((data['href'] ?? '').startsWith('/') && !(data['href'] ?? '').startsWith('//')) || (data['href'] ?? '').startsWith('https://') || (data['href'] ?? '').startsWith('http://') || (data['href'] ?? '').startsWith('#') ? (data['href'] ?? '') : '')
+</script>
+
+<template>
+    @if(href !== '' && !(data['disabled'] ?? false) && !(data['loading'] ?? false))
+        <a href="{{ href }}" class="btn {{ (data['variant'] ?? '') === 'outline' ? 'btn-outline-' : ((data['variant'] ?? '') === 'soft' ? 'btn-soft-' : ((data['variant'] ?? '') === 'ghost' ? 'btn-ghost-' : 'btn-')) }}{{ data['color'] ?? 'primary' }} {{ (data['size'] ?? '') === 'sm' ? 'btn-sm' : ((data['size'] ?? '') === 'lg' ? 'btn-lg' : '') }} {{ (data['rounded'] ?? false) ? 'rounded-pill' : '' }} {{ (data['iconOnly'] ?? false) ? 'btn-icon' : '' }}" aria-label="{{ data['label'] ?? '' }}" @click($view.emit('action', data['action'] ?? '', $event))>
+            @if((data['icon'] ?? '') !== '')<i class="{{ data['icon'] }} {{ (data['iconOnly'] ?? false) ? '' : 'align-bottom me-1' }}" aria-hidden="true"></i>@endif
+            @if(!(data['iconOnly'] ?? false)){{ data['label'] ?? '' }}@endif
+        </a>
+    @else
+        <button type="{{ (data['type'] ?? '') === 'submit' ? 'submit' : ((data['type'] ?? '') === 'reset' ? 'reset' : 'button') }}" class="btn {{ (data['variant'] ?? '') === 'outline' ? 'btn-outline-' : ((data['variant'] ?? '') === 'soft' ? 'btn-soft-' : ((data['variant'] ?? '') === 'ghost' ? 'btn-ghost-' : 'btn-')) }}{{ data['color'] ?? 'primary' }} {{ (data['size'] ?? '') === 'sm' ? 'btn-sm' : ((data['size'] ?? '') === 'lg' ? 'btn-lg' : '') }} {{ (data['rounded'] ?? false) ? 'rounded-pill' : '' }} {{ (data['iconOnly'] ?? false) ? 'btn-icon' : '' }}" aria-label="{{ data['label'] ?? '' }}" aria-busy="{{ (data['loading'] ?? false) ? 'true' : 'false' }}" @disabled((data['disabled'] ?? false) || (data['loading'] ?? false)) @click($view.emit('action', data['action'] ?? '', $event))>
+            @if(data['loading'] ?? false)<span class="spinner-border spinner-border-sm {{ (data['iconOnly'] ?? false) ? '' : 'me-1' }}" aria-hidden="true"></span>
+            @elseif((data['icon'] ?? '') !== '')<i class="{{ data['icon'] }} {{ (data['iconOnly'] ?? false) ? '' : 'align-bottom me-1' }}" aria-hidden="true"></i>@endif
+            @if(!(data['iconOnly'] ?? false)){{ data['label'] ?? '' }}@endif
+        </button>
+    @endif
+</template>

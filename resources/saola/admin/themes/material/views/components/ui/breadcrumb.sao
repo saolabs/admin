@@ -1,0 +1,18 @@
+<script setup lang="ts">
+    import type {UiBreadcrumb} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiBreadcrumb> = {})
+</script>
+
+<template>
+    <nav aria-label="{{ data['label'] ?? '' }}"><ol class="breadcrumb m-0">
+        @foreach(data['items'] ?? [] as item)
+            @key(item['id'])
+            <li class="breadcrumb-item {{ (item['active'] ?? false) ? 'active' : '' }}" aria-current="{{ (item['active'] ?? false) ? 'page' : 'false' }}">
+                @if(!(item['active'] ?? false) && (((item['href'] ?? '').startsWith('/') && !(item['href'] ?? '').startsWith('//')) || (item['href'] ?? '').startsWith('#') || (item['href'] ?? '').startsWith('https://') || (item['href'] ?? '').startsWith('http://')))
+                    <a href="{{ item['href'] }}">{{ item['label'] }}</a>
+                @else{{ item['label'] }}@endif
+            </li>
+        @endforeach
+    </ol></nav>
+</template>

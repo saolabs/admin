@@ -12,6 +12,7 @@ final class DictionaryController
     public function __invoke(Request $request, ClientCatalogs $catalogs, DictionaryAccess $access, string $scope, string $locale)
     {
         $access->authorize($request, $catalogs, $scope);
+        abort_unless(in_array($locale, array_column(app(\Saola\Admin\Language\LocaleManager::class)->uiLocales(), 'code'), true), 404);
         $snapshot = $catalogs->snapshot($scope, $locale);
         abort_if($snapshot['revision'] === 0, 404, 'Locale has no published translations.');
         $response = response()->json($snapshot, 200, [

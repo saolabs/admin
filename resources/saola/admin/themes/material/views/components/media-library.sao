@@ -1,0 +1,113 @@
+<script setup lang="ts">
+    @vars(editor: any = {}, picker: boolean = false, imageOnly: boolean = false, onSelect: any = null, onClose: any = null)
+    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', noticeKind: string = 'error', progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active')
+
+    App.Admin.controllers.mediaLibrary($view, () => ({editor, picker, imageOnly, onSelect, onClose}));
+</script>
+
+<template>
+    <section id="media-library" class="card sa-admin-card sa-admin-media" role="{{ picker ? 'dialog' : 'region' }}" aria-modal="{{ picker ? 'true' : 'false' }}" aria-label="{{ __('admin.media.title') }}" tabindex="-1">
+        @if(picker)
+            <div class="sa-admin-media-heading"><h2 class="card-header fs-15">{{ __('admin.media.choose') }}</h2><button class="btn btn-light" type="button" @disabled(busy) @click(close())>{{ __('admin.media.close') }}</button></div>
+        @endif
+        <div class="sa-admin-media-toolbar">
+            <form class="sa-admin-media-search" @submit.prevent(search())>
+                <div class="sa-admin-media-query">
+                <input class="form-control" type="search" aria-label="{{ __('admin.resource.search') }}" placeholder="{{ __('admin.media.search') }}" maxlength="100" value="{{ query }}" @disabled(busy) @input(updateQuery($event))>
+                    <button class="btn btn-light sa-admin-media-search-submit" type="submit" title="{{ __('admin.resource.search') }}" aria-label="{{ __('admin.resource.search') }}" @disabled(busy)><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+                </div>
+                @if(!imageOnly)
+                    <select class="form-select" aria-label="{{ __('admin.media.kind') }}" @disabled(busy) @change(changeKind($event))>
+                        @foreach(['all', 'image', 'video', 'audio', 'document'] as value)
+                            <option value="{{ value }}" @selected(value === kind)>{{ text(sprintf('admin.media.kinds.%s', value)) }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                @if(!picker)
+                    <select class="form-select" aria-label="{{ __('admin.media.status') }}" @disabled(busy) @change(changeStatus($event))>
+                        <option value="active" @selected(status === 'active')>{{ __('admin.media.active') }}</option>
+                        <option value="trash" @selected(status === 'trash')>{{ __('admin.media.trash') }}</option>
+                    </select>
+                @endif
+            </form>
+            @if(editor['permissions']['upload'])
+                <label class="sa-admin-media-upload">{{ __('admin.media.upload') }}<input class="form-control" id="media-upload" type="file" multiple accept="{{ imageOnly ? 'image/jpeg,image/png,image/gif,image/webp,image/x-icon,image/vnd.microsoft.icon' : editor['accept'] }}" @disabled(busy || dirty) @change(upload($event))></label>
+            @endif
+        </div>
+        <p class="sa-admin-media-public-hint">{{ __('admin.media.public_hint') }}</p>
+        @if(notice !== '')
+            <p class="alert sa-admin-alert" data-kind="{{ noticeKind }}" role="status">{{ text(notice) }}</p>
+        @endif
+        @if(busy)
+            <p class="sa-admin-media-loading" role="status">{{ __('admin.media.loading') }} {{ progress }}</p>
+        @endif
+        <div class="sa-admin-media-body" @dragover.prevent @drop.prevent(dropFiles($event))>
+            <div class="sa-admin-media-main">
+                <div class="sa-admin-media-grid" aria-label="{{ __('admin.media.title') }}" aria-busy="{{ busy ? 'true' : 'false' }}">
+                    @foreach(items as item)
+                        @key(item['id'])
+                        <button class="btn btn-light" type="button" @class({'sa-admin-media-tile', 'is-selected': selected && selected['id'] === item['id']}) aria-pressed="{{ selected && selected['id'] === item['id'] ? 'true' : 'false' }}" @disabled(busy) @click(selectItem(item))>
+                            @if(item['kind'] === 'image')
+                                <img src="{{ item['url'] }}" alt="{{ item['alt'] }}" loading="lazy">
+                            @else
+                                <span class="sa-admin-media-file-kind">{{ text(sprintf('admin.media.kinds.%s', item['kind'])) }}</span>
+                            @endif
+                            <span class="sa-admin-media-filename">{{ item['title'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
+                @if(items.length === 0 && !busy)
+                    <div class="sa-admin-media-empty" role="status">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/><path d="M12 11v6m-3-3 3-3 3 3"/></svg>
+                        <strong>{{ query !== '' || status === 'trash' ? text('admin.media.no_results') : text('admin.media.empty_title') }}</strong>
+                        @if(editor['permissions']['upload'] && status === 'active')<p>{{ __('admin.media.empty') }}</p>@endif
+                    </div>
+                @endif
+                @if(total > 0)
+                    <div class="sa-admin-media-pagination">
+                        <span>{{ __('admin.resource.total') }}: {{ total }}</span>
+                        @if(total > 24)
+                            <button class="btn btn-light" type="button" @disabled(busy || page <= 1) @click(changePage(-1))>{{ __('admin.resource.previous') }}</button>
+                            <span>{{ page }}</span>
+                            <button class="btn btn-light" type="button" @disabled(busy || page * 24 >= total) @click(changePage(1))>{{ __('admin.resource.next') }}</button>
+                        @endif
+                    </div>
+                @endif
+            </div>
+            @if(selected)
+                <aside class="sa-admin-media-details" aria-label="{{ __('admin.media.details') }}">
+                    @if(selected['kind'] === 'image')
+                        <img class="sa-admin-media-preview" src="{{ selected['url'] }}" alt="{{ selected['alt'] }}">
+                    @endif
+                    <p class="sa-admin-media-meta">{{ selected['filename'] }} · {{ selected['sizeLabel'] }}
+                        @if(selected['width'])
+                            · {{ selected['width'] }} × {{ selected['height'] }}
+                        @endif
+                    </p>
+                    <fieldset @disabled(busy || selected['trashed'] || !editor['permissions']['update'])>
+                        <label for="media-title">{{ __('admin.media.name') }}</label>
+                        <input class="form-control" id="media-title" type="text" maxlength="200" value="{{ title }}" @input(editTitle($event))>
+                        <label for="media-alt">{{ __('admin.media.alt') }}</label>
+                        <input class="form-control" id="media-alt" type="text" maxlength="200" value="{{ alt }}" @input(editAlt($event))>
+                        <label for="media-caption">{{ __('admin.media.caption') }}</label>
+                        <textarea class="form-control" id="media-caption" rows="2" maxlength="2000" @input(editCaption($event))>{{ caption }}</textarea>
+                    </fieldset>
+                    <label for="media-url">{{ __('admin.media.url') }}</label>
+                    <input class="form-control" id="media-url" type="text" readonly value="{{ selected['url'] }}">
+                    <div class="sa-admin-media-detail-actions">
+                        @if(editor['permissions']['update'])
+                            <button class="btn btn-light" type="button" @disabled(!canSave) @click(save())>{{ __('admin.settings.save') }}</button>
+                            <button class="btn btn-light" type="button" @disabled(busy || !dirty) @click(discard())>{{ __('admin.settings.discard') }}</button>
+                        @endif
+                        @if(editor['permissions']['delete'] && !picker)
+                            <button class="btn btn-light" type="button" @disabled(busy || dirty) @click(move())>{{ selected['trashed'] ? text('admin.media.restore') : text('admin.media.to_trash') }}</button>
+                        @endif
+                    </div>
+                </aside>
+            @endif
+        </div>
+        @if(picker)
+            <div class="sa-admin-form-actions"><button class="btn btn-light" id="media-select" type="button" @disabled(busy || dirty || !selected || selected['trashed']) @click(choose())>{{ __('admin.media.use') }}</button></div>
+        @endif
+    </section>
+</template>

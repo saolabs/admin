@@ -7,7 +7,6 @@ namespace Saola\Admin\Language;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use RuntimeException;
 use Saola\Core\Language\LanguageJson;
 use Saola\Core\Language\LanguageTree;
 
@@ -99,11 +98,26 @@ final class LanguageExchange
         });
     }
 
+    public function inspect(string $id, string $actor): array
+    {
+        $batch = $this->batch($id, $actor, 'import', false);
+        if ($batch->status !== 'published') $this->assertNotExpired($batch);
+        return $this->report($batch);
+    }
+
+    public function recent(string $actor): array
+    {
+        return $this->db->table($this->table())->where('actor', $actor)->orderByDesc('created_at')->orderByDesc('id')->limit(20)
+            ->get(['id', 'kind', 'locale', 'status', 'base_revision', 'result_revision', 'created_at', 'expires_at'])
+            ->map(fn ($row) => ['batch' => $row->id, 'kind' => $row->kind, 'locale' => $row->locale, 'status' => $row->status,
+                'baseRevision' => (int) $row->base_revision, 'createdAt' => $row->created_at, 'expired' => (int) $row->expires_at <= time()])->all();
+    }
+
     private function assertCurrent(array $payload, int $expectedRevision, int $revision): void
     {
         if ($expectedRevision !== $revision || $payload['source_locale'] !== $this->sourceLocale
             || !hash_equals($payload['catalog_hash'], $this->hash($this->store->catalogState()))) {
-            throw new RuntimeException('Language import conflict: catalog or target revision changed. Export/preview again.');
+            throw new \Symfony\Component\HttpKernel\Exception\ConflictHttpException('Language import conflict: catalog or target revision changed. Export/preview again.');
         }
     }
 
@@ -111,14 +125,14 @@ final class LanguageExchange
     {
         $query = $this->db->table($this->table())->where('id', $id)->where('actor', $actor)->where('kind', $kind);
         $batch = ($lock ? $query->lockForUpdate() : $query)->first();
-        if (!$batch) throw new InvalidArgumentException('Language batch not found for this actor.');
+        if (!$batch) throw new LanguageBatchNotFound('Language batch not found for this actor.');
         if ($expires) $this->assertNotExpired($batch);
         return $batch;
     }
 
     private function assertNotExpired(object $batch): void
     {
-        if ((int) $batch->expires_at <= time()) throw new RuntimeException('Language batch expired. Export/preview again.');
+        if ((int) $batch->expires_at <= time()) throw new \Symfony\Component\HttpKernel\Exception\GoneHttpException('Language batch expired. Export/preview again.');
     }
 
     private function insert(string $kind, string $locale, string $actor, string $status, int $revision, array $payload, string $identity): string

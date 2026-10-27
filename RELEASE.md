@@ -1,3 +1,7 @@
+# saola/admin v0.1.0-alpha.2
+
+Host-screen mechanism (`panel.host_modules`, `HostScreenController`), one-table permission `matrix` input (`Resource::fieldMatrix`), `.sao` themes in script-first layout, `admin` prefix as the default panel path. Requires `@saolabs/client` v1.4.0 (adds `App.Admin`); v1.3.0 is not enough.
+
 # saola/admin v0.1.0-alpha.1
 
 First installable alpha: source ownership/publishing, admin shell and read-only Resource renderer, DB translations with JSON preview/draft/publish, schema-based Settings editor and scoped host User directory. User create/update/password, role/grant UI, translation UI/AI, upload and audit are not part of this alpha. Panel and user directory are disabled by default.
@@ -39,3 +43,30 @@ Frontend tool versions are pinned to GitHub release tags for this coordinated al
 The PHP suite uses the package's own Composer dependencies and a committed host fixture. Laravel 12 and 13 are checked independently. CI adds the PHP 8.3/8.5 matrix, installed frontend package build, live disposable SQLite HTTP and extracted Composer ZIP inventory/idempotent source publication. The ecosystem client suite additionally covers actual SSR/hydrate/CSR, form/language/navigation guards and private projections.
 
 No test credentials or database are installed into a consumer. Theme support consists of stable layout/slots/tokens and isolated assets; theme management will be a separate package. Production auth/scope integration, mobile/theme overrides and MySQL/Postgres concurrency remain host/release validation work before a stable admin release.
+
+## Unreleased — language management
+
+Source after alpha.1 adds the language management page, locale metadata and DB defaults for UI/fallback/content, actor-bound JSON download/upload preview/draft/publish and separate capabilities. Requires the additive locale-management migration, frontend publish/build and language seed sync. This is not included in the alpha.1 Packagist tag and no replacement tag has been published. See [language management and upgrade](docs/LANGUAGE_MANAGEMENT.md).
+
+## Unreleased — settings groups and media library
+
+Source after alpha.1 includes Website/System settings subgroups and one shared set of operational settings. A reusable media library/picker provides upload, search/type filters, metadata revision checks, recoverable trash and selection for branding/SEO. Requires the media migration, host Gates, source publish/build and language sync. Media bytes live on a Laravel filesystem disk, outside frontend source; public UUID URLs remain stable across metadata changes, trash and panel disablement. No new release tag or Packagist publication was performed. See [media integration](docs/MEDIA_LIBRARY.md).
+
+Source theme update (unreleased): UI now lives in admin/themes/{theme}/, with Classic retained and Material using supplied distribution assets. See docs/THEMES.md for manifests, context selection, independent CSS and ownership-preserving source migration. This does not change an existing release tag.
+
+
+## Unreleased — reusable inputs and interface consistency
+
+The package now includes Classic/Material under `resources/saola/admin/themes/{name}`, shared view controllers, declarative Resource list/form definitions and 26 input presets. Form sections/tabs, scoped relation options, array/JSON values, media selection and basic Markdown/HTML source editing use one implementation across themes. HTML source editing is not WYSIWYG; relation options are bounded, not remotely paginated.
+
+Interface review corrected dropdown anchoring/arrows, removed redundant signed-in captions, compacted media/search/empty states and language toolbars, and added consistent feedback severity and Settings field-error focus/discard reset. See [UI contract](docs/UI_CONTRACT.md) and [Resource integration](docs/RESOURCES.md). These source changes do not publish a release or expand the capabilities of an existing tag.
+
+## Unreleased — context package source builds (P4)
+
+Composer metadata now exposes the context manifest and its type entry. The matching builder can build installed package sources with per-file project overrides, generated aliases/declarations, isolated theme assets and separate theme registry chunks. The matching core resolves generated CSS sources; admin exports the selected theme and trusted bundle URL classifications through request-scoped shared data. `admin:doctor` supports this source mode without requiring a source publication. Existing managed publications continue until deliberately migrated. See [installation](docs/INSTALLATION.md).
+
+Requires the coordinated P1/P4 client, core and builder sources; no release tag was changed. The client source fixtures were updated to register the P3 `App.Admin` namespace and constructor correctly.
+
+## Unreleased — canonical app source migration
+
+The `_shared/app` re-export tree has been removed from runtime source. Manifest renames and publisher ownership checks migrate old publications into `app/`, aborting on local changes or custom bootstrap imports of removed paths. Templates consume `App.Admin`; client fixtures now import canonical source. Gehihi was migrated through the publisher, retaining its bootstrap, with the matching local client archive installed for factory support. Registry tags have not been updated; run the host's installed-client runtime check before accepting a build.

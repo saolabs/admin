@@ -1,0 +1,15 @@
+<script setup lang="ts">
+    import type {UiToast} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiToast> = {})
+    @state(open: boolean = data['open'] ?? false, active: string = data['active'] ?? '', expanded: string[] = data['expanded'] ?? [], visible: boolean = true)
+
+    App.Admin.controllers.ui($view, () => data, 'toast');
+</script>
+
+<template>
+    @if(visible)<div id="{{ data['id'] }}" class="toast show {{ (data['color'] ?? '') !== '' ? 'bg-' : '' }}{{ data['color'] ?? '' }}{{ (data['color'] ?? '') !== '' ? ' text-white' : '' }}" role="status" aria-live="polite" aria-atomic="true">
+        <div class="toast-header"><strong class="me-auto">{{ data['title'] ?? '' }}</strong><small>{{ data['caption'] ?? '' }}</small><button type="button" class="btn-close" aria-label="{{ data['closeLabel'] ?? '' }}" @click(dismiss())></button></div>
+        <div class="toast-body">{{ data['text'] ?? '' }}</div>
+    </div>@endif
+</template>

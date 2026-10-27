@@ -19,6 +19,7 @@ use Saola\Admin\Console\ApplyLanguageCommand;
 use Saola\Admin\Pages\PageRegistry;
 use Saola\Admin\Http\AdminAccess;
 use Saola\Admin\Http\PageController;
+use Saola\Admin\Http\ResourceController;
 use Saola\Core\Support\SPA;
 use Saola\Core\Providers\SaolaServiceProvider;
 use Saola\Core\Engines\ViewContextManager;
@@ -35,13 +36,25 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->register(SaolaServiceProvider::class);
         $this->app->register(\Saola\Core\Providers\BladeDirectiveServiceProvider::class);
         $this->app->singleton(PageRegistry::class);
+        $this->app->scoped(\Saola\Admin\Media\MediaLibrary::class);
+        $this->app->bind(\Saola\Admin\Media\MediaScope::class, \Saola\Admin\Media\GlobalMediaScope::class);
         $this->app->scoped(\Saola\Admin\Users\UserDirectory::class, \Saola\Admin\Users\EloquentUserDirectory::class);
         $this->app->singleton(\Saola\Admin\Settings\SettingsRegistry::class);
+        $this->app->scoped(\Saola\Admin\Language\LocaleManager::class, fn ($app) => new \Saola\Admin\Language\LocaleManager(
+            $app['db']->connection(config('saola-admin.language.connection')), config('saola-admin.language.table_prefix', 'saola_'),
+            ['uiDefault' => config('app.locale', 'en'), 'uiFallback' => config('app.fallback_locale', 'en'),
+                'contentDefault' => config('saola-admin.settings.default_locale', 'en'), 'contentLocales' => config('saola-admin.settings.content_locales', ['en', 'vi']), 'uiDisabled' => []],
+            (bool) config('saola-admin.language.detect_browser', false),
+        ));
+        $this->app->scoped(\Saola\Core\Language\TextResolver::class, fn ($app) => new \Saola\Core\Language\TextResolver(
+            $app->make(LanguageStore::class), fn () => $app->getLocale(), fn () => $app->make(\Saola\Admin\Language\LocaleManager::class)->uiFallback(),
+        ));
         $this->app->scoped(\Saola\Admin\Settings\SettingsStore::class, fn ($app) => new \Saola\Admin\Settings\DatabaseSettingsStore(
             $app['db']->connection(config('saola-admin.settings.connection')),
             config('saola-admin.settings.table', 'saola_settings'),
             config('saola-admin.settings.content_locales', ['en', 'vi']),
             config('saola-admin.settings.default_locale', 'en'),
+            fn () => $app->make(\Saola\Admin\Language\LocaleManager::class)->contentPolicy(),
         ));
         $this->app->scoped(DatabaseLanguageStore::class, fn ($app) => new DatabaseLanguageStore(
             $app['db']->connection($app['config']->get('saola-admin.language.connection')),
@@ -62,6 +75,9 @@ final class AdminServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Website assets must remain deliverable even when the admin panel is disabled.
+        $this->app->booted(fn () => $this->registerMediaDelivery());
+        $this->app['router']->aliasMiddleware('saola.locale', \Saola\Admin\Http\ResolveUiLocale::class);
         $this->app->make(LanguageSources::class)->register(
             'saola/admin', __DIR__.'/../lang', ['admin', 'common'],
             $this->app->langPath('vendor/admin'),
@@ -77,19 +93,14 @@ final class AdminServiceProvider extends ServiceProvider
         }
         $this->app->afterResolving(\Saola\Admin\Settings\SettingsRegistry::class, function ($registry) {
             if (!config('saola-admin.settings.register_defaults', true)) return;
-            $registry->register(new \Saola\Admin\Settings\SettingsGroup('general', 'admin.settings.general',
-                config('saola-admin.settings.read_ability', 'view-site-settings'), config('saola-admin.settings.write_ability', 'update-site-settings'), [
-                    'website_name' => ['labelKey' => 'admin.settings.website_name', 'type' => 'text', 'localized' => true, 'public' => true, 'default' => (string) config('app.name', 'Saola'), 'maxLength' => 200],
-                    'description' => ['labelKey' => 'admin.settings.description', 'type' => 'text', 'localized' => true, 'public' => true, 'default' => ''],
-                    'contact' => ['labelKey' => 'admin.settings.contact', 'type' => 'text', 'public' => false, 'default' => ''],
-                ]));
+            \Saola\Admin\Settings\DefaultSettings::register($registry);
         });
         $this->app->afterResolving(PageRegistry::class, function (PageRegistry $registry) {
             foreach (config('saola-admin.panel.pages', []) as $class) $registry->register($class);
             if (config('saola-admin.users.enabled', false)) $registry->register(\Saola\Admin\Users\UsersPage::class);
         });
         if (config('saola-admin.panel.enabled', false)) {
-            config(['sao.assets.css.admin' => config('saola-admin.panel.css')]);
+            config(['sao.assets.css.admin' => app(\Saola\Admin\Themes\AdminTheme::class)->definition()['css']]);
             $this->app->booted(fn () => $this->registerPanel());
         }
         if (config('saola-admin.language.dictionary.enabled', true) && !$this->app->routesAreCached()) {
@@ -101,25 +112,56 @@ final class AdminServiceProvider extends ServiceProvider
         }
     }
 
+    private function registerMediaDelivery(): void
+    {
+        if ($this->app->routesAreCached()) return;
+        foreach (Route::getRoutes() as $route) {
+            if ($route->uri() === 'saola/media/{media}' || $route->getName() === 'saola.media.content') throw new \RuntimeException('Media delivery route collision.');
+        }
+        Route::get('saola/media/{media}', [\Saola\Admin\Http\MediaController::class, 'content'])->whereUuid('media')->name('saola.media.content');
+        Route::getRoutes()->refreshNameLookups();
+        Route::getRoutes()->refreshActionLookups();
+    }
+
     private function registerPanel(): void
     {
         $manager = $this->app->make(ViewContextManager::class);
-        if (!$manager->hasContext('admin')) $manager->registerContext('admin', ['base' => 'admin']);
-        $partials = $manager->getBaseDirectory('admin', 'partials') ?? 'admin.partials';
-        if (!view()->exists($partials.'.head')) {
-            $manager->registerContext('admin', ['base' => $manager->getBaseDirectory('admin', 'base'), 'partials' => 'admin.partials']);
-        }
+        app(\Saola\Admin\Themes\AdminTheme::class)->apply();
         $prefix = trim((string) config('saola-admin.panel.prefix', 'admin'), '/');
         if ($prefix === '' || !preg_match('~^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$~D', $prefix)) throw new \InvalidArgumentException('Invalid admin prefix.');
         if (!$this->app->routesAreCached()) {
             foreach (Route::getRoutes() as $route) {
-                if (array_intersect(['GET', 'PUT'], $route->methods()) && in_array($route->uri(), [$prefix, $prefix.'/{page}', $prefix.'/settings', $prefix.'/settings/{group}'], true)) {
+                $methods = $route->uri() === $prefix.'/_api/languages/{locale}/{operation}' ? ['POST']
+                    : ($route->uri() === $prefix.'/_api/languages/batches/{batch}' ? ['GET', 'POST'] : ['GET', 'PUT']);
+                if (array_intersect($methods, $route->methods()) && in_array($route->uri(), [$prefix, $prefix.'/{page}', $prefix.'/settings', $prefix.'/settings/{group}', $prefix.'/languages', $prefix.'/_api/languages', $prefix.'/_api/languages/{locale}/{operation}', $prefix.'/_api/languages/batches/{batch}'], true)
+                    || in_array($route->uri(), [$prefix.'/media', $prefix.'/_api/media', $prefix.'/_api/media/{media}', $prefix.'/_api/media/{media}/{operation}',
+                        $prefix.'/_api/resources/{resource}', $prefix.'/_api/resources/{resource}/bulk',
+                        $prefix.'/_api/resources/{resource}/{record}', $prefix.'/_api/resources/{resource}/{record}/{operation}',
+                        $prefix.'/{page}/create', $prefix.'/{page}/{record}/edit', $prefix.'/_ui'], true)) {
                     throw new \RuntimeException('Admin route collision at '.$route->uri().'; choose another panel prefix before enabling.');
                 }
             }
             Route::middleware(['web', AdminAccess::class])->group(function () use ($prefix) {
+                Route::get($prefix.'/_ui', \Saola\Admin\Http\UiCatalogController::class)->name('saola.admin.ui.catalog');
+                Route::match(['GET', 'POST'], $prefix.'/_api/resources/{resource}', [ResourceController::class, 'index'])->name('saola.admin.resources.api')->middleware('throttle:60,1');
+                Route::post($prefix.'/_api/resources/{resource}/bulk', [ResourceController::class, 'bulk'])->name('saola.admin.resources.bulk')->middleware('throttle:30,1');
+                Route::match(['GET', 'PUT'], $prefix.'/_api/resources/{resource}/{record}', [ResourceController::class, 'item'])->where('record', '[A-Za-z0-9_-]{1,191}')->name('saola.admin.resources.item');
+                Route::post($prefix.'/_api/resources/{resource}/{record}/{operation}', [ResourceController::class, 'state'])->where(['record' => '[A-Za-z0-9_-]{1,191}', 'operation' => 'trash|restore|purge'])->name('saola.admin.resources.state')->middleware('throttle:30,1');
+                Route::get($prefix.'/{page}/create', [ResourceController::class, 'page'])->name('saola.admin.resource.create');
+                Route::get($prefix.'/{page}/{record}/edit', [ResourceController::class, 'page'])->where('record', '[A-Za-z0-9_-]{1,191}')->name('saola.admin.resource.edit');
+                Route::get($prefix.'/media', [\Saola\Admin\Http\MediaController::class, 'page'])->name('saola.admin.media.editor');
+                Route::get($prefix.'/_api/media', [\Saola\Admin\Http\MediaController::class, 'index'])->name('saola.admin.media.api');
+                Route::post($prefix.'/_api/media', [\Saola\Admin\Http\MediaController::class, 'upload'])->middleware('throttle:30,1');
+                Route::match(['GET', 'PUT'], $prefix.'/_api/media/{media}', [\Saola\Admin\Http\MediaController::class, 'item'])->whereUuid('media')->name('saola.admin.media.item');
+                Route::post($prefix.'/_api/media/{media}/{operation}', [\Saola\Admin\Http\MediaController::class, 'state'])->whereUuid('media')->where('operation', 'trash|restore')->name('saola.admin.media.state');
                 Route::match(['GET', 'PUT'], $prefix.'/settings/{group}', \Saola\Admin\Http\SettingsController::class)->where('group', '[a-z][a-z0-9_-]*')->name('saola.admin.settings');
                 Route::get($prefix.'/settings', \Saola\Admin\Http\SettingsEditorController::class)->name('saola.admin.settings.editor');
+                Route::get($prefix.'/languages', [\Saola\Admin\Http\LanguagesController::class, 'page'])->name('saola.admin.languages.editor');
+                Route::match(['GET', 'PUT'], $prefix.'/_api/languages', [\Saola\Admin\Http\LanguagesController::class, 'index'])->name('saola.admin.languages.api');
+                Route::post($prefix.'/_api/languages/{locale}/{operation}', [\Saola\Admin\Http\LanguagesController::class, 'exchange'])
+                    ->where(['locale' => '[A-Za-z]{2,3}(?:[_-][A-Za-z0-9]{2,8})*', 'operation' => 'export|preview'])->name('saola.admin.languages.exchange');
+                Route::match(['GET', 'POST'], $prefix.'/_api/languages/batches/{batch}', [\Saola\Admin\Http\LanguagesController::class, 'batch'])
+                    ->whereUuid('batch')->name('saola.admin.languages.batch');
                 Route::get($prefix, PageController::class)->name('saola.admin.home');
                 Route::get($prefix.'/{page}', PageController::class)->where('page', '[a-z][a-z0-9_-]*')->name('saola.admin.page');
             });
@@ -129,7 +171,12 @@ final class AdminServiceProvider extends ServiceProvider
         Route::getRoutes()->refreshNameLookups();
         Route::getRoutes()->refreshActionLookups();
         $active = SPA::isActive(); SPA::active();
+        SPA::addRoute('admin', 'saola.admin.resource.create', '/'.$prefix.'/{page}/create', ['kind' => 'explicit', 'logical' => '@BASE:pages.resource']);
+        SPA::addRoute('admin', 'saola.admin.resource.edit', '/'.$prefix.'/{page}/{record}/edit', ['kind' => 'explicit', 'logical' => '@BASE:pages.resource']);
         SPA::addRoute('admin', 'saola.admin.settings.editor', '/'.$prefix.'/settings', ['kind' => 'explicit', 'logical' => '@BASE:pages.settings']);
+        SPA::addRoute('admin', 'saola.admin.languages.editor', '/'.$prefix.'/languages', ['kind' => 'explicit', 'logical' => '@BASE:pages.languages']);
+        SPA::addRoute('admin', 'saola.admin.media.editor', '/'.$prefix.'/media', ['kind' => 'explicit', 'logical' => '@BASE:pages.media']);
+        SPA::addRoute('admin', 'saola.admin.ui.catalog', '/'.$prefix.'/_ui', ['kind' => 'explicit', 'logical' => '@BASE:pages.ui-library']);
         foreach (['saola.admin.home' => '/'.$prefix, 'saola.admin.page' => '/'.$prefix.'/{page}'] as $name => $path) {
             SPA::addRoute('admin', $name, $path, ['kind' => 'explicit', 'logical' => '@BASE:pages.resource']);
         }

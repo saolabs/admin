@@ -1,0 +1,139 @@
+@viewtype('layout')
+<script setup lang="ts">
+    import {createMaterialPresentation} from '@sao/admin/themes/material/app/presentation';
+
+    @vars(navigation: any[] = [], currentPage: string = '', brand: string = '', branding: any = {}, locales: any[] = [], dictionaryPattern: string = '', uiLocale: string = '', account: any = {})
+    @state(menuOpen: boolean = false, sidebarCompact: boolean = false, compactView: boolean = false, mobileView: boolean = false, flyoutKey: string = '', flyoutTop: number = 0, notice: string = '', navItems: any[] = navigation, languageOpen: boolean = false, accountOpen: boolean = false, selectedLocale: string = uiLocale, languageBusy: boolean = false)
+
+    App.Admin.controllers.shell($view, () => ({navigation, currentPage, brand, locales, dictionaryPattern, uiLocale, account}), createMaterialPresentation());
+</script>
+
+<template>
+    @pageStart
+    <div id="layout-wrapper" data-admin-theme="material" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-bs-theme="light" data-sidebar-size="{{ compactView ? 'sm' : 'lg' }}" @class({'saola-admin', 'is-sidebar-compact': compactView, 'is-mobile-menu-open': menuOpen})>
+        <a class="sa-admin-skip" href="#admin-content">{{ __('admin.shell.skip') }}</a>
+        @if(menuOpen)
+            <button class="sa-admin-sidebar-backdrop" type="button" aria-label="{{ __('admin.shell.close_menu') }}" @click(closeMenu())></button>
+        @endif
+        <aside id="sa-admin-navigation" @class({'sa-admin-sidebar app-menu navbar-menu', 'is-open': menuOpen})>
+            <div class="sa-admin-brand navbar-brand-box">
+                @if((branding['logoUrl'] ?? '') !== '')
+                    <img class="sa-admin-brand-image sa-admin-brand-full" src="{{ branding['logoUrl'] }}" alt="{{ brand }}">
+                @else
+                    <span class="sa-admin-mark sa-admin-brand-full" aria-hidden="true">{{ branding['initials'] ?? '' }}</span><span class="sa-admin-brand-label">{{ brand }}</span>
+                @endif
+                @if((branding['compactLogoUrl'] ?? '') !== '')
+                    <img class="sa-admin-brand-image sa-admin-brand-small" src="{{ branding['compactLogoUrl'] }}" alt="{{ brand }}">
+                @else
+                    <span class="sa-admin-mark sa-admin-brand-small" aria-label="{{ brand }}">{{ branding['initials'] ?? '' }}</span>
+                @endif
+            </div>
+            <nav class="sa-admin-nav-scroll navbar-nav" aria-label="{{ __('admin.shell.navigation') }}" @scroll(closeFlyout())>
+                @foreach(navItems as item)
+                    @key(item['key'])
+                    @if((item['children'] ?? []).length > 0)
+                        <div @class({'sa-admin-nav-group nav-item', 'is-flyout-open': compactView && flyoutKey === item['key']}) @mouseenter(hoverSubmenu(item['key'], $event)) @mouseleave(leaveSubmenu(item['key'])) @focusin(focusSubmenu(item['key'], $event)) @focusout(blurSubmenu(item['key'], $event))>
+                            <button type="button" @class({'sa-admin-nav-item sa-admin-nav-parent nav-link menu-link', 'is-active active': item['active']}) aria-label="{{ text(item['titleKey']) }}" aria-expanded="{{ (compactView ? flyoutKey === item['key'] : item['open']) ? 'true' : 'false' }}" aria-controls="admin-submenu-{{ item['key'] }}" @click(toggleSubmenu(item['key'], $event))>
+                                <i class="sa-admin-nav-icon {{ item['iconClass'] ?? 'ri-folder-line' }}" aria-hidden="true"></i>
+                                <span class="sa-admin-nav-label">{{ text(item['titleKey']) }}</span>
+                                @if(!compactView)<span class="sa-admin-chevron" aria-hidden="true"></span>@endif
+                            </button>
+                            @if(compactView ? flyoutKey === item['key'] : item['open'])
+                            <ul id="admin-submenu-{{ item['key'] }}" class="sa-admin-submenu nav nav-sm flex-column" style="--sa-admin-flyout-top: {{ flyoutTop }}px">
+                                @if(compactView)
+                                    <li class="sa-admin-flyout-title" aria-hidden="true"><span>{{ text(item['titleKey']) }}</span><span class="sa-admin-chevron"></span></li>
+                                @endif
+                                @foreach(item['children'] as child)
+                                    @key(child['key'])
+                                    <li><a href="{{ child['url'] }}" @class({'sa-admin-nav-child nav-link', 'is-active active': child['active']}) aria-current="{{ child['active'] ? 'page' : 'false' }}" @click(closeMenu())>{{ text(child['titleKey']) }}</a></li>
+                                @endforeach
+                            </ul>
+                            @endif
+                        </div>
+                    @else
+                        <div @class({'sa-admin-nav-group nav-item', 'is-flyout-open': compactView && flyoutKey === item['key']}) @mouseenter(hoverSubmenu(item['key'], $event)) @mouseleave(leaveSubmenu(item['key'])) @focusin(focusSubmenu(item['key'], $event)) @focusout(blurSubmenu(item['key'], $event))>
+                            <a href="{{ item['url'] }}" @class({'sa-admin-nav-item nav-link menu-link', 'is-active active': item['active'] ?? false}) aria-label="{{ text(item['titleKey']) }}" aria-current="{{ (item['active'] ?? false) ? 'page' : 'false' }}" @click(closeMenu())>
+                                <i class="sa-admin-nav-icon {{ item['iconClass'] ?? 'ri-folder-line' }}" aria-hidden="true"></i>
+                                <span class="sa-admin-nav-label">{{ text(item['titleKey']) }}</span>
+                                @if(compactView && flyoutKey === item['key'])
+                                    <span class="sa-admin-flyout-label" style="--sa-admin-flyout-top: {{ flyoutTop }}px" aria-hidden="true">{{ text(item['titleKey']) }}</span>
+                                @endif
+                            </a>
+                        </div>
+                    @endif
+                @endforeach
+            </nav>
+        </aside>
+        <div class="sa-admin-main main-content">
+            <header id="page-topbar"><div class="sa-admin-topbar navbar-header">
+                <button id="admin-menu-toggle" class="sa-admin-menu-toggle btn shadow-none btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger" type="button" aria-label="{{ mobileView ? text('admin.shell.menu') : (sidebarCompact ? text('admin.shell.expand_sidebar') : text('admin.shell.collapse_sidebar')) }}" aria-controls="sa-admin-navigation" aria-expanded="{{ (mobileView ? menuOpen : !sidebarCompact) ? 'true' : 'false' }}" @click(toggleMenu())>
+                    <span @class({'hamburger-icon', 'open': compactView}) aria-hidden="true"><span></span><span></span><span></span></span>
+                </button>
+                @useBlock('heading')
+                <div class="sa-admin-header-actions">
+                    <div class="sa-admin-languages sa-admin-header-dropdown dropdown" aria-label="{{ __('admin.shell.language') }}">
+                        <button id="admin-language-toggle" class="sa-admin-header-trigger btn btn-ghost-secondary shadow-none" type="button" aria-label="{{ __('admin.shell.language') }}" aria-expanded="{{ languageOpen ? 'true' : 'false' }}" aria-controls="admin-language-menu" @disabled(languageBusy) @click(toggleLanguage())>
+                            <svg class="sa-admin-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><ellipse cx="12" cy="12" rx="4" ry="9"></ellipse><path d="M3 12h18"></path></svg>
+                            <span class="sa-admin-language-code">{{ selectedLocale }}</span><svg class="sa-admin-dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        @if(languageOpen)
+                            <div id="admin-language-menu" class="sa-admin-header-popover dropdown-menu dropdown-menu-end show" aria-label="{{ __('admin.shell.language') }}">
+                                <p class="sa-admin-popover-label">{{ __('admin.shell.language') }}</p>
+                                @foreach(locales as language)
+                                    @key(language['code'])
+                                    <button type="button" data-locale="{{ language['code'] }}" @class({'sa-admin-language-option dropdown-item', 'is-active active': language['code'] === selectedLocale}) aria-pressed="{{ language['code'] === selectedLocale ? 'true' : 'false' }}" @disabled(languageBusy) @click(changeLanguage(language['code']))>
+                                        <span lang="{{ language['code'] }}">{{ language['name'] ?? language['code'] }}</span><span class="sa-admin-language-option-code">{{ language['code'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    <div class="sa-admin-account sa-admin-header-dropdown dropdown">
+                        <button id="admin-account-toggle" class="sa-admin-account-trigger btn shadow-none" type="button" aria-label="{{ __('admin.shell.account') }}" aria-expanded="{{ accountOpen ? 'true' : 'false' }}" aria-controls="admin-account-menu" @click(toggleAccount())>
+                            @if((account['avatar'] ?? '') !== '')
+                                <img class="sa-admin-avatar header-profile-user rounded-circle" src="{{ account['avatar'] }}" alt="">
+                            @else
+                                <span class="sa-admin-avatar header-profile-user rounded-circle" aria-hidden="true">{{ account['initials'] ?? 'U' }}</span>
+                            @endif
+                            <span class="sa-admin-account-caption">
+                                <strong>{{ (account['name'] ?? '') !== '' ? account['name'] : text('admin.shell.account') }}</strong>
+                                @if((account['subtitle'] ?? '') !== '')<small>{{ account['subtitle'] }}</small>@endif
+                            </span>
+                            <svg class="sa-admin-dropdown-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        @if(accountOpen)
+                            <div id="admin-account-menu" class="sa-admin-header-popover dropdown-menu dropdown-menu-end show" aria-label="{{ __('admin.shell.account') }}">
+                                <div class="sa-admin-account-summary">
+                                    <strong>{{ (account['name'] ?? '') !== '' ? account['name'] : text('admin.shell.account') }}</strong>
+                                    @if((account['email'] ?? '') !== '')
+                                        <small>{{ account['email'] }}</small>
+                                    @endif
+                                </div>
+                                @foreach(account['links'] ?? [] as link)
+                                    @key(link['key'])
+                                    <a class="sa-admin-account-link dropdown-item" href="{{ link['url'] }}" @click(closeHeaderMenus())>{{ text(link['titleKey']) }}</a>
+                                @endforeach
+                                @if((account['logoutUrl'] ?? '') !== '')
+                                    <form action="{{ account['logoutUrl'] }}" method="post" @submit(checkLogout($event))>
+                                        <input type="hidden" name="_token" value="{{ account['csrfToken'] }}">
+                                        @if(account['logoutMethod'] === 'DELETE')
+                                            <input type="hidden" name="_method" value="DELETE">
+                                        @endif
+                                        <button class="sa-admin-logout dropdown-item text-danger" type="submit">{{ __('admin.shell.logout') }}</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div></header>
+            <main id="admin-content" class="sa-admin-content page-content container-fluid" tabindex="-1">
+                @if(notice !== '')
+                    <p class="sa-admin-alert" role="alert">{{ text(notice) }}</p>
+                @endif
+                @useBlock('content')
+            </main>
+        </div>
+    </div>
+    @pageEnd
+</template>

@@ -1,33 +1,51 @@
-# Hợp đồng shell và renderer admin v1
+# Hợp đồng giao diện admin
 
-Frontend thuộc `resources/saola/admin`; lang backend thuộc `lang/{locale}`. `admin.manifest.json` khai package/version/contract, CSS, bootstrap và renderer suffix. Namespace view dùng context `admin.*`, không lặp tầng package; collision source được publisher chặn theo ownership/hash. Xem [quy ước tên và nâng cấp](NAMING.md). Không tự chọn theme hoặc quản lý theme trong package này.
+Source hiện tại thuộc **gói saola/admin**. Giao diện nằm ở `resources/saola/admin/themes/{name}/{app,views,assets}`; controller/state dùng chung ở `app/`, gọi qua `App.Admin`. Xem [Themes](THEMES.md) cho manifest, view context, CSS và nâng cấp nguồn.
 
-## Page và dữ liệu
+## Ranh giới package và project
 
-`PageRegistry` chỉ nhận class triển khai `Pages\Page` không giữ request/User trong registry. Definition có `key`, `titleKey`, `ability` và `document(Request): ResourceDocument`; class được resolve mỗi request. Host đăng ký trong `afterResolving(PageRegistry::class, ...)`. Không đăng ký cùng slug hai lần; slug `settings` được dành cho editor. Navigation và HTTP page đều kiểm Gate; giấu menu không thay kiểm backend.
+Project cung cấp model, scope, Policy, Resource/Settings schema, nhãn và hook nghiệp vụ. CRUD thông thường không cần controller, `.sao`, JavaScript hoặc bản sao theme trong project. Package cung cấp list/form/trash/bulk, media, locale management và settings editor. Các trang nghiệp vụ đặc thù có thể triển khai Page riêng.
 
-`ResourceDocument` v1 là **read-only**: title/description là key, fields có key/labelKey/value text; columns có key/labelKey/renderer text hoặc badge; rows chỉ xuất scalar thuộc column allowlist. Giá trị được escape bởi renderer. Không serialize Eloquent model, secret hoặc HTML tùy ý. `listing` tùy chọn thêm search/sort/pagination từ ResourceListing/ListingQuery; page cũ nhận null và không hiện toolbar. Chưa có mutation/actions/options hoặc field authorization tự động; definition phải query và project theo Policy/scope trước khi tạo DTO. Category và User directory dùng cùng renderer, không copy HTML.
+`ResourceDocument` vẫn là DTO chỉ đọc. `Resources\Resource` thêm schema field/cột, scope, rules, quyền và hooks cho mutation. SSR và page-data luôn project theo quyền trước khi render; giấu nút không thay kiểm tra backend. Không serialize toàn bộ model, relation, password hash hoặc token của host. Xem [Resource](RESOURCES.md).
 
-Page có thể triển khai `AuthorizesPage::allows(Request)` để bổ sung quyền theo request/model; PageRegistry áp cùng với Gate ability cho cả navigation và controller. [User directory](USERS.md) cần ability và model viewAny, query scope host bắt buộc; list/count/search phải cùng phạm vi.
+## Theme và tài nguyên
 
-Trang workspace đọc tên app/locale và revision các ngôn ngữ đã published từ DB, không tạo số liệu giả. Panel tắt mặc định, guard/Gate của host quyết định quyền. Middleware thành công trả private/no-store, Vary Cookie/Authorization/Accept-Language; khôi phục app locale sau response/exception để worker không giữ ngôn ngữ người quản trị trước. SSR và page-data cùng kiểm DictionaryAccess trước scoped snapshot; không lấy catalog đầy đủ để nhúng vào web.
+Classic và Material dùng cùng props/state/action contract. Material dùng Bootstrap/Velzon Material đã được cung cấp; CSS vendor, icon và nguồn asset có inventory riêng. Các script demo, Popper/Bootstrap event handlers của template không được chạy trên view Saola. Dropdown, sidebar, media overlay và form chỉ có một bộ lifecycle/action trong `app/views`.
 
-## Client, locale và tài nguyên
+Mỗi theme có manifest và CSS entry riêng. Root bundle chỉ đăng ký service; không import mọi stylesheet. View context logic hiện là `admin.classic` hoặc `admin.material`; namespace được ánh xạ sang source trong `admin/themes/`. Đổi theme bằng document load mới để registry, SSR và CSS cùng phiên bản. Xem [Asset inventory](ASSET_INVENTORY.md).
 
-`pages.resource` dùng `@await`; layout props runtime được giữ cả Blade/JS. Shell có sidebar, menu responsive, slot content, lựa chọn locale và thông báo. Nhãn `__()` trong `.sao` được compiler hạ sang `text()`, dynamic label gọi `text(key)`.
+Source publisher theo dõi ownership/hash, nâng cấp cả đường dẫn phẳng và `admin/{name}` cũ, giữ file host và dừng toàn bộ batch nếu file đã đổi chỗ có chỉnh sửa local. Không sửa output Blade/JS bằng tay. `admin:doctor` kiểm source, namespace, renderer, asset và các storage adapter đã cấu hình.
 
-`AdminUI.registerLanguageGuard(() => !dirty)` trả disposer; form phải dispose khi pause/destroy và đăng ký lại khi resumed. Shell gọi guard trước/sau tải dictionary qua client `changeLanguage`. Settings form đăng ký thêm `Router.addNavigationGuard`, beforeunload và gỡ đúng lifecycle; guard không ghi đè beforeEach của host. Chưa có persistence preference. Không đăng ký model/actor/auth snapshot trong service singleton.
+## Lớp JavaScript dùng chung
 
-CSS scope `.saola-admin`, token `--sa-admin-*`, layout/resource key và slot content là điểm tương thích cho theme tương lai. CSS/SVG nguyên bản của package, font hệ thống; không chép Bootstrap/plugin/template assets. Xem [inventory](ASSET_INVENTORY.md). Theme quản lý cài/bật/tắt/publish/override lifecycle thuộc package riêng. Manifest/slot/token mới là nền tương thích, chưa là API theme management đầy đủ.
+`AdminUI` tạo state instance cho từng view; không giữ draft hay actor trong singleton. ResourceManager, SettingsForm, LanguageForm và MediaLibraryForm quản lý dữ liệu/request. Controller trong `app/views` quản lý binding, sự kiện, dirty guard, focus và start/resume/pause/destroy. `.sao` của theme chỉ có markup, props/state và lời gọi binding.
 
-`BundleManifest::cssUrl('admin')` dùng `sao.assets.css.admin`, dev URL source hoặc manifest production (cả CSS import từ JS entry). Web mặc định vẫn `resources/css/app.css`. Build source cùng đợt compiler/client/core để marker SSR/hydration và props đồng bộ. Publisher không chép output generated hoặc runtime riêng.
+Guard điều hướng, đổi ngôn ngữ và beforeunload được đăng ký/dispose theo lifecycle. Request có generation/abort để response cũ không đổi view đã pause. Không ghi đè navigation hook của project. Các request ghi có CSRF, revision và khả năng truy vết theo contract từng module.
 
-## Settings renderer
+## Shell và menu
 
-`pages.settings`/`components.settings-form` dùng cùng layout slot và metadata từ SettingsRegistry. `SettingsForm` client chỉ giữ draft của view, patch field thay đổi, revision/CSRF và trạng thái request. Thiếu bản dịch nội dung hiện fallback nhưng không tự gửi; text/boolean/integer đều cùng renderer, extension không copy form. Locale nội dung chọn bằng URL và độc lập locale UI; xem [Settings contract](SETTINGS.md).
+Mỗi page có một heading qua block `heading`; block `content` chứa nội dung. Shell giữ active page theo AdminUI và cập nhật cả khi view cache resume. Sidebar hỗ trợ desktop thu gọn, flyout bằng hover/focus, Escape và mobile backdrop.
 
-Server đăng ký route editor trước catch-all và refresh name/action lookups sau khi thêm route trong booted(); workbench mới khởi động kiểm được lỗi mà Testbench tự refresh trước đó từng che khuất. HTTP JSON settings vẫn riêng `/{prefix}/settings/{group}`, không được đăng ký như component route.
+Dropdown tài khoản/ngôn ngữ có mũi tên riêng với sidebar, phản ánh `aria-expanded`, đóng khi click ngoài/đổi trang/Escape và trả focus về nút mở. Menu neo theo nút trigger bằng CSS của theme; không gắn class cần Popper transform. Tài khoản chỉ hiện tên và subtitle được host cấu hình rõ ràng; không chèn trạng thái “Signed in”. Menu có email và các route hợp lệ được host cung cấp; logout vẫn là POST/DELETE có CSRF.
 
-## Đã kiểm và còn thiếu
+## Form, phản hồi và input
 
-PHP tests compile source publish thật, request SSR/page-data, auth/Gate, private projection, routes và CSS. Client tests dùng HTML Laravel thật để hydrate, CSR, đổi locale, guard và strict TypeScript. Preview Vite build từ source publish đã chạy trong browser ở lượt trước; không dùng fixture server để chứng nhận production auth. Test form kiểm draft/422/409/network/revoked permission/response cũ, strict TS của cả compiled view và module state. Workbench Laravel sống với operator giả/SQLite tạm kiểm session+CSRF và save/revision. Composer archive đã giải nén và publish idempotent. Đã kiểm cài từ Composer ZIP với core/compiler của Packagist, Laravel 12/13 và build từ client/builder GitHub tags, không cần sibling. CI bổ sung PHP 8.3/8.5. Consumer mới cài trực tiếp saola/admin alpha từ Packagist đã kiểm provider/install/migrate/sync/text. Mobile/browser trên host thật, route/theme overrides và DB MySQL/Postgres vẫn cần nghiệm thu.
+Các vùng input dùng fieldset để nhóm/disable; lưới layout nằm trong div bên trong, tránh cơ chế layout đặc biệt của legend/fieldset. Label, mô tả và lỗi nối bằng ID/ARIA. Form settings và CRUD đưa focus tới field lỗi sau render, giữ draft khi 422/409/session/network lỗi; discard khôi phục cả native input, checkbox và textarea.
+
+`feedback.ts` phân loại thông báo dùng chung: success cho thao tác đã xác nhận, info cho trạng thái tải/preview, warning cho guard/reload/conflict, error cho dữ liệu hoặc request lỗi. Theme chọn màu theo token; nội dung thông báo luôn được dịch qua text resolver.
+
+CRUD có 26 input preset, bố cục section/tab và media picker. Tất cả dùng cùng controller input, không nhân bản chức năng theo theme. HTML editor hiện soạn source với toolbar, chưa phải WYSIWYG; relation select tìm trong tối đa 1000 options do host lọc scope, chưa phải remote relation editor. Xem [danh mục input và ví dụ](RESOURCES.md#input-template-và-bố-cục-dựng-sẵn).
+
+## Media, Settings và ngôn ngữ
+
+Media page/picker dùng cùng component. Search và submit là một input group; bộ lọc có chiều rộng hữu hạn, wrap trên màn hẹp. Trạng thái rỗng không hiện pagination giả, nút trang chỉ hiện khi có nhiều trang. Picker nằm trên header/sidebar, giữ focus, đóng bằng Escape và trả focus về control gọi. Upload/metadata/trash/selection vẫn kiểm quyền và revision; không có purge/crop/CDN tự động.
+
+Settings chia Website/Hệ thống; các group dùng tab link có guard, locale nội dung độc lập locale UI. Chỉ giá trị chưa được override mới có gợi ý fallback. Khi discard/reload, native controls được tạo lại từ snapshot; dữ liệu kế thừa không tự tạo patch nếu chưa tương tác.
+
+Trang ngôn ngữ có locale/defaults, form thêm locale, export/import preview/draft/publish và lịch sử. Chỉ phần cần dùng mới mở ra; toolbar không kéo giãn nút theo file input. Các permission manage/export/import/publish độc lập. Không tự công bố bản dịch khi upload hoặc preview.
+
+## Mức kiểm chứng và phần tiếp tục
+
+Kiểm chứng bằng PHP package, source publish thật → compiler → strict TypeScript, SSR/hydration/CSR, dirty guard và lifecycle. Gehihi kiểm tích hợp PostgreSQL test riêng, build và browser native cho các màn hiện tại. Các lần kiểm cụ thể được ghi trong tài liệu module/release; không coi test state là chứng nhận mọi layout responsive hoặc tranh chấp nhiều kết nối.
+
+Role/grant UI, trình sửa dịch từng key/AI, remote relation picker, WYSIWYG và kiểm chứng concurrency DB nhiều connection vẫn chưa thuộc chức năng đã hoàn thiện. Source đang phát triển; chưa tạo tag hay phát hành thay alpha.1.

@@ -1,0 +1,21 @@
+<script setup lang="ts">
+    import type {UiDropdown} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiDropdown> = {})
+    @state(open: boolean = data['open'] ?? false, active: string = data['active'] ?? '', expanded: string[] = data['expanded'] ?? [], visible: boolean = true)
+
+    App.Admin.controllers.ui($view, () => data, 'dropdown');
+</script>
+
+<template>
+    <div id="{{ data['id'] }}" class="dropdown" @keydown(keydown($event))>
+        <button type="button" id="{{ data['id'] }}-trigger" class="btn btn-{{ data['color'] ?? 'primary' }} dropdown-toggle" data-ui-trigger aria-expanded="{{ open ? 'true' : 'false' }}" aria-controls="{{ data['id'] }}-menu" aria-haspopup="menu" @click(toggle($event))>{{ data['label'] ?? '' }}</button>
+        @if(open)<div id="{{ data['id'] }}-menu" class="dropdown-menu show {{ (data['align'] ?? '') === 'end' ? 'dropdown-menu-end' : '' }}" role="menu" aria-labelledby="{{ data['id'] }}-trigger">
+            @foreach(data['items'] ?? [] as item)@key(item['id'])
+                <button type="button" class="dropdown-item" role="menuitem" @disabled(item['disabled'] ?? false) @click(choose(item['id']))>
+                    @if((item['icon'] ?? '') !== '')<i class="{{ item['icon'] }} align-middle me-2" aria-hidden="true"></i>@endif{{ item['label'] }}
+                </button>
+            @endforeach
+        </div>@endif
+    </div>
+</template>

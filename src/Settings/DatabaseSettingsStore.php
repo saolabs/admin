@@ -16,6 +16,7 @@ final class DatabaseSettingsStore implements SettingsStore
         private readonly string $table,
         private readonly array $locales,
         private readonly string $defaultLocale,
+        private readonly ?\Closure $localePolicy = null,
     ) {
         if (!$locales || !in_array($defaultLocale, $locales, true)) throw new \InvalidArgumentException('Invalid content locales.');
         foreach ($locales as $locale) {
@@ -37,8 +38,9 @@ final class DatabaseSettingsStore implements SettingsStore
                 }
             } elseif (array_key_exists($key, $stored['values'] ?? [])) $values[$key] = $stored['values'][$key];
         }
+        $policy = $group->hasLocalizedFields() ? $this->policy() : ['locales' => [], 'default' => ''];
         return ['group' => $group->key, 'schemaVersion' => $group->version, 'revision' => (int) ($row->revision ?? 0),
-            'values' => $values, 'localized' => $localized, 'contentLocales' => $this->locales, 'defaultLocale' => $this->defaultLocale];
+            'values' => $values, 'localized' => $localized, 'contentLocales' => $policy['locales'], 'defaultLocale' => $policy['default']];
     }
 
     public function update(SettingsGroup $group, int $revision, array $patch): array
@@ -67,19 +69,22 @@ final class DatabaseSettingsStore implements SettingsStore
         });
     }
 
-    public function values(SettingsGroup $group, string $locale, bool $publicOnly = false): array
+    public function values(SettingsGroup $group, ?string $locale = null, bool $publicOnly = false): array
     {
-        if (!in_array($locale, $this->locales, true)) throw new \InvalidArgumentException('Unsupported content locale.');
         $document = $this->read($group); $values = [];
+        $locale ??= $document['defaultLocale'];
+        if ($group->hasLocalizedFields() && !in_array($locale, $document['contentLocales'], true)) throw new \InvalidArgumentException('Unsupported content locale.');
         foreach ($group->fields as $key => $field) {
             if ($publicOnly && !($field['public'] ?? false)) continue;
             if ($field['localized'] ?? false) {
                 // Empty string is an intentional translation. Fallback never writes data.
-                $values[$key] = $document['localized'][$locale][$key] ?? $document['localized'][$this->defaultLocale][$key] ?? $field['default'];
+                $values[$key] = $document['localized'][$locale][$key] ?? $document['localized'][$document['defaultLocale']][$key] ?? $field['default'];
             } else $values[$key] = $document['values'][$key] ?? $field['default'];
         }
         return $values;
     }
+
+    private function policy(): array { return $this->localePolicy ? ($this->localePolicy)() : ['locales' => $this->locales, 'default' => $this->defaultLocale]; }
 
     private function validate(SettingsGroup $group, array $patch): void
     {
@@ -89,16 +94,18 @@ final class DatabaseSettingsStore implements SettingsStore
             if (array_key_exists($section, $patch) && !is_array($patch[$section])) $errors[$section][] = 'Must be an object.';
         }
         if ($errors) throw ValidationException::withMessages($errors);
+        if (!$group->hasLocalizedFields() && !empty($patch['localized'])) throw ValidationException::withMessages(['localized' => 'This settings group has one shared value set.']);
+        $policy = $group->hasLocalizedFields() ? $this->policy() : ['locales' => []];
         $sets = ['values' => $patch['values'] ?? []];
         foreach ($patch['localized'] ?? [] as $locale => $fields) {
-            if (!in_array($locale, $this->locales, true) || !is_array($fields)) { $errors['localized'][] = 'Unsupported locale or invalid fields.'; continue; }
+            if (!in_array($locale, $policy['locales'], true) || !is_array($fields)) { $errors['localized'][] = 'Unsupported locale or invalid fields.'; continue; }
             $sets['localized.'.$locale] = $fields;
         }
         $count = 0;
         foreach ($sets as $path => $fields) foreach ($fields as $key => $value) {
             ++$count; $field = $group->fields[$key] ?? null;
             if (!$field || (bool) ($field['localized'] ?? false) !== str_starts_with($path, 'localized.')) { $errors[$path.'.'.$key][] = 'Unknown field or wrong locale section.'; continue; }
-            if (!$group->validType($field['type'], $value)) { $errors[$path.'.'.$key][] = 'Invalid value type.'; continue; }
+            if (!$group->validValue($field, $value)) { $errors[$path.'.'.$key][] = 'Invalid value or constraint.'; continue; }
             if (is_string($value) && mb_strlen($value) > ($field['maxLength'] ?? 2048)) $errors[$path.'.'.$key][] = 'Text is too long.';
             if (is_int($value) && (isset($field['min']) && $value < $field['min'] || isset($field['max']) && $value > $field['max'])) $errors[$path.'.'.$key][] = 'Number is outside the allowed range.';
         }

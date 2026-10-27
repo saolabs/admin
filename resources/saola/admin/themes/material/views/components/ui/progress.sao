@@ -1,0 +1,12 @@
+<script setup lang="ts">
+    import type {UiProgress} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiProgress> = {})
+    @computed(percent: number = (data['value'] ?? 0) < 0 ? 0 : ((data['value'] ?? 0) > 100 ? 100 : (data['value'] ?? 0)))
+</script>
+
+<template>
+    <div class="progress {{ (data['size'] ?? '') === 'sm' ? 'progress-sm' : ((data['size'] ?? '') === 'lg' ? 'progress-lg' : '') }}" aria-label="{{ data['label'] ?? '' }}">
+        <div class="progress-bar bg-{{ data['color'] ?? 'primary' }} {{ (data['striped'] ?? false) ? 'progress-bar-striped' : '' }} {{ (data['animated'] ?? false) ? 'progress-bar-animated' : '' }}" role="progressbar" style="width: {{ percent }}%" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ data['label'] ?? '' }}">{{ (data['showValue'] ?? false) ? percent : '' }}{{ (data['showValue'] ?? false) ? '%' : '' }}</div>
+    </div>
+</template>

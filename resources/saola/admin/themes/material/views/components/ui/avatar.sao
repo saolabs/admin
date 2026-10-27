@@ -1,0 +1,15 @@
+<script setup lang="ts">
+    import type {UiAvatar} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiAvatar> = {})
+    @computed(src: string = ((data['src'] ?? '').startsWith('/') && !(data['src'] ?? '').startsWith('//')) || (data['src'] ?? '').startsWith('https://') || (data['src'] ?? '').startsWith('http://') ? (data['src'] ?? '') : '')
+</script>
+
+<template>
+    <div class="{{ (data['size'] ?? '') === 'lg' ? 'avatar-lg' : ((data['size'] ?? '') === 'xs' ? 'avatar-xs' : ((data['size'] ?? '') === 'md' ? 'avatar-md' : 'avatar-sm')) }}">
+        @if(src !== '')<img class="img-fluid {{ (data['rounded'] ?? true) ? 'rounded-circle' : 'rounded' }}" src="{{ src }}" alt="{{ data['label'] ?? '' }}">
+        @else<span class="avatar-title bg-{{ data['color'] ?? 'primary' }}-subtle text-{{ data['color'] ?? 'primary' }} {{ (data['rounded'] ?? true) ? 'rounded-circle' : 'rounded' }}" aria-label="{{ data['label'] ?? '' }}">
+            @if((data['icon'] ?? '') !== '')<i class="{{ data['icon'] }} fs-20" aria-hidden="true"></i>@else{{ data['initials'] ?? '' }}@endif
+        </span>@endif
+    </div>
+</template>

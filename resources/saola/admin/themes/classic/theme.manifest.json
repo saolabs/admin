@@ -1,0 +1,8 @@
+{
+    "name": "classic",
+    "contract": 1,
+    "view_context": "admin.classic",
+    "views": "views",
+    "bootstrap": "app/bootstrap.ts",
+    "css": "assets/css/admin.css"
+}

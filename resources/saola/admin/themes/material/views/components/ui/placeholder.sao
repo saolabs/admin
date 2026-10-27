@@ -1,0 +1,14 @@
+<script setup lang="ts">
+    import type {UiPlaceholder} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiPlaceholder> = {})
+</script>
+
+<template>
+    <div class="{{ (data['wave'] ?? false) ? 'placeholder-wave' : 'placeholder-glow' }}" role="status" aria-label="{{ data['label'] ?? '' }}" aria-busy="true">
+        @foreach(data['widths'] ?? [12, 8, 6] as width)
+            <span class="placeholder col-{{ width }} {{ (data['size'] ?? '') === 'sm' ? 'placeholder-sm' : ((data['size'] ?? '') === 'lg' ? 'placeholder-lg' : '') }}" aria-hidden="true"></span>
+        @endforeach
+        <span class="visually-hidden">{{ data['label'] ?? '' }}</span>
+    </div>
+</template>

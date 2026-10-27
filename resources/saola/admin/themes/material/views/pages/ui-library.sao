@@ -1,0 +1,63 @@
+@await
+<script setup lang="ts">
+    @vars(samples: any = {}, navigation: any[] = [], currentPage: string = '', brand: string = '', branding: any = {}, locales: any[] = [], dictionaryPattern: string = '', uiLocale: string = '', account: any = {})
+    @state(lastAction: string = '')
+
+    App.Admin.controllers.page($view, () => currentPage);
+</script>
+
+<template>
+    @serverside
+        @section('meta:title', text('admin.ui.title'))
+    @endserverside
+    @extends(__base__ + 'layouts.shell', {navigation: navigation, currentPage: currentPage, brand: brand, branding: branding, locales: locales, dictionaryPattern: dictionaryPattern, uiLocale: uiLocale, account: account})
+    @block('heading')<h1 id="admin-page-title">{{ text('admin.ui.title') }}</h1>@endblock
+    @block('content')
+        <p class="text-muted">Velzon Material · UI samples</p>
+        <div class="alert alert-info" role="status">{{ lastAction !== '' ? lastAction : 'Actions in this catalogue only update this message.' }}</div>
+        <div class="row" id="ui-cards">
+            @foreach(samples['cards'] ?? [] as card)@key(card['id'])<div class="col-sm-6 col-xl-3">@include(__base__ + 'components.ui.card', {data: card, on$action: (id) => setLastAction(id)})</div>@endforeach
+        </div>
+        <div class="row">
+            @foreach(samples['stats'] ?? [] as stat)@key(stat['label'])<div class="col-sm-6 col-xl-3">@include(__base__ + 'components.ui.stat-card', {data: stat})</div>@endforeach
+        </div>
+        @foreach(samples['variants'] ?? [] as variant)@key(variant['id'])
+            <div class="card"><div class="card-header"><h4 class="card-title mb-0">{{ variant['title'] }}</h4></div><div class="card-body d-flex flex-wrap gap-2">
+                @foreach(samples['colors'] ?? [] as color)@key(color)
+                    @include(__base__ + 'components.ui.button', {data: {label: color, color: color, variant: variant['id'] === 'solid-rounded' ? 'solid' : variant['id'], rounded: variant['rounded'], action: variant['id'] + ':' + color}, on$action: (id) => setLastAction(id)})
+                @endforeach
+            </div></div>
+        @endforeach
+        <div class="card"><div class="card-header"><h4 class="card-title mb-0">Button sizes, icons and states</h4></div><div class="card-body d-flex flex-wrap align-items-center gap-2">
+            @include(__base__ + 'components.ui.button', {data: {label: 'Small', size: 'sm'}})
+            @include(__base__ + 'components.ui.button', {data: {label: 'Large', size: 'lg', icon: 'ri-add-line'}})
+            @include(__base__ + 'components.ui.button', {data: {label: 'Edit', icon: 'ri-edit-2-line', iconOnly: true, color: 'success', variant: 'ghost'}})
+            @include(__base__ + 'components.ui.button', {data: {label: 'Loading', loading: true}})
+            @include(__base__ + 'components.ui.button', {data: {label: 'Disabled', disabled: true}})
+        </div></div>
+        <div class="row"><div class="col-lg-6"><div class="card"><div class="card-header"><h4 class="card-title mb-0">Alerts</h4></div><div class="card-body">
+            @foreach(samples['alerts'] ?? [] as alert)@key(alert['id'])@include(__base__ + 'components.ui.alert', {data: alert})@endforeach
+        </div></div></div>
+        <div class="col-lg-6"><div class="card"><div class="card-header"><h4 class="card-title mb-0">Badges and Avatars</h4></div><div class="card-body">
+            <div class="d-flex flex-wrap gap-2 mb-4">@foreach(samples['colors'] ?? [] as color)@key(color)@include(__base__ + 'components.ui.badge', {data: {label: color, color: color, soft: true, rounded: true}})@endforeach</div>
+            <div class="d-flex flex-wrap gap-3">@foreach(samples['colors'] ?? [] as color)@key(color)@include(__base__ + 'components.ui.avatar', {data: {initials: 'UI', label: color, color: color}})@endforeach</div>
+        </div></div>
+        <div class="card"><div class="card-header"><h4 class="card-title mb-0">Dropdown, Modal and Offcanvas</h4></div><div class="card-body d-flex flex-wrap gap-3">
+            @include(__base__ + 'components.ui.dropdown', {data: samples['dropdown'], on$action: (id) => setLastAction(id)})
+            @include(__base__ + 'components.ui.dialog', {data: samples['dialog']})
+            @include(__base__ + 'components.ui.dialog', {data: samples['drawer']})
+        </div></div></div></div>
+        <div class="row"><div class="col-lg-6"><div class="card"><div class="card-header"><h4 class="card-title mb-0">Tabs</h4></div><div class="card-body">@include(__base__ + 'components.ui.tabs', {data: samples['tabs'], on$change: (id) => setLastAction(id)})</div></div></div>
+        <div class="col-lg-6"><div class="card"><div class="card-header"><h4 class="card-title mb-0">Accordion</h4></div><div class="card-body">@include(__base__ + 'components.ui.accordion', {data: samples['accordion']})</div></div></div></div>
+        <div class="row"><div class="col-lg-6"><div class="card"><div class="card-header"><h4 class="card-title mb-0">Progress, Spinners and Placeholders</h4></div><div class="card-body">
+            <div class="mb-3">@include(__base__ + 'components.ui.progress', {data: {value: 65, color: 'success', label: 'Progress', striped: true, showValue: true}})</div>
+            <div class="d-flex gap-3 mb-3">@include(__base__ + 'components.ui.spinner', {data: {label: 'Loading'}})@include(__base__ + 'components.ui.spinner', {data: {label: 'Loading', grow: true, color: 'success'}})</div>
+            @include(__base__ + 'components.ui.placeholder', {data: {label: 'Loading content', widths: [12, 8, 6]}})
+        </div></div></div><div class="col-lg-6"><div class="card"><div class="card-header"><h4 class="card-title mb-0">Breadcrumb, Pagination and Toast</h4></div><div class="card-body">
+            <div class="mb-3">@include(__base__ + 'components.ui.breadcrumb', {data: {label: 'Breadcrumb', items: [{id: 'home', label: 'Home', href: '#ui-cards'}, {id: 'ui', label: 'UI', active: true}]}})</div>
+            <div class="mb-3">@include(__base__ + 'components.ui.pagination', {data: samples['pagination'], on$change: (page) => setLastAction('Page ' + page)})</div>
+            @include(__base__ + 'components.ui.toast', {data: samples['toast']})
+        </div></div></div></div>
+        <div class="card">@include(__base__ + 'components.ui.empty-state', {data: {icon: 'ri-search-line', title: 'No results found', text: 'Try another search or clear the filters.', action: {label: 'Clear filters', action: 'clear-filters'}}, on$action: (id) => setLastAction(id)})</div>
+    @endblock
+</template>

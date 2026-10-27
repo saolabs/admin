@@ -6,7 +6,8 @@
     "require": {
         "php": "^8.3",
         "saola/core": "^2.4",
-        "laravel/framework": "^12.0|^13.0"
+        "laravel/framework": "^12.0|^13.0",
+        "ext-dom": "*"
     },
     "require-dev": {
         "orchestra/testbench": "^10.0|^11.0",
@@ -24,6 +25,11 @@
         }
     },
     "extra": {
+        "saola": {
+            "contexts": {
+                "admin": "resources/saola/admin/context.manifest.json"
+            }
+        },
         "laravel": {
             "providers": [
                 "Saola\\Admin\\AdminServiceProvider"

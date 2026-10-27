@@ -1,0 +1,11 @@
+<script setup lang="ts">
+    import type {UiBadge} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiBadge> = {})
+</script>
+
+<template>
+    <span class="badge bg-{{ data['color'] ?? 'primary' }}{{ (data['soft'] ?? false) ? '-subtle text-' : '' }}{{ (data['soft'] ?? false) ? (data['color'] ?? 'primary') : '' }} {{ (data['rounded'] ?? false) ? 'rounded-pill' : '' }}">
+        @if((data['icon'] ?? '') !== '')<i class="{{ data['icon'] }} me-1" aria-hidden="true"></i>@endif{{ data['label'] ?? '' }}
+    </span>
+</template>

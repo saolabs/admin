@@ -1,0 +1,160 @@
+<script setup lang="ts">
+    @vars(editor: any = {})
+    @state(localeDoc: any = editor['document'], permissions: any = editor['permissions'], batches: any[] = editor['batches'], busy: boolean = false, dirty: boolean = false, canSave: boolean = false, canPublish: boolean = false, selectedLocale: string = '', baseline: string = '', fileName: string = '', notice: string = '', noticeKind: string = 'error', details: string = '', preview: any = null, changes: any[] = [])
+
+    App.Admin.controllers.languages($view, () => ({editor}));
+</script>
+
+<template>
+    @if(notice !== '')
+        <p id="language-notice" data-kind="{{ noticeKind }}" class="sa-admin-alert" role="status">{{ text(notice) }}</p>
+    @endif
+    @if(details !== '')
+        <pre class="sa-admin-alert sa-admin-language-errors" data-kind="error" role="alert">{{ details }}</pre>
+    @endif
+    <section class="sa-admin-card">
+        <h2>{{ __('admin.languages.defaults') }}</h2>
+        <form @submit.prevent(save())>
+            <fieldset class="sa-admin-form-fieldset sa-admin-locale-fields" @disabled(busy || !permissions['manage'])>
+                <legend class="sa-admin-visually-hidden">{{ __('admin.languages.defaults') }}</legend>
+                <div class="sa-admin-locale-defaults">
+                    <div class="sa-admin-form-field">
+                        <label for="language-ui-default">{{ __('admin.languages.ui_default') }}</label>
+                        <select id="language-ui-default" @change(changeDefault('uiDefault', $event))>
+                            @foreach(localeDoc['locales'] as row)
+                                @if(row['uiEnabled'] && row['revision'] > 0)
+                                    <option value="{{ row['code'] }}" @selected(row['code'] === localeDoc['uiDefault'])>{{ row['name'] === row['code'] ? row['code'] : sprintf('%s (%s)', row['name'], row['code']) }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sa-admin-form-field">
+                        <label for="language-ui-fallback">{{ __('admin.languages.ui_fallback') }}</label>
+                        <select id="language-ui-fallback" @change(changeDefault('uiFallback', $event))>
+                            @foreach(localeDoc['locales'] as row)
+                                @if(row['uiEnabled'] && row['revision'] > 0)
+                                    <option value="{{ row['code'] }}" @selected(row['code'] === localeDoc['uiFallback'])>{{ row['name'] === row['code'] ? row['code'] : sprintf('%s (%s)', row['name'], row['code']) }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sa-admin-form-field">
+                        <label for="language-content-default">{{ __('admin.languages.content_default') }}</label>
+                        <select id="language-content-default" @change(changeDefault('contentDefault', $event))>
+                            @foreach(localeDoc['locales'] as row)
+                                @if(row['contentEnabled'])
+                                    <option value="{{ row['code'] }}" @selected(row['code'] === localeDoc['contentDefault'])>{{ row['name'] === row['code'] ? row['code'] : sprintf('%s (%s)', row['name'], row['code']) }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="sa-admin-table-scroll">
+                    <table class="sa-admin-table sa-admin-locales-table">
+                        <thead><tr><th scope="col">{{ __('admin.languages.code') }}</th><th scope="col">{{ __('admin.languages.name') }}</th><th scope="col">{{ __('admin.languages.ui_enabled') }}</th><th scope="col">{{ __('admin.languages.content_enabled') }}</th><th scope="col">{{ __('admin.languages.status_label') }}</th></tr></thead>
+                        <tbody>
+                            @foreach(localeDoc['locales'] as row)
+                                @key(row['code'])
+                                <tr>
+                                    <td>{{ row['code'] }}</td>
+                                    <td><input aria-label="{{ __('admin.languages.name') }} {{ row['code'] }}" type="text" maxlength="100" value="{{ row['name'] }}" @input(changeName(row['code'], $event))></td>
+                                    <td><input aria-label="{{ __('admin.languages.ui_enabled') }} {{ row['code'] }}" type="checkbox" @checked(row['uiEnabled']) @change(changeFlag(row['code'], 'uiEnabled', $event))></td>
+                                    <td><input aria-label="{{ __('admin.languages.content_enabled') }} {{ row['code'] }}" type="checkbox" @checked(row['contentEnabled']) @change(changeFlag(row['code'], 'contentEnabled', $event))></td>
+                                    <td><span class="sa-admin-badge">{{ row['revision'] > 0 ? text('admin.languages.status.published') : text('admin.languages.unpublished') }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </fieldset>
+            <div class="sa-admin-form-actions">
+                <button id="language-save" type="submit" @disabled(!canSave)>{{ __('admin.settings.save') }}</button>
+                <button type="button" @disabled(busy || !dirty) @click(discard())>{{ __('admin.settings.discard') }}</button>
+                <button type="button" @disabled(busy || dirty) @click(reload())>{{ __('admin.settings.reload') }}</button>
+            </div>
+        </form>
+        @if(permissions['manage'])
+            <details class="sa-admin-add-language">
+                <summary>{{ __('admin.languages.add') }}</summary>
+                <form class="sa-admin-locale-add-form" @submit.prevent(add($event))>
+                    <div class="sa-admin-form-field"><label for="language-new-code">{{ __('admin.languages.code') }}</label>
+                        <input id="language-new-code" name="code" type="text" maxlength="40" required @disabled(busy)></div>
+                    <div class="sa-admin-form-field"><label for="language-new-name">{{ __('admin.languages.name') }}</label>
+                        <input id="language-new-name" name="name" type="text" maxlength="100" required @disabled(busy)></div>
+                    <button type="submit" @disabled(busy)>{{ __('admin.languages.add') }}</button>
+                </form>
+            </details>
+        @endif
+    </section>
+    <section class="sa-admin-card">
+        <h2>{{ __('admin.languages.translations') }}</h2>
+        <div class="sa-admin-form-fields sa-admin-translation-fields">
+            <div class="sa-admin-translation-tools">
+                <div class="sa-admin-form-field">
+                    <label for="language-target">{{ __('admin.languages.target') }}</label>
+                    <select id="language-target" @disabled(busy || dirty) @change(selectLocale($event))>
+                        @foreach(localeDoc['locales'] as row)
+                            <option value="{{ row['code'] }}" @selected(row['code'] === selectedLocale)>{{ row['name'] === row['code'] ? row['code'] : sprintf('%s (%s)', row['name'], row['code']) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @if(permissions['export'])
+                    <button id="language-export" type="button" @disabled(busy || dirty) @click(exportJson())>{{ __('admin.languages.export') }}</button>
+                @endif
+                @if(permissions['import'])
+                    <div class="sa-admin-form-field sa-admin-file-field">
+                        <label for="language-file">{{ __('admin.languages.file') }}</label>
+                        <input id="language-file" type="file" accept="application/json,.json" @disabled(busy) @change(loadFile($event))>
+                    </div>
+                    <button id="language-preview" type="button" @disabled(busy || fileName === '' || baseline === '') @click(previewJson())>{{ __('admin.languages.preview') }}</button>
+                @endif
+            </div>
+            <details class="sa-admin-help">
+                <summary>{{ __('admin.languages.import_options') }}</summary>
+                <p>{{ __('admin.languages.json_hint') }}</p>
+                <p>{{ __('admin.languages.defaults_hint') }}</p>
+                @if(permissions['import'])
+                    <div class="sa-admin-form-field">
+                        <label for="language-baseline">{{ __('admin.languages.baseline') }}</label>
+                        <input id="language-baseline" type="text" value="{{ baseline }}" @disabled(busy) @input(changeBaseline($event))>
+                    </div>
+                @endif
+            </details>
+            @if(preview)
+                <p class="sa-admin-preview-status"><span class="sa-admin-badge">{{ text(sprintf('admin.languages.status.%s', preview['status'])) }}</span> {{ preview['locale'] }} · {{ __('admin.languages.untranslated') }}: {{ preview['untranslated'].length }}</p>
+                <p class="sa-admin-muted">{{ __('admin.languages.preview_limit') }}</p>
+                <dl class="sa-admin-language-preview">
+                    @foreach(changes as change)
+                        @key(change['key'])
+                        <div><dt>{{ change['key'] }}</dt><dd>{{ change['value'] }}</dd></div>
+                    @endforeach
+                </dl>
+                <div class="sa-admin-form-actions">
+                    <button id="language-draft" type="button" @disabled(busy || dirty || preview['status'] === 'published') @click(apply(false))>{{ __('admin.languages.draft') }}</button>
+                    @if(permissions['publish'])
+                        <button id="language-publish" type="button" @disabled(!canPublish) @click(apply(true))>{{ __('admin.languages.publish') }}</button>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </section>
+    <details class="sa-admin-card sa-admin-history">
+        <summary>{{ __('admin.languages.recent') }} <span class="sa-admin-badge">{{ batches.length }}</span></summary>
+        <div class="sa-admin-history-list">
+            @foreach(batches as batch)
+                @key(batch['batch'])
+                <div class="sa-admin-history-item" title="{{ batch['batch'] }}">
+                    <span>{{ batch['locale'] }} · {{ text(sprintf('admin.languages.status.%s', batch['status'])) }}</span>
+                    @if(batch['kind'] === 'export')
+                        <button type="button" @disabled(busy || dirty) @click(useBaseline(batch['locale'], batch['batch']))>{{ __('admin.languages.use_baseline') }}</button>
+                    @elseif(permissions['import'])
+                        <button type="button" @disabled(busy || dirty) @click(openBatch(batch['batch']))>{{ __('admin.languages.open_preview') }}</button>
+                    @endif
+                </div>
+            @endforeach
+            @if(batches.length === 0)
+                <p class="sa-admin-empty">{{ __('admin.resource.empty') }}</p>
+            @endif
+        </div>
+    </details>
+</template>

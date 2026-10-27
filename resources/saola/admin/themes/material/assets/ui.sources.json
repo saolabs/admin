@@ -1,0 +1,86 @@
+{
+  "template": "Velzon Material",
+  "sourceDirectory": "admin-material",
+  "policy": "Markup/classes and existing packaged CSS; Saola owns state/events/lifecycle. No template-wide app.js or Bootstrap DOM plugins.",
+  "components": {
+    "button": {
+      "source": "ui-buttons.html",
+      "sha256": "d5fcc36a8e21496f2e337db82292bc569b7d0f9cc0c8a328eb0d18b20de8df19"
+    },
+    "card": {
+      "source": "ui-cards.html",
+      "sha256": "2ed3f55b3d4a457b360dc48d85947e1b66b580115f4c0c97676ef155ba577b3c"
+    },
+    "stat-card": {
+      "source": "widgets.html",
+      "sha256": "70a4e4fd6ab8e9ae716cfe865fd72fc7ab1a9e33526aa70f87bacf7bab125fd4"
+    },
+    "alert": {
+      "source": "ui-alerts.html",
+      "sha256": "0196dbf740cfc8e328e8b2bbfbf0cfca5654d670e898d4d4edbdb9e37ea53677"
+    },
+    "badge": {
+      "source": "ui-badges.html",
+      "sha256": "c6c0d459d2593fdf5ccda7d531a10394d17413e24aa1da4c0344324aff175a46"
+    },
+    "avatar": {
+      "source": "ui-images.html",
+      "sha256": "e8f338c22768b2173f1dfda164f21d2e334c7c27fa167d28a408f618eeb8de09"
+    },
+    "breadcrumb": {
+      "source": "ui-general.html",
+      "sha256": "e6638e3f3a04774f70d0c3872ca18b90fdd6bdbf9cc9891f8379da7a3d237231"
+    },
+    "list-group": {
+      "source": "ui-general.html",
+      "sha256": "e6638e3f3a04774f70d0c3872ca18b90fdd6bdbf9cc9891f8379da7a3d237231"
+    },
+    "progress": {
+      "source": "ui-progress.html",
+      "sha256": "ad078b73956e85966c1e9f3032502a95ec15f12b7f22d0b692ec7514449ecb7b"
+    },
+    "spinner": {
+      "source": "ui-notifications.html",
+      "sha256": "0d14984a4db8ea7d6947c4ad04d4bb34afcc13750c830f53bd7ce919c0b2f548"
+    },
+    "placeholder": {
+      "source": "ui-placeholders.html",
+      "sha256": "db99e40a412bbe8770d840f0bf48742a57a4b53fe95d1b8ed6c7f2ae9d3eec8d"
+    },
+    "empty-state": {
+      "source": "apps-ecommerce-products.html",
+      "sha256": "de768e5b82145b7319d60df82c7bda1b59fd9f692959391a97363a78f9d97c66"
+    },
+    "dropdown": {
+      "source": "ui-dropdowns.html",
+      "sha256": "a38dbfee46aea6f5a2055e4ec8b0cba5704e3d6e3bca5f055b152c287a6f9677"
+    },
+    "tabs": {
+      "source": "ui-tabs.html",
+      "sha256": "045bad21f282608dbfbab214cc6739f71402310d4dbfee9456c9f61b81089d39"
+    },
+    "accordion": {
+      "source": "ui-accordions.html",
+      "sha256": "805967ad78a32d336e3561db5b606132eb0b3bfff720e47d64def37e63a37a66"
+    },
+    "dialog": {
+      "source": "ui-modals.html",
+      "sha256": "7f8a9222e7c4dda5f75a343ce1935d468348165ac76a825d8c26369e8d598e18"
+    },
+    "toast": {
+      "source": "ui-notifications.html",
+      "sha256": "0d14984a4db8ea7d6947c4ad04d4bb34afcc13750c830f53bd7ce919c0b2f548"
+    },
+    "pagination": {
+      "source": "ui-general.html",
+      "sha256": "e6638e3f3a04774f70d0c3872ca18b90fdd6bdbf9cc9891f8379da7a3d237231"
+    }
+  },
+  "images": {
+    "img-3.jpg": "c334ab5afb2a886507f91ad751c800dc749090910fee9f5202d206f74e4fbe8e",
+    "img-2.jpg": "f05cbcbf7cc78b00b095532c01bbe4e7b37d2323da4e11f0415263f7e9469f6c",
+    "img-1.jpg": "c0f827fbf78e865191099f70c47a4b00655499d4b805b42322e053a73989f7ff",
+    "img-4.jpg": "d61a0809f01cbace661771d48a4a5fb7f4c83ec4c7b6ea6b107d1d78df4bdc00"
+  },
+  "imageDirectory": "vendor/material/images/small"
+}

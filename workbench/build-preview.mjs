@@ -3,6 +3,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
+import {adminThemeAssets} from '../resources/saola/admin/build/themes.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = fs.realpathSync(path.resolve(process.argv[2] || '/tmp/saola-admin-preview'));
@@ -19,22 +20,24 @@ fs.writeFileSync(path.join(root, 'resources/js/saola/admin/registry.js'), `${imp
 await new Builder().generateAppEntry(config.contexts.admin, root, config.paths, 'admin');
 await build({
     root, configFile: false, publicDir: false, base: '/static/saola/admin/', logLevel: 'warn',
+    plugins: [adminThemeAssets(root)],
     resolve: {alias: {'@saolabs/client': require.resolve('@saolabs/client'), '@sao': path.join(root, 'resources/saola')}},
     build: {outDir: 'public/static/saola/admin', emptyOutDir: true, manifest: 'manifest.json',
-        rollupOptions: {input: path.join(root, 'resources/js/saola/app.admin.js'), preserveEntrySignatures: 'exports-only'}},
+        rollupOptions: {input: [path.join(root, 'resources/js/saola/app.admin.js'), ...['classic', 'material'].map(theme => path.join(root, `resources/saola/admin/themes/${theme}/assets/css/admin.css`))], preserveEntrySignatures: 'exports-only'}},
 });
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public/static/saola/admin/manifest.json'), 'utf8'));
 const entry = manifest['resources/js/saola/app.admin.js'];
-if (!entry || !entry.css?.length) throw new Error('Admin build is missing its JavaScript or stylesheet');
+const themeCss = manifest['resources/saola/admin/themes/classic/assets/css/admin.css'];
+if (!entry || !themeCss?.file) throw new Error('Admin build is missing its JavaScript or stylesheet');
 for (const locale of ['en', 'vi']) {
-    for (const page of ['index', 'categories', 'settings', 'users']) {
+    for (const page of ['index', 'categories', 'settings', 'users', 'languages']) {
         const filename = path.join(root, `public/${page}-${locale}.html`);
         let html = fs.readFileSync(filename, 'utf8').replaceAll('http://localhost', origin);
         html = html.replaceAll('/static/saola/admin/js/app.admin.js', '/static/saola/admin/' + entry.file);
-        html = html.replace('</head>', entry.css.map(css => `<link rel="stylesheet" href="/static/saola/admin/${css}">`).join('\n') + '</head>');
+        html = html.replace('</head>', [themeCss.file].map(css => `<link rel="stylesheet" href="/static/saola/admin/${css}">`).join('\n') + '</head>');
         fs.writeFileSync(filename, html);
     }
-    for (const kind of ['page', 'categories', 'dictionary', 'settings-page', 'users-page']) {
+    for (const kind of ['page', 'categories', 'dictionary', 'settings-page', 'users-page', 'languages-page']) {
         const json = path.join(root, `${kind}-${locale}.json`);
         fs.writeFileSync(json, JSON.stringify(JSON.parse(fs.readFileSync(json, 'utf8'))).replaceAll('http://localhost', origin));
     }

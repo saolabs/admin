@@ -1,16 +1,22 @@
 # Inventory tài nguyên frontend admin
 
-Ngày kiểm: 24/10/2026. Phạm vi bản source `0.1.0-alpha.1`, contract 1.
+Source sau alpha.1, contract 1. Cấu trúc theme và nguồn thuộc gói `saola/admin`; xem [THEMES](THEMES.md).
 
-| Tài nguyên trong resources/saola/admin | Nguồn | Phụ thuộc runtime/build |
-| --- | --- | --- |
-| assets/css/admin.css | CSS nguyên bản của package; token, sidebar/header/table/responsive | Vite xử lý import CSS và URL ảnh tương đối |
-| assets/images/mark.svg | SVG hình học nguyên bản | Được CSS tham chiếu, Vite có thể inline hoặc hash |
-| app/bundle.ts | Service AdminUI nguyên bản, import runtime host | @saolabs/client của host; không vendor thêm runtime |
-| app/settings-form.ts | State draft/request nguyên bản, view sở hữu instance | Web fetch/AbortController; không giữ state actor trong singleton |
-| views/**/*.sao | Shell/resource/settings/head nguyên bản | Compiler Saola + document host |
-| Font, icon library, plugin/demo JS | Không đóng gói | Font hệ thống; không tải CDN |
+| Thành phần trong resources/saola/admin | Nguồn và vai trò |
+| --- | --- |
+| app/ | Bootstrap/bridge giữ tích hợp host; không import skin |
+| app/ | AdminUI (`App.Admin`) và state/request/guard dùng chung cho form, CRUD, ngôn ngữ và media |
+| themes/classic/app, views, assets | Giao diện nguyên bản trước khi tách theme, được giữ đầy đủ |
+| themes/material/app, views | Template Material chuyển thành `.sao`, dùng các class Bootstrap/Velzon có sẵn và contract state chung |
+| themes/material/assets/vendor/material/css | CSS Bootstrap 5.3.6, Velzon Material và icon library từ distribution admin-material được cung cấp |
+| themes/material/assets/vendor/material/fonts | Font icon được các stylesheet vendor tham chiếu, đóng gói local |
+| themes/material/assets/vendor/material/images | Ảnh local còn được stylesheet vendor tham chiếu |
+| themes/material/assets/vendor/material/SOURCE.json | Hash upstream/packaged và các biến đổi chuẩn bị asset |
+| themes/*/theme.manifest.json | Tên theme, contract, view context và các entry trong theme |
+| build/themes.mjs | Helper lấy CSS input riêng của từng theme từ manifest |
 
-`admin-html-template/html/material/pages-starter.html` được tham khảo cách chia sidebar/topbar/content. Checkout là bản mirror Velzon/Themesbrand; chưa có bằng chứng license phân phối lại CSS/font/plugin/ảnh template trong package. Vì vậy source hiện tại chỉ dùng phần viết mới trong bảng, không chép asset template. Nếu đưa asset template vào sau này phải cập nhật inventory và căn cứ quyền phân phối trước publish release.
+CSS vendor được giữ nguyên hệ component. Bỏ Google Fonts network imports, source-map comments, các font hkgrotesk và URL ảnh trang trí bị thiếu trong bản mirror; font hệ thống làm fallback. Không thêm ảnh giả thay thế. Dùng font icon đóng gói local; không chạy app.js/layout.js/demo plugin của template vì chúng quản lý document và sessionStorage bên ngoài lifecycle Saola. Không đưa ảnh avatar/cờ hay dữ liệu demo vào host.
 
-Source phải đi cùng manifest; publish cây này sang đúng root admin, build ra public/static/saola/admin. Không đặt tài nguyên admin vào resources/css hoặc resources/js dùng chung. File ngôn ngữ backend là nguồn PHP theo locale và không thuộc asset pipeline.
+CSS adapter Material chỉ bố trí widget đặc thù và nối trạng thái Saola vào class của distribution; không import CSS Classic. Build hai CSS entry riêng và chọn theo theme. Cập nhật source ở package rồi publish; toàn bộ frontend vẫn dưới root resources/saola/admin. Lang backend và media do người dùng upload vẫn là dữ liệu độc lập, không thuộc cây asset theme.
+
+Distribution Material là tài nguyên bên thứ ba do người dùng cung cấp, không phải phần CSS/SVG nguyên bản theo license của code package. SOURCE.json giữ provenance; việc kiểm thử Composer archive cục bộ không phải một lần phát hành công khai.

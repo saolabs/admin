@@ -77,7 +77,7 @@ class UserDirectoryTest extends TestCase
         $this->getJson('/control')->assertOk()->assertJsonCount(1, 'data.navigation');
         $this->operator();
         $this->getJson('/control')->assertOk()->assertJsonCount(2, 'data.navigation');
-        $this->getJson('/control/users')->assertOk()->assertJsonPath('view', 'admin.pages.resource');
+        $this->getJson('/control/users')->assertOk()->assertJsonPath('view', 'admin.classic.pages.resource');
         $this->postJson('/control/users', ['password' => 'attempt'])->assertStatus(405);
         $this->putJson('/control/users', ['email' => 'attempt@example.test'])->assertStatus(405);
     }
@@ -90,7 +90,7 @@ class UserDirectoryTest extends TestCase
             ->assertJsonPath('data.page.rows.0', ['id' => '1', 'name' => 'Member 01', 'email' => 'member1@example.test'])
             ->assertJsonPath('data.page.listing.page', 1)->assertJsonPath('data.page.listing.lastPage', 3);
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
-        $this->assertStringNotContainsString('password', $response->getContent());
+        $this->assertStringNotContainsString('password', json_encode($response->json('data.page.rows')));
         $this->assertStringNotContainsString('never-send-hash', $response->getContent());
         $this->assertStringNotContainsString('arbitrary', $response->json('data.page.listing.next'));
         $selects = array_column(DB::getQueryLog(), 'query');

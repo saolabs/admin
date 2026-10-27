@@ -1,0 +1,19 @@
+<script setup lang="ts">
+    import type {UiListGroup} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiListGroup> = {})
+</script>
+
+<template>
+    <ul class="list-group {{ (data['flush'] ?? false) ? 'list-group-flush' : '' }} {{ (data['numbered'] ?? false) ? 'list-group-numbered' : '' }}">
+        @foreach(data['items'] ?? [] as item)
+            @key(item['id'])
+            <li class="list-group-item {{ (item['active'] ?? false) ? 'active' : '' }} {{ (item['disabled'] ?? false) ? 'disabled' : '' }}" aria-current="{{ (item['active'] ?? false) ? 'true' : 'false' }}">
+                @if((item['icon'] ?? '') !== '')<i class="{{ item['icon'] }} align-middle me-2" aria-hidden="true"></i>@endif
+                {{ item['label'] }}
+                @if((item['badge'] ?? '') !== '')<span class="badge bg-primary rounded-pill float-end">{{ item['badge'] }}</span>@endif
+                @if((item['text'] ?? '') !== '')<p class="mb-0 text-muted">{{ item['text'] }}</p>@endif
+            </li>
+        @endforeach
+    </ul>
+</template>

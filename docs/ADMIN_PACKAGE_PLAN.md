@@ -1,5 +1,7 @@
 # Kế hoạch phát triển và đóng gói saola/admin
 
+Cập nhật 26/10: [theme nguồn thuộc gói admin](THEMES.md) đã triển khai tại `admin/{theme}/`, giữ Classic và bổ sung Material. Phần theme management/marketplace trong kế hoạch này tiếp tục là phạm vi riêng; không áp giới hạn “chỉ token, chưa tách theme” của thiết kế trước đó cho source hiện tại.
+
 Ngày: **24/10/2026**. Trạng thái: **đã có shell/read-only renderer, installer/publisher/doctor, nền lang và Settings schema/DB/API/form; CRUD User/role và editor lang còn theo kế hoạch**. Xem [thiết kế lang](LANGUAGE_SYSTEM_PLAN.md) cho API/CLI và trạng thái tích hợp.
 
 Mục tiêu là một gói quản trị nền tảng: **quản lý người dùng, phân quyền, thiết lập website**, dùng được cho nhiều loại ứng dụng Saola/Laravel. Chức năng chuyên ngành do ứng dụng hoặc package mở rộng cung cấp. Bộ HTML tại `admin-html-template` là nguồn dựng giao diện; `m-ai` và `ai-services` chỉ là nguồn tham khảo nhu cầu/cách sử dụng.
@@ -21,7 +23,7 @@ Tài liệu này tiếp nối đề xuất admin/CRUD ngày 18/10 trong workspac
 | Theo dõi thay đổi cơ bản | Audit thay đổi User/role/settings, người thực hiện, thời điểm, đối tượng | API/trang danh sách chỉ đọc, có giới hạn lưu; không phải observability hoặc analytics suite |
 | Đóng gói | Cài đặt/doctor, migration có chủ đích, source views/client/assets được publish có kiểm soát, translations có override, test app sạch | Không phụ thuộc thư mục sibling hoặc source template ở máy tác giả khi cài package |
 
-Bản đầu không gồm CMS bài viết, commerce, ví/thanh toán, bộ quản trị AI/provider tổng quát, media library đầy đủ, theme marketplace, email campaign, workflow, báo cáo nâng cao, đa tenant/multi-panel hoàn chỉnh hoặc impersonation. Theo yêu cầu cập nhật, quản lý ngôn ngữ/bản dịch trong DB và JSON tổng xuất/nhập thuộc gói nền; AI dịch là job qua adapter, không kéo toàn bộ hệ AI vào admin. Upload nhỏ cho logo là primitive của Settings, không kéo theo file manager.
+Bản đầu không gồm CMS bài viết, commerce, ví/thanh toán, bộ quản trị AI/provider tổng quát, biên tập/chuyển mã media nâng cao, theme marketplace, email campaign, workflow, báo cáo nâng cao, đa tenant/multi-panel hoàn chỉnh hoặc impersonation. Theo yêu cầu cập nhật, quản lý ngôn ngữ/bản dịch trong DB và JSON tổng xuất/nhập thuộc gói nền; AI dịch là job qua adapter, không kéo toàn bộ hệ AI vào admin. Yêu cầu ngày 25/10 bổ sung thư viện media dùng chung và picker cho Settings/module/theme; không đưa filesystem explorer của hệ cũ vào admin. Xem [MEDIA_LIBRARY](MEDIA_LIBRARY.md).
 
 “Dùng cho mọi loại web” nghĩa là không gắn với nghiệp vụ AI/blog/shop: host vẫn phải có Laravel/Saola và đáp ứng contract tích hợp. Không hứa cài nguyên package PHP vào nền tảng ngoài Laravel. Hỗ trợ DB theo ma trận kiểm thử §13; không phụ thuộc Postgres-only như kế hoạch Agent Store.
 
@@ -31,7 +33,7 @@ Bản đầu không gồm CMS bài viết, commerce, ví/thanh toán, bộ quả
 
 | Nguồn | Xác nhận | Hệ quả thiết kế |
 | --- | --- | --- |
-| `admin/` | Shell/read-only renderer, source install/publish/doctor, lang DB/JSON/dictionary; Settings schema/DB/API/form có revision | CRUD User/role, settings upload/audit, UI dịch/AI còn thiếu; alpha đã có trên Packagist |
+| `admin/` | Shell/read-only renderer, source install/publish/doctor, lang DB/JSON/dictionary; Settings schema/DB/API/form có revision | Source mới có Settings chia nhóm, quản lý ngôn ngữ và thư viện media/picker; CRUD User/role, audit và AI còn thiếu; tag alpha.1 đã có trên Packagist |
 | `permission/composer.json`, `permission/README.md`, `src/PermissionServiceProvider.php` | Package quyền riêng đã có: role, grant, middleware, Gate, cache, catalog/route matrix, `canRoute`/`#permission` | Admin cung cấp UI và action quản trị; thao tác cấp quyền đi qua API package để giữ invalidation |
 | `core/src/core/Routing/Permission.php` | Enum ACCESS, READ, CREATE, UPDATE, DELETE, RESTORE, FORCE_DELETE, EXTRA; string permission tự do bị từ chối | Không dùng thiết kế capability string `users.update` của đề xuất 18/10 làm storage contract mới |
 | `saola/app/Modules/User/Models/User.php`, `saola/docs/USER_MODULE.md` | Starter có một User model trong module, kế thừa core Authenticatable | Default adapter hỗ trợ model starter, không di chuyển User vào package |
@@ -214,7 +216,7 @@ Mỗi update gửi `expected_revision`; compare-and-swap trong transaction, 409 
 
 Cache theo group + revision, nếu resolve theo locale thì thêm locale; invalidate sau commit, không giữ actor/locale/value riêng từng request trong singleton của worker. Update transaction và audit cùng connection; nếu adapter settings dùng store ngoài DB, phải công bố cơ chế audit/atomicity khác trước khi bật ghi.
 
-Public reader chỉ xuất allowlist giá trị public theo locale/fallback; không gửi cả bảng settings vào bootstrap. Logo/favicon upload kiểm quyền group, dung lượng/MIME thật, tên/path do server đặt; SVG chưa bật nếu chưa có sanitizer. File upload tạm có vòng đời dọn/attach rõ; lưu DB lỗi không được xóa file đang dùng của phiên bản trước. Đây là upload primitive, không cần package media library ở đợt đầu.
+Public reader chỉ xuất allowlist giá trị public theo locale/fallback; không gửi cả bảng settings vào bootstrap. Logo/favicon upload kiểm quyền group, dung lượng/MIME thật, tên/path do server đặt; SVG chưa bật nếu chưa có sanitizer. Thư viện lưu media độc lập trước khi gắn vào Settings; hủy chọn không xóa tệp đã tải lên để chức năng khác còn dùng được. DB insert lỗi gỡ bytes mới; thay/xóa lựa chọn không xóa file đang dùng. Thùng rác giữ liên kết, chưa có purge hoặc bảng tracking sử dụng.
 
 ### 7.3. Đối chiếu thiết lập và nội dung đa ngôn ngữ của ai-services
 
@@ -521,3 +523,29 @@ Không cần quyết định mọi package chuyên sâu trước khi bắt đầ
 Mốc alpha: [RELEASE](../RELEASE.md) chốt core 2.4.0, compiler 3.0.0 và frontend GitHub tags. Các mô tả release còn thiếu phía trên là bối cảnh kế hoạch; chỉ phạm vi alpha trong release notes được công bố.
 
 Đã kiểm consumer cài trực tiếp saola/admin 0.1.0-alpha.1 từ Packagist, không custom repository; xem [bằng chứng release](RELEASE_VERIFICATION.md).
+
+### Cập nhật triển khai sau alpha.1 — quản lý ngôn ngữ
+
+Source mới có P1a ở mức locale metadata/default UI/fallback/content trong DB, UI export JSON tổng/upload nguyên văn/preview/draft/publish, capabilities riêng, batch gắn actor và session choice; P1b giữ parity SSR/client và dirty guard. Đã kiểm admin 54 test (505 assertions) trên Laravel 12/13 với PHP 8.5, client 568 test và typecheck, build với package frontend đã pin, live Laravel HTTP và ZIP source publish idempotent 15 file. Xem [LANGUAGE_MANAGEMENT](LANGUAGE_MANAGEMENT.md). Editor từng key/AI/audit/account preference, CRUD User/role và các cổng DB/mobile/theme còn tiếp tục. Đây là source chưa phát hành, không thay phạm vi tag alpha.1.
+
+### Cập nhật 25/10/2026 — Settings và media dùng chung
+
+Source có 5 nhóm Settings trong 2 cụm Website/Hệ thống, cấu hình vận hành duy nhất không theo lang, và [thư viện media](MEDIA_LIBRARY.md) cho upload/lọc/tìm kiếm/metadata/CAS/thùng rác/khôi phục. Picker cùng renderer dùng cho logo/favicon/ảnh SEO và module/theme khác. Tệp công khai dùng UUID/URL ổn định, scope tenant có adapter, không trộn storage vào source/build, không tự cấp Gate. Media delivery độc lập trạng thái panel. Nguồn frontend hiện 18 authored files, vẫn cùng root admin. Đã kiểm 67 PHP tests/678 assertions trên Laravel 12/PHP 8.5, 576 client tests gồm strict TS và SSR picker → Settings CAS; HTTP sống có multipart CSRF, dữ liệu tạm và desktop/mobile. Composer validate/archive inventory và publish idempotent đạt. Đây là source chưa phát hành; chưa thay tag alpha.1, chưa có crop/resize/CDN/purge hay chứng nhận S3/MySQL/PostgreSQL thực.
+
+### Cập nhật submenu/tab ngang — 25/10/2026
+
+Settings category đi vào submenu sidebar, các group cùng category là tab ngang trên form; bỏ cột dọc cạnh menu và nút mobile mở nhóm cũ. GroupedPage hỗ trợ module gom child pages đã lọc quyền, không hiện parent rỗng. SSR/project navigation có children/active/open; client giữ disclosure và cập nhật active theo lifecycle kể cả cache resume. Tests có scope quyền category/child, SSR, mở/đóng submenu, đổi cụm và quay lại cache, dirty guard khi đổi tab. Tab quá dài cuộn trong thanh tab; nội dung dùng hết chiều rộng. Lượt này local browser bị tắt trong Work settings, nên kiểm UI bằng SSR/hydrate, strict TS và HTTP; chưa nghiệm thu trực quan lại bằng browser.
+
+### Nghiệm thu hover/sidebar icon rail — 25/10/2026
+
+Đã dùng cửa sổ browser native để preview template và admin, bổ sung icon mọi mục, active cha/con, nút thu gọn desktop, rail 72px giữ preference, flyout hover/focus/Escape và mobile backdrop. Header 60px với account block cùng chiều cao. Bổ sung hồi quy SSR/hydrate, desktop compact/mobile overlay, hover/focus và active sau cache; đây là source chưa phát hành, tài nguyên vẫn cô lập trong admin.
+
+### Tích hợp host thật — 25/10/2026
+
+Đã bắt đầu P6 theo [lượt tích hợp Gehihi](../../gehihi-app/docs/ADMIN_INTEGRATION.md): shell `/control`, Settings/lang/media và directory chỉ đọc dùng model UUID/Gate/PostgreSQL của project. Page thống kê do Gehihi định nghĩa bằng ResourceDocument; package bổ sung `panel.home_page` có mặc định tương thích và vẫn kiểm quyền. `/admin` giữ các nghiệp vụ AI cũ để chuyển từng phần; chưa coi P2 mutation/P3 hoặc toàn bộ P6 là hoàn tất. [Ranh giới hệ sinh thái](../../docs/ADMIN_PROJECT_BOUNDARY.md) quy định thay đổi nào quay về package, thay đổi nào giữ ở host. Dependency hiện là source local có copy vendor; chưa release/deploy.
+
+### Resource quản lý dùng chung — 26/10/2026
+
+Đã triển khai [Resource](RESOURCES.md) khai báo PHP cho list/search/sort/pagination, create/edit, soft delete/trash/restore, bulk nguyên tử và purge opt-in. Server kiểm scope/Policy/field abilities, allowlist, validation, revision HMAC/audit sequence và receipt create idempotent. Client giữ draft/guard, không serialize password, tải lại list sau ghi và reset form khi quay lại. Page/ResourceDocument cũ giữ chế độ chỉ đọc; không biến schema trình bày thành lệnh ghi.
+
+Gehihi đã chuyển User sang Resource bằng model UUID/SoftDeletes/Policy của host, không thêm `.sao`; giữ workspace khi restore, chặn xóa admin/tự xóa và nâng quyền qua fields. Package cung cấp renderer/controller/store/audit chung, project giữ identity rules và grants. Package đạt 79 PHP tests/835 assertions, Gehihi PostgreSQL 78 tests/660 assertions; client 581 tests và typecheck. Có hồi quy SSR create/edit cùng CSR/cache/reset/hủy form, invalid ID trả 404. Browser thật đã kiểm list/thùng rác/form, mở trực tiếp và SPA, guard và bỏ nháp; chưa thao tác ghi user thật trên browser. Chưa hoàn tất role assignment, mọi workflow/module, nhiều kết nối DB tranh chấp hoặc toàn bộ P2/P3/P6. Source vẫn chưa phát hành.

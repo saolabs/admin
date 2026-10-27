@@ -1,0 +1,105 @@
+<script setup lang="ts">
+    @vars(editor: any = {})
+    @state(fields: any[] = editor['fields'], busy: boolean = false, dirty: boolean = false, canSave: boolean = false, canUpdate: boolean = editor['canUpdate'], notice: string = '', noticeKind: string = 'error', errors: any = {}, mediaOpen: boolean = false, fieldEpoch: number = 0)
+
+    const {selectMedia, closeMedia} = App.Admin.controllers.settings($view, () => ({editor}));
+</script>
+
+<template>
+    <div class="sa-admin-settings-layout">
+    @if(editor['tabs'].length > 1)
+        <nav id="settings-group-navigation" class="sa-admin-settings-tabs" aria-label="{{ __('admin.settings.groups') }}">
+            @foreach(editor['tabs'] as group)
+                @key(group['key'])
+                <a href="{{ group['url'] }}" @class({'is-active': group['key'] === editor['group']}) aria-current="{{ group['key'] === editor['group'] ? 'page' : 'false' }}">{{ text(group['titleKey']) }}</a>
+            @endforeach
+        </nav>
+    @endif
+    <section class="sa-admin-card">
+        <form data-settings-group="{{ editor['group'] }}" action="{{ editor['endpoint'] }}" method="post" @submit.prevent(save())>
+            <input type="hidden" name="_token" value="{{ editor['csrfToken'] }}">
+            <input type="hidden" name="_method" value="PUT">
+            @if(editor['localizedGroup'])
+            <div class="sa-admin-form-toolbar">
+                <label for="settings-content-locale">{{ __('admin.settings.content_locale') }}</label>
+                <select id="settings-content-locale" @disabled(busy) @change(changeContentLocale($event))>
+                    @foreach(editor['document']['contentLocales'] as code)
+                        <option value="{{ code }}" @selected(code === editor['contentLocale'])>{{ code }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @else
+                <div class="sa-admin-form-toolbar"><span class="sa-admin-muted">{{ __('admin.settings.shared') }}</span></div>
+            @endif
+            @if(notice !== '')
+                <p id="settings-notice" tabindex="-1" data-kind="{{ noticeKind }}" class="sa-admin-alert" role="status">{{ text(notice) }}</p>
+            @endif
+            @if(!canUpdate)
+                <p class="sa-admin-empty">{{ __('admin.settings.read_only') }}</p>
+            @endif
+            @foreach([fieldEpoch] as epoch)
+            @key(epoch)
+            <fieldset class="sa-admin-form-fieldset" @disabled(busy || !canUpdate)>
+                <legend class="sa-admin-visually-hidden">{{ text(editor['titleKey']) }}</legend>
+                <div class="sa-admin-form-fields sa-admin-settings-fields">
+                @foreach(fields as field)
+                    @key(field['key'])
+                    <div @class({'sa-admin-form-field', 'sa-admin-field-wide': field['type'] === 'textarea'})>
+                        <label for="setting-{{ field['key'] }}">{{ text(field['labelKey']) }}
+                            @if(editor['localizedGroup'] && !field['localized'])
+                                <span class="sa-admin-field-scope">{{ __('admin.settings.shared_short') }}</span>
+                            @endif
+                        </label>
+                        @if(field['media'] && editor['mediaEditor'])
+                            <div class="sa-admin-media-field">
+                                @if(field['value'] !== '')
+                                    <img class="sa-admin-media-field-preview" src="{{ field['value'] }}" alt="{{ text(field['labelKey']) }}">
+                                @endif
+                                <input id="setting-{{ field['key'] }}" type="text" readonly value="{{ field['value'] }}" aria-label="{{ text(field['labelKey']) }}">
+                                <div class="sa-admin-media-field-actions">
+                                    <button type="button" @click(openMedia(field['key']))>{{ __('admin.media.choose') }}</button>
+                                    <button type="button" @disabled(field['value'] === '') @click(clearMedia(field['key']))>{{ __('admin.media.remove') }}</button>
+                                </div>
+                            </div>
+                        @elseif(field['type'] === 'boolean')
+                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="checkbox" aria-describedby="error-{{ field['key'] }}" @checked(field['value'] === true) @change(changeCheckbox(field['key'], $event))>
+                        @elseif(field['type'] === 'textarea')
+                            <textarea id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" rows="3" maxlength="{{ field['maxLength'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>{{ field['value'] }}</textarea>
+                        @elseif(field['type'] === 'select')
+                            <select id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" aria-describedby="error-{{ field['key'] }}" @change(changeText(field['key'], $event))>
+                                @foreach(field['options'] as option)
+                                    <option value="{{ option['value'] }}" @selected(option['value'] === field['value'])>{{ option['label'] }}</option>
+                                @endforeach
+                            </select>
+                        @elseif(field['type'] === 'integer')
+                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="number" step="1" min="{{ field['min'] }}" max="{{ field['max'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeNumber(field['key'], $event))>
+                        @else
+                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="text" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
+                        @endif
+                        <small id="hint-{{ field['key'] }}">
+                            @if(field['localized'] && !field['present'] && field['value'] !== '')
+                                {{ __('admin.settings.fallback') }}
+                            @endif
+                        </small>
+                        @if(errors[field['key']] ?? '')
+                            <p id="error-{{ field['key'] }}" class="sa-admin-field-error" role="alert">{{ text(errors[field['key']]) }}</p>
+                        @endif
+                    </div>
+                @endforeach
+                </div>
+            </fieldset>
+            @endforeach
+            <div class="sa-admin-form-actions">
+                <button id="settings-save" type="submit" @disabled(!canSave)>{{ busy ? text('admin.settings.saving') : text('admin.settings.save') }}</button>
+                <button id="settings-discard" type="button" @disabled(busy || !dirty) @click(discard())>{{ __('admin.settings.discard') }}</button>
+                <button id="settings-reload" type="button" @disabled(busy || dirty) @click(reload())>{{ __('admin.settings.reload') }}</button>
+            </div>
+        </form>
+    </section>
+    </div>
+    @if(mediaOpen)
+        <div class="sa-admin-media-overlay">
+            @include(__base__ + 'components.media-library', {editor: editor['mediaEditor'], picker: true, imageOnly: true, onSelect: selectMedia, onClose: closeMedia})
+        </div>
+    @endif
+</template>

@@ -50,7 +50,7 @@ class SettingsTest extends TestCase
         Gate::define('view-site-settings', fn () => true);
         $this->getJson('/control/settings/general')->assertOk()->assertJsonPath('canUpdate', false)
             ->assertJsonPath('schema.fields.website_name.localized', true)->assertJsonPath('data.revision', 0);
-        $this->assertSame(['website_name' => config('app.name'), 'description' => ''],
+        $this->assertSame(['website_name' => config('app.name'), 'description' => '', 'tagline' => '', 'website_url' => '', 'copyright' => ''],
             $this->app->make(SettingsStore::class)->values($group, 'vi', true));
         $this->putJson('/control/settings/general', ['revision' => 0, 'patch' => ['values' => ['contact' => 'private']]])->assertForbidden();
     }

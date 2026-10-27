@@ -1,5 +1,7 @@
 # Danh sách user của host
 
+**Cập nhật 26/10/2026:** directory dưới đây giữ tương thích chế độ chỉ đọc của alpha.1. Để có thêm/sửa/xóa mềm/thùng rác/khôi phục, dùng [Resource dùng chung](RESOURCES.md) với User model, Policy và service của project. Gehihi đã tích hợp theo cách này, không viết view user riêng. Khi đăng ký Resource key `users`, để `users.enabled=false` để tránh trùng Page. Package không tự sửa bảng User; SoftDeletes/migration/password/session/role thuộc host.
+
 Mốc 24/10/2026: đã có directory **chỉ đọc**, tìm kiếm/phân trang/sắp xếp qua renderer chung. Chưa có create/update, đổi password, trạng thái tài khoản, role assignment hoặc user detail. Không tạo User model/table thứ hai và không thay auth của host.
 
 ## Bật có chủ đích

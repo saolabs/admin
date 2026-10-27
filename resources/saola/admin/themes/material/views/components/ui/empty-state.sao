@@ -1,0 +1,13 @@
+<script setup lang="ts">
+    import type {UiEmptyState} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiEmptyState> = {})
+</script>
+
+<template>
+    <div class="text-center p-4">
+        @if((data['icon'] ?? '') !== '')<div class="avatar-lg mx-auto mb-4"><div class="avatar-title bg-light text-primary rounded-circle fs-36"><i class="{{ data['icon'] }}" aria-hidden="true"></i></div></div>@endif
+        <h5>{{ data['title'] ?? '' }}</h5><p class="text-muted">{{ data['text'] ?? '' }}</p>
+        @if(data['action'] ?? null)@include(__base__ + 'components.ui.button', {data: data['action'], on$action: (id, event) => $view.emit('action', id, event)})@endif
+    </div>
+</template>

@@ -1,6 +1,22 @@
 # Cài đặt và nâng cấp source admin
 
+Source hiện tại đã tách giao diện thành `admin/themes/{theme-name}/` trong **gói admin**. [Contract theme, build và đường nâng cấp](THEMES.md) là hướng dẫn hiện hành cho vị trí file, view context và CSS. Các mô tả skin nguyên bản/đường dẫn phẳng bên dưới là lịch sử của theme Classic trước lần tách này.
+
+## Chế độ nguồn gói — P4 chưa phát hành
+
+Với bộ core/client/builder/admin có P4, project mới không cần `admin:install` để chép nguồn frontend. Composer metadata `extra.saola.contexts.admin` trỏ tới `context.manifest.json`; builder tự nhận view, bundle, CSS, kiểu và theme từ gói đã cài. `sao.config.json` chỉ cần `contexts.admin: {}` nếu không đổi các mặc định. Các bước auth/Policy, Resource, migration và sync lang vẫn thực hiện tường minh như bên dưới.
+
+Dùng Vite với plugin `@saolabs/builder/vite` chọn context `admin`. Plugin tự thêm entry/CSS/alias và manifest; chạy `sao-compile admin` trước typecheck, rồi `vite build`. TypeScript có thể extends `resources/js/saola/tsconfig.contexts.json`; giữ các alias context cụ thể nếu project khai lại `compilerOptions.paths`. Nguồn hiệu lực dưới `resources/js/saola/_sources/admin` là output sinh ra, không phải nơi tùy biến.
+
+Project thêm service/provider trong `resources/saola/admin/app/bootstrap.ts`, và override từng view/asset tại cùng đường dẫn tương đối trong `resources/saola/admin/themes/{name}`. Không cần import hoặc spread bundle riêng của gói trong bootstrap mới. Theme project có `theme.manifest.json` được phát hiện tự động. Server chọn theme qua `panel.theme` và chia sẻ lựa chọn theo request; client tải chunk của theme đó trước hydrate. Core mới phân giải CSS qua metadata build, `admin:doctor` nhận diện chế độ không publish.
+
+Host đã có `.publish-state.json` tiếp tục dùng publisher. Muốn chuyển, trước hết đối chiếu bản đã publish và giữ riêng những thay đổi có chủ đích, rồi đặt `contexts.admin.source: "package"`; không xóa customization tự động. `source: "published"` giữ đường cũ. Cần nâng bộ phiên bản đã kiểm cùng nhau; các tag alpha cũ không tự có P4. Nghiệm thu cài từ registry và trình duyệt trên project sạch vẫn thuộc cổng phát hành.
+
 Cập nhật 24/10/2026. Đây là hướng dẫn tích hợp alpha `0.1.0-alpha.1`; phạm vi và các phiên bản đi cùng được ghi ở [RELEASE](../RELEASE.md). Core cần `BundleManifest` hỗ trợ CSS theo context; compiler cần hạ `__()` sang `text()` và giữ props runtime của `@extends`; client cần scoped dictionary, `changeLanguage` và `Router.addNavigationGuard` cho form. Alpha yêu cầu core ^2.4, compiler ^3.0 cho build; client v1.3.0 và builder v1.2.0 được lấy từ GitHub tags đã kiểm, chưa tuyên bố có trên npm registry.
+
+Source sau alpha.1 bổ sung [màn hình Ngôn ngữ và mặc định DB](LANGUAGE_MANAGEMENT.md), chưa có trong tag alpha.1. Khi nâng lên bản có tính năng này cần migrate schema bổ sung, publish/build source và sync nhãn mới; cấu hình quyền riêng theo tài liệu.
+
+Source ngày 26/10 có [Resource list/form/thùng rác](RESOURCES.md). Đăng ký class Resource tại `panel.pages`, model/Policy/scope/migration của host; chạy migration package `create_resource_events`, publish/build và sync lang mới. Store Eloquent mặc định dùng connection mặc định cùng audit. `admin:doctor` kiểm renderer manager, schema/table/SoftDeletes và audit cho Resource đã đăng ký. Thêm Resource không cần chép controller hay view.
 
 Xem [NAMING.md](NAMING.md) cho tên view/client/bảng, prefix tùy chọn và nâng cấp từ source cũ.
 
@@ -35,7 +51,7 @@ php artisan admin:lang:sync
 ```text
 vendor/saola/admin/resources/saola/admin/
 resources/saola/admin/
-  admin.manifest.json
+  context.manifest.json
   app/bootstrap.ts
   app/bundle.ts
   views/{pages,layouts,components,partials}/
@@ -111,6 +127,20 @@ SAOLA_ADMIN_PREVIEW_DIR="$admin_preview_root" php -S 127.0.0.1:8769 -t "$admin_p
 python3 workbench/check-http.py
 ```
 
-Preview `http://127.0.0.1:8769/control/settings?locale=vi&content_locale=vi` chạy Laravel với SQLite export tạm của test và source admin đã publish/build. Operator giả được gán sẵn **chỉ trong workbench**, không có login production; chỉ bind loopback, không đưa router này lên host/deploy. Không đọc .env/DB của project. Lệnh check-http tạo dữ liệu test trong group general của SQLite tạm; mỗi lượt export phải dùng thư mục tạm mới/rỗng; exporter từ chối trộn source, registry hoặc DB của lượt cũ. Test client còn hydrate HTML SSR và kiểm form/locale/guard/TypeScript; không thay thế kiểm browser/mobile trên host triển khai. Hiện browser use bị tắt trong Work nên chưa kiểm UI trực tiếp lượt mới.
+Preview `http://127.0.0.1:8769/control/settings?locale=vi&content_locale=vi` chạy Laravel với SQLite export tạm của test và source admin đã publish/build. Operator giả được gán sẵn **chỉ trong workbench**, không có login production; chỉ bind loopback, không đưa router này lên host/deploy. Không đọc .env/DB của project. Lệnh check-http tạo dữ liệu Settings, locale Nhật và batch xuất/nhập trong SQLite tạm, khôi phục ba mặc định ban đầu; mỗi lượt export phải dùng thư mục tạm mới/rỗng; exporter từ chối trộn source, registry hoặc DB của lượt cũ. Test client còn hydrate HTML SSR và kiểm form/locale/guard/TypeScript; không thay thế kiểm browser/mobile trên host triển khai. Hiện browser use bị tắt trong Work nên chưa kiểm UI trực tiếp lượt mới.
 
 Tests dùng Composer dependencies của chính admin; compiler và host fixture được khai báo/đóng gói để không cần sibling checkout. Workbench build dùng client/builder từ tag GitHub và Vite đã cài. CI kiểm Laravel 12/13, PHP 8.3/8.5, SQLite, source publish/compile/build/HTTP và Composer ZIP giải nén/publish lại. Fixture không thay thế kiểm auth, query scope, theme, mobile hay concurrency MySQL/Postgres của host triển khai.
+
+## Media library — source 25/10/2026
+
+Trang `pages.media` và component `components.media-library` dùng chung cho quản lý/picker. Migrate bảng `saola_media`, chọn filesystem disk và cấp riêng Gate view/upload/update/delete-media; không cấp tự động. Publish/build admin trước khi mở. Logo/favicon/SEO khai báo `media:true` trên field URL, giữ contract URL đã lưu. Xem [Media library](MEDIA_LIBRARY.md) về scope tenant, tệp công khai, CSRF/CAS và thùng rác giữ liên kết.
+
+## Cấu hình tài khoản trên header
+
+Source 25/10 thêm dropdown ngôn ngữ và tài khoản. Sau publish/build và sync nhãn, header tự đọc user của panel guard; avatar/subtitle cùng route hồ sơ/thiết lập tài khoản/đăng xuất ánh xạ tại `saola-admin.account`. Route mặc định null, chỉ hiện khi host cung cấp đúng method/URL; logout yêu cầu POST/DELETE và CSRF. Không tự thay auth của website. Xem [hợp đồng header](UI_CONTRACT.md#header-tài-khoản-và-ngôn-ngữ--25102026).
+
+## Trang chủ và tích hợp project thật
+
+Source sau alpha.1 có `panel.home_page`, mặc định `workspace`. Host đặt key của Page đã đăng ký trong `panel.pages`, ví dụ `overview`; route gốc panel dùng Page đó, vẫn kiểm ability/AuthorizesPage như route trực tiếp. Key không có trả 404; thiếu quyền trả 403. Không cần fork PageController hoặc tạo màn thống kê nghiệp vụ trong package.
+
+Gehihi đã bắt đầu tích hợp trên Laravel 13/PostgreSQL, guard web và model User UUID, với host-owned Policy/scope/login/logout/Page. Xem [tích hợp Gehihi](../../gehihi-app/docs/ADMIN_INTEGRATION.md) và [ranh giới package/project](../../docs/ADMIN_PROJECT_BOUNDARY.md). Đây là source local chưa phát hành: dependency path dùng bản copy để phát triển; phải chuyển sang dist/lock cài độc lập trước production. Settings/lang/media mới chưa làm cho toàn bộ admin nghiệp vụ của host tự động được chuyển đổi.

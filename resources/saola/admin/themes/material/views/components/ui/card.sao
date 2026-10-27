@@ -1,0 +1,43 @@
+<script setup lang="ts">
+    import type {UiCard} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiCard> = {})
+    @computed(image: string = ((data['image'] ?? '').startsWith('/') && !(data['image'] ?? '').startsWith('//')) || (data['image'] ?? '').startsWith('https://') || (data['image'] ?? '').startsWith('http://') ? (data['image'] ?? '') : '')
+</script>
+
+<template>
+    <div class="card {{ (data['color'] ?? '') !== '' ? 'border-' : '' }}{{ data['color'] ?? '' }}">
+        @if((data['header'] ?? '') !== '')<div class="card-header"><h4 class="card-title mb-0">{{ data['header'] }}</h4></div>@endif
+        @if(image !== '' && (data['imagePosition'] ?? 'top') === 'top')<img class="card-img-top img-fluid" src="{{ image }}" alt="{{ data['imageAlt'] ?? '' }}">@endif
+        @if((data['imagePosition'] ?? '') === 'middle' && ((data['title'] ?? '') !== '' || (data['subtitle'] ?? '') !== ''))
+            <div class="card-body">
+                @if((data['title'] ?? '') !== '')<h4 class="card-title mb-2">{{ data['title'] }}</h4>@endif
+                @if((data['subtitle'] ?? '') !== '')<h6 class="card-subtitle text-muted">{{ data['subtitle'] }}</h6>@endif
+            </div>
+        @endif
+        @if(image !== '' && (data['imagePosition'] ?? '') === 'middle')<img class="img-fluid" src="{{ image }}" alt="{{ data['imageAlt'] ?? '' }}">@endif
+        @if((data['text'] ?? '') !== '' || (data['actionsInBody'] ?? false) || ((data['imagePosition'] ?? '') !== 'middle' && ((data['title'] ?? '') !== '' || (data['subtitle'] ?? '') !== '')))
+            <div class="card-body">
+                @if((data['imagePosition'] ?? '') !== 'middle')
+                    @if((data['title'] ?? '') !== '')<h4 class="card-title mb-2">{{ data['title'] }}</h4>@endif
+                    @if((data['subtitle'] ?? '') !== '')<h6 class="card-subtitle text-muted mb-2">{{ data['subtitle'] }}</h6>@endif
+                @endif
+                <p class="card-text {{ (data['actionsInBody'] ?? false) ? '' : 'mb-0' }}">{{ data['text'] ?? '' }}</p>
+                @if(data['actionsInBody'] ?? false)<div class="d-flex justify-content-end flex-wrap gap-2">
+                    @foreach(data['actions'] ?? [] as action)@key(action['label'])@include(__base__ + 'components.ui.button', {data: action, on$action: (id, event) => $view.emit('action', id, event)})@endforeach
+                </div>@endif
+            </div>
+        @endif
+        @if((data['items'] ?? []).length > 0)@include(__base__ + 'components.ui.list-group', {data: {flush: true, items: data['items']}})@endif
+        @if(image !== '' && (data['imagePosition'] ?? '') === 'bottom')<img class="card-img-bottom img-fluid" src="{{ image }}" alt="{{ data['imageAlt'] ?? '' }}">@endif
+        @if(!(data['actionsInBody'] ?? false) && (data['actions'] ?? []).length > 0)<div class="card-footer d-flex flex-wrap gap-2">
+            @foreach(data['actions'] as action)@key(action['label'])
+                @if(((action['href'] ?? '').startsWith('/') && !(action['href'] ?? '').startsWith('//')) || (action['href'] ?? '').startsWith('#') || (action['href'] ?? '').startsWith('https://') || (action['href'] ?? '').startsWith('http://'))
+                    <a class="card-link link-{{ (action['color'] ?? '') === 'link' ? 'secondary' : (action['color'] ?? 'secondary') }}" href="{{ action['href'] }}" @click($view.emit('action', action['action'] ?? '', $event))>{{ action['label'] }} @if((action['icon'] ?? '') !== '')<i class="{{ action['icon'] }} ms-1 align-middle lh-1" aria-hidden="true"></i>@endif</a>
+                @else
+                    <button class="btn btn-link p-0 shadow-none card-link link-{{ (action['color'] ?? '') === 'link' ? 'secondary' : (action['color'] ?? 'secondary') }}" type="button" @disabled(action['disabled'] ?? false) @click($view.emit('action', action['action'] ?? '', $event))>{{ action['label'] }} @if((action['icon'] ?? '') !== '')<i class="{{ action['icon'] }} ms-1 align-middle lh-1" aria-hidden="true"></i>@endif</button>
+                @endif
+            @endforeach
+        </div>@endif
+    </div>
+</template>

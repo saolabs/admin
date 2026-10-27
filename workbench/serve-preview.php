@@ -24,7 +24,7 @@ final class SaolaWorkbenchOperator
 {
     public function handle(Request $request, Closure $next)
     {
-        $operator = new GenericUser(['id' => 1, 'tenant_id' => 7]);
+        $operator = new GenericUser(['id' => 1, 'tenant_id' => 7, 'name' => 'Workbench Operator', 'email' => 'operator@workbench.test']);
         \Illuminate\Support\Facades\Auth::guard()->setUser($operator);
         $request->setUserResolver(static fn () => $operator);
         return $next($request);
@@ -57,11 +57,12 @@ $app->afterBootstrapping(LoadConfiguration::class, function ($app) use ($root) {
     $config['session']['cookie'] = 'saola_workbench'; $config['session']['secure'] = false;
     $config['view']['paths'] = [$root.'/resources/views']; $config['view']['compiled'] = $root.'/storage/framework/views';
     $config['app']['debug'] = true;
+    $config['filesystems']['disks']['local']['root'] = $root.'/storage/app/private';
     foreach (['sessions', 'views', 'cache'] as $directory) @mkdir($root.'/storage/framework/'.$directory, 0777, true);
     foreach ($config as $key => $values) $app['config']->set($key, $values);
 });
 $app->booted(function () use ($app) {
-    foreach (['access-admin', 'view-site-settings', 'update-site-settings', 'view-categories', 'view-admin-users'] as $ability) {
+    foreach (['access-admin', 'view-media', 'upload-media', 'update-media', 'delete-media', 'view-site-settings', 'update-site-settings', 'view-system-settings', 'update-system-settings', 'view-categories', 'view-admin-users', 'view-admin-languages', 'manage-admin-languages', 'export-admin-languages', 'import-admin-languages', 'publish-admin-languages'] as $ability) {
         Gate::define($ability, fn ($user) => $user->getAuthIdentifier() === 1);
     }
     Gate::define('viewAny', fn ($user, $model) => $user->getAuthIdentifier() === 1 && $model === \Saola\Admin\Tests\Fixtures\DirectoryUser::class);

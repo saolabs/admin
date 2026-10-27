@@ -1,0 +1,9 @@
+<script setup lang="ts">
+    import type {UiSpinner} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiSpinner> = {})
+</script>
+
+<template>
+    <span class="{{ (data['grow'] ?? false) ? 'spinner-grow' : 'spinner-border' }} text-{{ data['color'] ?? 'primary' }} {{ (data['small'] ?? false) ? ((data['grow'] ?? false) ? 'spinner-grow-sm' : 'spinner-border-sm') : '' }}" role="status"><span class="visually-hidden">{{ data['label'] ?? '' }}</span></span>
+</template>

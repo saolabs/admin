@@ -1,5 +1,5 @@
 export type SettingValue = string | boolean | number;
-export type Field = {key: string; labelKey: string; type: 'text' | 'integer' | 'boolean'; localized: boolean;
+export type Field = {key: string; labelKey: string; type: 'text' | 'textarea' | 'url' | 'select' | 'integer' | 'boolean'; localized: boolean; media?: boolean; options?: Array<{value: string; label: string}>;
     value: SettingValue; present: boolean; maxLength: number; min: number | ''; max: number | ''};
 export type SettingsDocument = {group: string; schemaVersion: number; revision: number; values: Record<string, SettingValue>;
     localized: Record<string, Record<string, SettingValue>>; contentLocales: string[]; defaultLocale: string};
@@ -109,9 +109,10 @@ export class SettingsForm {
     private install(result: any): void {
         const doc: SettingsDocument = result?.data;
         const isMap = (value: unknown): value is Record<string, any> => !!value && typeof value === 'object' && (!Array.isArray(value) || value.length === 0);
+        const localizedGroup = this.editor.fields.some(field => field.localized);
         if (!doc || doc.group !== this.editor.group || !Number.isSafeInteger(doc.revision) || doc.revision < 0
             || doc.schemaVersion !== this.editor.document.schemaVersion || !isMap(doc.values) || !isMap(doc.localized) || !isMap(result?.schema?.fields)
-            || !Array.isArray(doc.contentLocales) || !doc.contentLocales.includes(this.editor.contentLocale) || !doc.contentLocales.includes(doc.defaultLocale)
+            || !Array.isArray(doc.contentLocales) || (localizedGroup ? !doc.contentLocales.includes(this.editor.contentLocale) || !doc.contentLocales.includes(doc.defaultLocale) : doc.contentLocales.length !== 0 || doc.defaultLocale !== '')
             || typeof result.canUpdate !== 'boolean') throw new Error('Invalid settings response');
         const fields: Field[] = this.editor.fields.map(previous => {
             const schema = result.schema.fields[previous.key];
@@ -122,7 +123,9 @@ export class SettingsForm {
             if (!isMap(source) || (previous.type === 'boolean' ? typeof value !== 'boolean' : previous.type === 'integer' ? !Number.isSafeInteger(value) : typeof value !== 'string')) {
                 throw new Error('Invalid settings value');
             }
-            return {...previous, present: Object.prototype.hasOwnProperty.call(source, previous.key), value};
+            const options = previous.type === 'select' && isMap(schema.options) ? Object.entries(schema.options).map(([value, label]) => ({value, label: String(label)})) : previous.options;
+            if (previous.type === 'select' && !options?.some(option => option.value === value)) throw new Error('Invalid select option');
+            return {...previous, options, present: Object.prototype.hasOwnProperty.call(source, previous.key), value};
         });
         this.editor = {...this.editor, fields, document: doc}; this.fields = fields.map(field => ({...field}));
         this.canUpdate = result.canUpdate; this.changes.clear(); this.requiresReload = false;

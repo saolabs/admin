@@ -1,0 +1,6 @@
+<template>
+    <meta name="application-name" content="Saola Admin">
+    @serverside
+        <script>for (const [key, value] of Object.entries({'data-layout':'vertical','data-topbar':'light','data-sidebar':'dark','data-sidebar-size':'lg','data-bs-theme':'light'})) document.documentElement.setAttribute(key, value);</script>
+    @endserverside
+</template>

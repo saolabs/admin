@@ -1,0 +1,17 @@
+<script setup lang="ts">
+    import type {UiAccordion} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiAccordion> = {})
+    @state(open: boolean = data['open'] ?? false, active: string = data['active'] ?? '', expanded: string[] = data['expanded'] ?? [], visible: boolean = true)
+
+    App.Admin.controllers.ui($view, () => data, 'accordion');
+</script>
+
+<template>
+    <div id="{{ data['id'] }}" class="accordion {{ (data['flush'] ?? false) ? 'accordion-flush' : '' }}">
+        @foreach(data['items'] ?? [] as item)@key(item['id'])<div class="accordion-item">
+            <h2 class="accordion-header"><button type="button" @class({'accordion-button', 'collapsed': !expanded.includes(item['id'])}) id="{{ data['id'] }}-heading-{{ item['id'] }}" aria-expanded="{{ expanded.includes(item['id']) ? 'true' : 'false' }}" aria-controls="{{ data['id'] }}-panel-{{ item['id'] }}" @disabled(item['disabled'] ?? false) @click(expand(item['id']))>{{ item['label'] }}</button></h2>
+            <div @class({'accordion-collapse collapse', 'show': expanded.includes(item['id'])}) id="{{ data['id'] }}-panel-{{ item['id'] }}" role="region" aria-labelledby="{{ data['id'] }}-heading-{{ item['id'] }}"><div class="accordion-body">{{ item['text'] ?? '' }}</div></div>
+        </div>@endforeach
+    </div>
+</template>

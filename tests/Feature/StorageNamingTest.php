@@ -43,7 +43,7 @@ class StorageNamingTest extends TestCase
         $physical = array_column($this->app['db']->select("SELECT name FROM sqlite_master WHERE type='table'"), 'name');
         $this->assertContains($connectionPrefix.$prefix.'locales', $physical);
         $this->assertContains($connectionPrefix.$prefix.'settings', $physical);
-        foreach (['locales', 'translation_keys', 'translation_values', 'language_batches', 'settings'] as $suffix) {
+        foreach (['locales', 'translation_keys', 'translation_values', 'language_batches', 'language_settings', 'settings'] as $suffix) {
             $this->assertTrue($schema->hasTable($prefix.$suffix));
         }
         if ($prefix !== 'saola_admin_') $this->assertFalse($schema->hasTable('saola_admin_locales'));
@@ -55,6 +55,14 @@ class StorageNamingTest extends TestCase
         $preview = $exchange->preview('vi', '{"save":"Lưu"}', 'operator', $export['batch']);
         $exchange->apply($preview['batch'], 'operator', true);
         $this->assertSame('Lưu', $store->snapshot('vi')['messages']['save']);
+        $manager = $this->app->make(\Saola\Admin\Language\LocaleManager::class);
+        $state = $manager->state();
+        foreach ($state['locales'] as &$locale) unset($locale['revision']);
+        unset($locale);
+        $state['uiDefault'] = 'vi';
+        $manager->update(0, $state);
+        $this->assertSame('vi', $manager->state()['uiDefault']);
+        $this->assertSame(1, $this->app['db']->table($prefix.'language_settings')->count());
         $group = new SettingsGroup('test', 'settings', 'read', 'write', ['title' => ['labelKey' => 'title', 'type' => 'text', 'default' => '']]);
         $settings = $this->app->make(SettingsStore::class);
         $settings->update($group, 0, ['values' => ['title' => 'Website']]);

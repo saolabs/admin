@@ -1,6 +1,6 @@
 # Thiết kế lang động — catalog key, database và client
 
-Ngày: **24/10/2026**. Trạng thái: đã triển khai nguồn locale-first, sync DB, resolver/compiler, JSON preview/draft/publish, dictionary có quyền và demo starter. UI quản trị/AI còn là kế hoạch. Hợp đồng và cách dùng API/CLI hiện có: [cách cài và CLI](../README.md). Liên kết với [kế hoạch saola/admin](ADMIN_PACKAGE_PLAN.md).
+Ngày: **24/10/2026**. Trạng thái: đã triển khai nguồn locale-first, sync DB, resolver/compiler, JSON preview/draft/publish, dictionary có quyền và demo starter. Source sau alpha.1 đã có UI thêm locale, mặc định DB và upload JSON; AI/editor từng key còn là kế hoạch. Xem [hợp đồng triển khai](LANGUAGE_MANAGEMENT.md), chưa có trong tag Packagist alpha.1. Hợp đồng và cách dùng API/CLI hiện có: [cách cài và CLI](../README.md). Liên kết với [kế hoạch saola/admin](ADMIN_PACKAGE_PLAN.md).
 
 **Hợp đồng chính:** file PHP trong `lang/{locale}/` khai báo cây key–value và seed ban đầu, registry/config giữ metadata riêng → đồng bộ vào DB → PHP/client đọc bản dịch đã công bố từ DB hoặc cache của DB. Thêm ngôn ngữ, nhập JSON hoặc AI dịch không yêu cầu sửa `.sao`, viết thêm PHP lang hay build lại JS.
 

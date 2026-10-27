@@ -1,0 +1,21 @@
+<script setup lang="ts">
+    import type {UiTabs} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiTabs> = {})
+    @state(open: boolean = data['open'] ?? false, active: string = data['active'] ?? '', expanded: string[] = data['expanded'] ?? [], visible: boolean = true)
+
+    App.Admin.controllers.ui($view, () => data, 'tabs');
+</script>
+
+<template>
+    <div id="{{ data['id'] }}" @keydown(keydown($event))>
+        <ul class="nav {{ (data['variant'] ?? '') === 'pills' ? 'nav-pills' : ((data['variant'] ?? '') === 'line' ? 'nav-tabs nav-justified nav-border-top nav-border-top-primary' : 'nav-tabs') }} mb-3" role="tablist" aria-label="{{ data['label'] ?? '' }}">
+            @foreach(data['items'] ?? [] as item)@key(item['id'])<li class="nav-item" role="presentation"><button type="button" @class({'nav-link', 'active': active === item['id']}) id="{{ data['id'] }}-tab-{{ item['id'] }}" role="tab" aria-selected="{{ active === item['id'] ? 'true' : 'false' }}" aria-controls="{{ data['id'] }}-panel-{{ item['id'] }}" tabindex="{{ active === item['id'] ? '0' : '-1' }}" @disabled(item['disabled'] ?? false) @click(choose(item['id']))>
+                @if((item['icon'] ?? '') !== '')<i class="{{ item['icon'] }} align-middle me-1" aria-hidden="true"></i>@endif{{ item['label'] }}
+            </button></li>@endforeach
+        </ul>
+        <div class="tab-content text-muted">@foreach(data['items'] ?? [] as item)@key(item['id'])
+            <div @class({'tab-pane', 'active show': active === item['id']}) id="{{ data['id'] }}-panel-{{ item['id'] }}" role="tabpanel" aria-labelledby="{{ data['id'] }}-tab-{{ item['id'] }}" tabindex="0"><p class="mb-0">{{ item['text'] ?? '' }}</p></div>
+        @endforeach</div>
+    </div>
+</template>

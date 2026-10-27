@@ -1,0 +1,34 @@
+{
+  "source": "admin-material/assets",
+  "upstream": "Velzon Material / Themesbrand, local supplied distribution",
+  "changes": [
+    "Removed Google Fonts network imports; bundled local fonts remain.",
+    "Removed source-map comments.",
+    "Removed hkgrotesk faces absent from the supplied mirror; use bundled template/system fallbacks.",
+    "Removed missing decorative image URLs unused by admin screens."
+  ],
+  "css": {
+    "bootstrap.min.css": {
+      "upstream_sha256": "bc475f6eb562b28267ac3fbfb83bcfb81eb0b0ba0eae4275a1a479e0604df755",
+      "packaged_sha256": "e9fed53413783a6fb566f37b535b83525d0ada16bc50b8f926b21afaa8962473"
+    },
+    "app.min.css": {
+      "upstream_sha256": "b638b9e56ae0230095d8564eacb703bf49fbac2277a27bf0b848475c106f7b03",
+      "packaged_sha256": "8fd2740a9a151f49dcdc047ae243f8c84d3105446a284570c51f3a9093ac6b69"
+    },
+    "icons.min.css": {
+      "upstream_sha256": "dc8b9727e1c259126c54a503c9b8808520d250e00e4fb5fc52525d0b84a25608",
+      "packaged_sha256": "2c54482afd96d97c73878d40d0978e0f8611cc36737aca3869bd9ae318c272b6"
+    }
+  },
+  "missing_upstream_decorations": [
+    "../images/chat-bg-pattern.png",
+    "../images/cover-pattern.png",
+    "../images/file.png",
+    "../images/landing/bg-pattern.png",
+    "../images/modal-bg.png",
+    "../images/new.png",
+    "../images/nft/bg-home.jpg",
+    "../images/nft/marketplace.png"
+  ]
+}

@@ -8,5 +8,5 @@ interface SettingsStore
 {
     public function read(SettingsGroup $group): array;
     public function update(SettingsGroup $group, int $revision, array $patch): array;
-    public function values(SettingsGroup $group, string $locale, bool $publicOnly = false): array;
+    public function values(SettingsGroup $group, ?string $locale = null, bool $publicOnly = false): array;
 }

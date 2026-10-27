@@ -1,0 +1,17 @@
+<script setup lang="ts">
+    import type {UiPagination} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiPagination> = {})
+    @computed(totalPages: number = (data['totalPages'] ?? 1) < 1 ? 1 : (data['totalPages'] ?? 1))
+</script>
+
+<template>
+    <nav aria-label="{{ data['label'] ?? '' }}"><ul class="pagination {{ (data['size'] ?? '') === 'sm' ? 'pagination-sm' : '' }} mb-0">
+        <li @class({'page-item', 'disabled': (data['page'] ?? 1) <= 1})><button class="page-link" type="button" @disabled((data['page'] ?? 1) <= 1) @click($view.emit('change', (data['page'] ?? 1) - 1))>{{ data['previousLabel'] ?? '' }}</button></li>
+        @foreach(data['pages'] ?? [] as item)
+            @key(item)
+            <li @class({'page-item', 'active': (data['page'] ?? 1) === item})><button class="page-link" type="button" aria-current="{{ (data['page'] ?? 1) === item ? 'page' : 'false' }}" @click($view.emit('change', item))>{{ item }}</button></li>
+        @endforeach
+        <li @class({'page-item', 'disabled': (data['page'] ?? 1) >= totalPages})><button class="page-link" type="button" @disabled((data['page'] ?? 1) >= totalPages) @click($view.emit('change', (data['page'] ?? 1) + 1))>{{ data['nextLabel'] ?? '' }}</button></li>
+    </ul></nav>
+</template>

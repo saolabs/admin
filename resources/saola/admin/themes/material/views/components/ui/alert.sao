@@ -1,0 +1,18 @@
+<script setup lang="ts">
+    import type {UiAlert} from '@sao/admin/app/contracts/ui';
+
+    @vars(data: Partial<UiAlert> = {})
+    @state(open: boolean = data['open'] ?? false, active: string = data['active'] ?? '', expanded: string[] = data['expanded'] ?? [], visible: boolean = true)
+
+    App.Admin.controllers.ui($view, () => data, 'alert');
+</script>
+
+<template>
+    @if(visible)
+        <div id="{{ data['id'] }}" class="alert alert-{{ data['color'] ?? 'primary' }} {{ (data['borderLeft'] ?? false) ? 'alert-border-left' : '' }} {{ (data['dismissible'] ?? false) ? 'alert-dismissible' : '' }} fade show" role="alert">
+            @if((data['icon'] ?? '') !== '')<i class="{{ data['icon'] }} me-2 align-middle" aria-hidden="true"></i>@endif
+            @if((data['title'] ?? '') !== '')<strong>{{ data['title'] }}</strong> @endif{{ data['text'] ?? '' }}
+            @if(data['dismissible'] ?? false)<button type="button" class="btn-close" aria-label="{{ data['closeLabel'] ?? '' }}" @click(dismiss())></button>@endif
+        </div>
+    @endif
+</template>

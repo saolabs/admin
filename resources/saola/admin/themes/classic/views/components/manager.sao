@@ -1,0 +1,209 @@
+<script setup lang="ts">
+    @vars(resource: any = {})
+    @state(data: any = resource, fields: any[] = resource['fields'] ?? [], rows: any[] = resource['rows'] ?? [], fieldEpoch: number = 0, busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', errors: any = {}, selectedCount: number = 0, allSelected: boolean = false, canTrash: boolean = false, canRestore: boolean = false, locked: boolean = false, canSelect: boolean = resource['selectable'] ?? false, partiallySelected: boolean = false, noticeKind: string = 'error', errorList: any[] = [], filtersOpen: boolean = false, sections: any[] = resource['groups'] ?? [], activeSection: string = resource['firstSection'] ?? 'main', mediaOpen: boolean = false, imageOnly: boolean = false)
+
+    const {changeValue, openMedia, closeMedia, selectMedia} = App.Admin.controllers.manager($view, () => ({resource}));
+</script>
+
+<template>
+    <div class="sa-admin-resource-manager" aria-busy="{{ busy ? 'true' : 'false' }}">
+        @if(notice !== '')
+            <div id="resource-notice" class="sa-admin-alert sa-admin-resource-notice" data-kind="{{ noticeKind }}" role="status" tabindex="-1">
+                <p>{{ text(notice) }}</p>
+                @if(errorList.length > 0)
+                    <ul>
+                        @foreach(errorList as error)
+                            @key(error['key'])
+                            <li>{{ error['message'] }}</li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        @endif
+        @if(data['mode'] === 'list')
+            <section class="sa-admin-card" aria-label="{{ __('admin.resource.records') }}">
+            <div class="sa-admin-resource-toolbar">
+                <nav class="sa-admin-settings-tabs" aria-label="{{ __('admin.resource.status') }}">
+                    <a href="{{ data['activeUrl'] }}" aria-current="{{ data['status'] === 'active' ? 'page' : 'false' }}">{{ __('admin.resource.active') }} ({{ data['counts']['active'] }})</a>
+                    @if(data['trashUrl'])
+                        <a href="{{ data['trashUrl'] }}" aria-current="{{ data['status'] === 'trash' ? 'page' : 'false' }}">{{ __('admin.resource.trashed') }} ({{ data['counts']['trash'] }})</a>
+                    @endif
+                </nav>
+                @if(data['createUrl'])
+                    <a class="sa-admin-resource-primary sa-admin-icon-action" href="{{ data['createUrl'] }}" title="{{ __('admin.resource.create') }}" aria-label="{{ __('admin.resource.create') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></a>
+                @endif
+            </div>
+                <form class="sa-admin-list-filters sa-admin-resource-filters" action="{{ data['listing']['action'] }}" method="get" @submit.prevent(filter($event))>
+                    <input type="hidden" name="status" value="{{ data['status'] }}">
+                    <input type="hidden" name="locale" value="{{ data['listing']['locale'] }}">
+                    <div class="sa-admin-filter-field sa-admin-filter-search"><label class="sa-admin-visually-hidden" for="managed-search">{{ __('admin.resource.search') }}</label>
+                    <input id="managed-search" name="q" type="search" maxlength="100" value="{{ data['listing']['q'] }}" placeholder="{{ __('admin.resource.search_placeholder') }}" @disabled(busy)></div>
+                    <div id="managed-filter-options" class="sa-admin-resource-filter-options {{ filtersOpen ? 'is-open' : '' }}">
+                    @if((data['listing']['searchOptions'] ?? []).length > 1)
+                        <div class="sa-admin-filter-field"><label class="sa-admin-visually-hidden" for="managed-search-by">{{ __('admin.resource.search_by') }}</label>
+                            <select id="managed-search-by" name="search_by" @disabled(busy)>
+                                <option value="" @selected((data['listing']['searchBy'] ?? '') === '')>{{ __('admin.resource.search_all') }}</option>
+                                @foreach(data['listing']['searchOptions'] as option)
+                                    <option value="{{ option['key'] }}" @selected(option['key'] === data['listing']['searchBy'])>{{ text(option['labelKey']) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+                    <div class="sa-admin-filter-field"><label class="sa-admin-visually-hidden" for="managed-sort">{{ __('admin.resource.sort') }}</label>
+                    <select id="managed-sort" name="sort" title="{{ __('admin.resource.sort') }}" @disabled(busy)>
+                        @foreach(data['listing']['sortOptions'] as option)
+                            <option value="{{ option['key'] }}" @selected(option['key'] === data['listing']['sort'])>{{ text(option['labelKey']) }}</option>
+                        @endforeach
+                    </select>
+                    </div>
+                    <div class="sa-admin-filter-field"><label class="sa-admin-visually-hidden" for="managed-direction">{{ __('admin.resource.direction') }}</label>
+                    <select id="managed-direction" name="direction" title="{{ __('admin.resource.direction') }}" @disabled(busy)>
+                        <option value="asc" @selected(data['listing']['direction'] === 'asc')>{{ __('admin.resource.ascending') }}</option>
+                        <option value="desc" @selected(data['listing']['direction'] === 'desc')>{{ __('admin.resource.descending') }}</option>
+                    </select>
+                    </div>
+                    <div class="sa-admin-filter-field sa-admin-filter-size"><label class="sa-admin-visually-hidden" for="managed-size">{{ __('admin.resource.per_page') }}</label>
+                    <select id="managed-size" name="per_page" title="{{ __('admin.resource.per_page') }}" @disabled(busy)>
+                        @foreach([10, 25, 50] as size)
+                            <option value="{{ size }}" @selected(size === data['listing']['perPage'])>{{ size }} / {{ __('admin.resource.page_short') }}</option>
+                        @endforeach
+                    </select>
+                    </div>
+                    </div>
+                    <div class="sa-admin-filter-actions">
+                        <button class="sa-admin-icon-action" type="submit" title="{{ __('admin.resource.apply') }}" aria-label="{{ __('admin.resource.apply') }}" @disabled(busy)><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg></button>
+                        <button class="sa-admin-icon-action" type="button" title="{{ __('admin.resource.reload') }}" aria-label="{{ __('admin.resource.reload') }}" @disabled(busy) @click(reload())><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 3M19 16a8 8 0 0 1-13 3l-2-3" /></svg></button>
+                        @if(data['listing']['filtered'] ?? false)<a class="sa-admin-icon-action" href="{{ data['resetUrl'] }}" title="{{ __('admin.resource.reset_filters') }}" aria-label="{{ __('admin.resource.reset_filters') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg></a>@endif
+                    </div>
+                    <button class="sa-admin-filter-toggle" type="button" aria-controls="managed-filter-options" aria-expanded="{{ filtersOpen ? 'true' : 'false' }}" @click(toggleFilters())>{{ __('admin.resource.filters') }} <span aria-hidden="true">{{ filtersOpen ? '−' : '+' }}</span></button>
+                </form>
+                <div class="sa-admin-table-scroll">
+                    <table class="sa-admin-table">
+                        <thead><tr>
+                            @if(canSelect)<th class="sa-admin-select-cell" scope="col"><input type="checkbox" aria-label="{{ __('admin.resource.select_page') }}" aria-checked="{{ partiallySelected ? 'mixed' : (allSelected ? 'true' : 'false') }}" @checked(allSelected) @disabled(locked) @change(selectAll($event))></th>@endif
+                            @foreach(data['columns'] as column)
+                                @key(column['key'])
+                                <th scope="col" aria-sort="{{ column['key'] === data['listing']['sort'] ? (data['listing']['direction'] === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                    @if(column['sortUrl'] ?? '')
+                                        <a class="sa-admin-sort-link" href="{{ column['sortUrl'] }}">{{ text(column['labelKey']) }}<span aria-hidden="true">{{ column['key'] === data['listing']['sort'] ? (data['listing']['direction'] === 'asc' ? '↑' : '↓') : '↕' }}</span></a>
+                                    @else{{ text(column['labelKey']) }}@endif
+                                </th>
+                            @endforeach
+                            <th scope="col">{{ __('admin.resource.actions') }}</th>
+                        </tr></thead>
+                        <tbody>
+                            @foreach(rows as row)
+                                @key(row['id'])
+                                <tr class="{{ (row['selected'] ?? false) ? 'is-selected' : '' }}">
+                                    @if(canSelect)<td class="sa-admin-select-cell"><input type="checkbox" aria-label="{{ __('admin.resource.select_record') }}" @checked((row['selected'] ?? false) ?? false) @disabled(locked || !row['selectable']) @change(selectRow(row['id'], $event))></td>@endif
+                                    @foreach(data['columns'] as column)
+                                        @key(column['key'])
+                                        <td data-column="{{ column['key'] }}">
+                                            @if((column['renderer'] ?? 'text') === 'image')
+                                                @if(row['values'][column['key']] !== '')<img class="sa-admin-cell-image" src="{{ row['values'][column['key']] }}" alt="{{ text(column['labelKey']) }}" loading="lazy">@endif
+                                            @elseif((column['renderer'] ?? 'text') === 'link')
+                                                @if(row['values'][column['key']] !== '')<a href="{{ row['values'][column['key']] }}" rel="noopener noreferrer">{{ row['values'][column['key']] }}</a>@endif
+                                            @elseif((column['renderer'] ?? 'text') === 'boolean')
+                                                <span class="sa-admin-badge">{{ row['values'][column['key']] === '1' ? text('admin.input.yes') : text('admin.input.no') }}</span>
+                                            @elseif((column['renderer'] ?? 'text') === 'badge')<span class="sa-admin-badge">{{ row['values'][column['key']] }}</span>
+                                            @else<span>{{ row['values'][column['key']] }}</span>@endif
+                                        </td>
+                                    @endforeach
+                                    <td><div class="sa-admin-resource-actions">
+                                        @foreach(row['actions'] as action)
+                                            @key(action['operation'])
+                                            @if(action['operation'] === 'edit')
+                                                <a class="sa-admin-icon-action" href="{{ action['url'] }}" title="{{ text(action['labelKey']) }}" aria-label="{{ text(action['labelKey']) }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{ action['labelKey'] === 'admin.resource.view' ? 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Zm10-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6' : 'm15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z' }}" /></svg></a>
+                                            @else
+                                                <button class="sa-admin-icon-action" type="button" title="{{ text(action['labelKey']) }}" aria-label="{{ text(action['labelKey']) }}" data-resource-operation="{{ action['operation'] }}" data-resource-id="{{ row['id'] }}" @disabled(locked) @click(transition(action['operation'], row['id']))><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{ action['operation'] === 'restore' ? 'M4 4v6h6M4 10a8 8 0 1 1 0 5' : 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7' }}" /></svg></button>
+                                            @endif
+                                        @endforeach
+                                    </div></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @if(rows.length === 0)
+                        <div class="sa-admin-resource-empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 5h16v14H4zM4 14h4l2 3h4l2-3h4" /></svg>
+                            <strong>{{ data['listing']['q'] !== '' ? text('admin.resource.no_results') : (data['status'] === 'trash' ? text('admin.resource.trash_empty') : text('admin.resource.empty')) }}</strong>
+                            @if(data['listing']['q'] !== '')<a href="{{ data['resetUrl'] }}">{{ __('admin.resource.reset_filters') }}</a>@endif
+                        </div>
+                    @endif
+                </div>
+                <p class="sa-admin-resource-range">{{ __('admin.resource.showing') }} {{ data['listing']['from'] ?? 0 }}–{{ data['listing']['to'] ?? 0 }} / {{ data['listing']['total'] }} {{ __('admin.resource.results') }}</p>
+                <div class="sa-admin-resource-footer">
+                @if(canSelect)
+                    <div class="sa-admin-resource-bulk">
+                        <span>{{ __('admin.resource.selected') }}: <strong>{{ selectedCount }}</strong></span>
+                        <button type="button" @disabled(locked) @click(clearSelection())>{{ __('admin.resource.clear_selection') }}</button>
+                        @if(data['status'] === 'active')
+                            <button type="button" @disabled(!canTrash) @click(transition('trash'))>{{ __('admin.resource.trash_selected') }}</button>
+                        @else
+                            <button type="button" @disabled(!canRestore) @click(transition('restore'))>{{ __('admin.resource.restore_selected') }}</button>
+                        @endif
+                    </div>
+                @endif
+                <nav class="sa-admin-pagination" aria-label="{{ __('admin.resource.pagination') }}">
+                    @if(data['listing']['previous'])<a rel="prev" href="{{ data['listing']['previous'] }}">{{ __('admin.resource.previous') }}</a>@else<span class="sa-admin-page-disabled" aria-disabled="true">{{ __('admin.resource.previous') }}</span>@endif
+                    @foreach(data['listing']['pages'] ?? [] as page)
+                        @key(page['key'])
+                        @if(page['current'])<span class="sa-admin-page-current" aria-current="page">{{ page['label'] }}</span>
+                        @elseif(page['url'])<a href="{{ page['url'] }}" aria-label="{{ text('admin.resource.page') }} {{ page['label'] }}">{{ page['label'] }}</a>
+                        @else<span class="sa-admin-page-gap">{{ page['label'] }}</span>@endif
+                    @endforeach
+                    @if(data['listing']['next'])<a rel="next" href="{{ data['listing']['next'] }}">{{ __('admin.resource.next') }}</a>@else<span class="sa-admin-page-disabled" aria-disabled="true">{{ __('admin.resource.next') }}</span>@endif
+                </nav>
+                </div>
+            </section>
+        @else
+            <nav class="sa-admin-resource-breadcrumb" aria-label="{{ __('admin.resource.location') }}">
+                <a href="{{ data['listUrl'] ?? data['returnUrl'] }}">{{ text(data['titleKey']) }}</a><span aria-hidden="true">/</span>
+                <span>{{ data['mode'] === 'create' ? text('admin.resource.create') : (data['canSave'] ? text('admin.resource.edit') : text('admin.resource.view')) }}</span>
+            </nav>
+            <section class="sa-admin-card sa-admin-resource-editor" aria-label="{{ __('admin.resource.details') }}">
+                <div class="sa-admin-resource-form-heading">
+                    <h2>{{ data['mode'] === 'create' ? text('admin.resource.create') : (data['canSave'] ? text('admin.resource.edit') : text('admin.resource.view')) }}</h2>
+                    <p>{{ data['canSave'] ? text('admin.resource.required_hint') : text('admin.resource.read_only') }}</p>
+                </div>
+                <form method="post" autocomplete="off" @submit.prevent(save())>
+                    @if((data['formLayout'] ?? 'sections') === 'tabs' && sections.length > 1)
+                        <div class="sa-admin-settings-tabs sa-admin-form-tabs" role="tablist" @keydown(sectionKeydown($event)) aria-label="{{ text('admin.input.form_sections') }}">
+                            @foreach(sections as section)
+                                @key(section['key'])
+                                <button type="button" role="tab" tabindex="{{ activeSection === section['key'] ? '0' : '-1' }}" id="resource-tab-{{ section['key'] }}" aria-controls="resource-section-{{ section['key'] }}" aria-selected="{{ activeSection === section['key'] ? 'true' : 'false' }}" @click(selectSection(section['key']))>{{ text(section['labelKey']) }}</button>
+                            @endforeach
+                        </div>
+                    @endif
+                    @foreach([fieldEpoch] as epoch)
+                        @key(epoch)
+                        @foreach(sections as section)
+                            @key(section['key'])
+                            @if((data['formLayout'] ?? 'sections') !== 'tabs' || activeSection === section['key'])
+                                <fieldset id="resource-section-{{ section['key'] }}" class="sa-admin-form-fields sa-admin-resource-fields" @disabled(locked)>
+                                    <legend class="{{ section['labelKey'] ? 'sa-admin-section-title' : 'sa-admin-visually-hidden' }}">{{ section['labelKey'] ? text(section['labelKey']) : text('admin.resource.details') }}</legend>
+                                    @if(section['descriptionKey'] ?? '')<p class="sa-admin-field-wide">{{ text(section['descriptionKey']) }}</p>@endif
+                                    @foreach(section['fields'] as field)
+                                        @key(field['key'])
+                                        <div class="sa-admin-form-field {{ (field['span'] ?? '') === 'full' || field['type'] === 'textarea' ? 'sa-admin-field-wide' : '' }}">
+                                            @include(__base__ + 'components.input', {field: field, error: errors[field['key']] ?? '', locked: locked, onChange: changeValue ?? null, onMedia: openMedia ?? null, mediaAvailable: (data['mediaEditor'] ?? null) !== null})
+                                        </div>
+                                    @endforeach
+                                </fieldset>
+                            @endif
+                        @endforeach
+                    @endforeach
+                    <div class="sa-admin-form-actions">
+                        @if(data['canSave'])<button id="resource-save" type="submit" @disabled(!canSave)>{{ busy ? text('admin.resource.saving') : text('admin.resource.save') }}</button>
+                        <button type="button" @disabled(busy || !dirty) @click(discard())>{{ __('admin.resource.discard') }}</button>@endif
+                        <button type="button" @disabled(busy || dirty) @click(reload())>{{ __('admin.resource.reload') }}</button>
+                        <button type="button" @disabled(busy) @click(cancel())>{{ __('admin.resource.cancel') }}</button>
+                    </div>
+                </form>
+            </section>
+        @endif
+        @if(mediaOpen)
+            <div class="sa-admin-media-overlay">@include(__base__ + 'components.media-library', {editor: data['mediaEditor'], picker: true, imageOnly: imageOnly, onSelect: selectMedia, onClose: closeMedia})</div>
+        @endif
+    </div>
+</template>

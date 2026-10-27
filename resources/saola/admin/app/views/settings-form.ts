@@ -46,9 +46,22 @@ export function bindSettings(view: View, App: Application, readProps: () => Sett
     }
     let disposers: Array<() => void> = [];
     let active = false;
+    const richBody = (key: string) => document.querySelector<HTMLElement>('[data-rich-body="' + key + '"]');
+    /** The editable region mirrors the form value (first paint, discard, reload, and re-renders that clear it). While typing the two already agree. */
+    function syncRich() {
+        if (!active || !form)
+            return;
+        for (const field of form.fields as any[]) {
+            const body = field.type === 'richtext' ? richBody(field.key) : null;
+            if (body && body.innerHTML !== field.value && !(field.value === '' && body.textContent!.trim() === ''))
+                body.innerHTML = field.value;
+        }
+    }
     function refresh() {
         if (!active || !form)
             return;
+        requestAnimationFrame(syncRich);
+        setTimeout(syncRich, 60);
         binding.set("fields", form.fields.map((field: any) => ({ ...field })));
         binding.set("busy", form.busy);
         binding.set("dirty", form.dirty);
@@ -120,6 +133,29 @@ export function bindSettings(view: View, App: Application, readProps: () => Sett
         form.change(key, Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : input.value);
         refresh();
     }
+    function changeRich(key: string, event: Event) {
+        const html = (event.target as HTMLElement).innerHTML;
+        const empty = (event.target as HTMLElement).textContent!.trim() === '' && !/<(ul|ol|li)\b/i.test(html);
+        form.change(key, empty ? '' : html);
+        refresh();
+    }
+    function richCommand(key: string, command: string) {
+        richBody(key)?.focus();
+        document.execCommand(command);
+        richBody(key)?.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    function richLink(key: string) {
+        const url = window.prompt(App.Helper.text('admin.settings.rich.link_prompt'), 'https://');
+        if (!url)
+            return;
+        richBody(key)?.focus();
+        document.execCommand('createLink', false, url.trim());
+        richBody(key)?.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    function pastePlain(event: ClipboardEvent) {
+        event.preventDefault();
+        document.execCommand('insertText', false, event.clipboardData?.getData('text/plain') ?? '');
+    }
     function changeCheckbox(key: string, event: Event) {
         form.change(key, (event.target as HTMLInputElement).checked);
         refresh();
@@ -158,7 +194,7 @@ export function bindSettings(view: View, App: Application, readProps: () => Sett
         target.searchParams.set('content_locale', input.value);
         (App.Router as any).replace(target.pathname + target.search);
     }
-    const actions = { openMedia, closeMedia, selectMedia, clearMedia, started, resumed, paused, stopped, destroyed, changeText, changeNumber, changeCheckbox, discard, save, reload, changeContentLocale };
+    const actions = { openMedia, closeMedia, selectMedia, clearMedia, started, resumed, paused, stopped, destroyed, changeText, changeNumber, changeRich, richCommand, richLink, pastePlain, changeCheckbox, discard, save, reload, changeContentLocale };
     view.__ctrl__.setUserDefinedConfig(actions);
     return actions;
 }

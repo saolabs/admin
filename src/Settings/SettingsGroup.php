@@ -26,8 +26,9 @@ final readonly class SettingsGroup
         foreach ($fields as $name => $field) {
             $type = $field['type'] ?? null;
             if (!is_string($name) || !preg_match('/^[a-z][a-z0-9_]*$/D', $name)
-                || !in_array($type, ['text', 'textarea', 'url', 'select', 'boolean', 'integer', 'secret'], true)
+                || !in_array($type, ['text', 'textarea', 'richtext', 'url', 'select', 'boolean', 'integer', 'secret'], true)
                 || !is_string($field['labelKey'] ?? null) || $field['labelKey'] === ''
+                || !is_string($field['placeholderKey'] ?? '')
                 || !is_bool($field['localized'] ?? false) || !is_bool($field['public'] ?? false)
                 || ($type === 'secret' && (($field['localized'] ?? false) || ($field['public'] ?? false)))
                 || !is_bool($field['hidden'] ?? false) || !is_bool($field['relative'] ?? false) || !is_bool($field['media'] ?? false)
@@ -54,7 +55,7 @@ final readonly class SettingsGroup
     public function validType(string $type, mixed $value): bool
     {
         return match ($type) {
-            'text', 'textarea', 'url', 'select', 'secret' => is_string($value), 'boolean' => is_bool($value), 'integer' => is_int($value), default => false,
+            'text', 'textarea', 'richtext', 'url', 'select', 'secret' => is_string($value), 'boolean' => is_bool($value), 'integer' => is_int($value), default => false,
         };
     }
 

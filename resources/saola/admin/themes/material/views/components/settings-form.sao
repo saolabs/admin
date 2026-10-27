@@ -44,7 +44,7 @@
                 <div class="sa-admin-form-fields sa-admin-settings-fields">
                 @foreach(fields as field)
                     @key(field['key'])
-                    <div @class({'sa-admin-form-field', 'sa-admin-field-wide': field['type'] === 'textarea'})>
+                    <div @class({'sa-admin-form-field', 'sa-admin-field-wide': field['type'] === 'textarea' || field['type'] === 'richtext'})>
                         <label for="setting-{{ field['key'] }}">{{ text(field['labelKey']) }}
                             @if(editor['localizedGroup'] && !field['localized'])
                                 <span class="sa-admin-field-scope">{{ __('admin.settings.shared_short') }}</span>
@@ -52,19 +52,43 @@
                         </label>
                         @if(field['media'] && editor['mediaEditor'])
                             <div class="sa-admin-media-field">
-                                @if(field['value'] !== '')
-                                    <img class="sa-admin-media-field-preview" src="{{ field['value'] }}" alt="{{ text(field['labelKey']) }}">
-                                @endif
-                                <input class="form-control" id="setting-{{ field['key'] }}" type="text" readonly value="{{ field['value'] }}" aria-label="{{ text(field['labelKey']) }}">
-                                <div class="sa-admin-media-field-actions">
-                                    <button class="btn btn-light" type="button" @click(openMedia(field['key']))>{{ __('admin.media.choose') }}</button>
-                                    <button class="btn btn-light" type="button" @disabled(field['value'] === '') @click(clearMedia(field['key']))>{{ __('admin.media.remove') }}</button>
+                                <button class="sa-admin-media-thumb" type="button" title="{{ __('admin.media.choose') }}" aria-label="{{ __('admin.media.choose') }}" @click(openMedia(field['key']))>
+                                    @if(field['value'] !== '')
+                                        <img src="{{ field['value'] }}" alt="{{ text(field['labelKey']) }}">
+                                    @else
+                                        <span class="sa-admin-media-thumb-empty"><i class="ri-image-add-line" aria-hidden="true"></i></span>
+                                    @endif
+                                </button>
+                                <div class="sa-admin-media-field-body">
+                                    <input class="form-control" id="setting-{{ field['key'] }}" type="text" readonly value="{{ field['value'] }}" placeholder="{{ (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" aria-label="{{ text(field['labelKey']) }}">
+                                    <div class="sa-admin-media-field-actions">
+                                        <button class="btn btn-soft-primary btn-sm" type="button" @click(openMedia(field['key']))><i class="ri-gallery-line align-bottom me-1" aria-hidden="true"></i>{{ __('admin.media.choose') }}</button>
+                                        <button class="btn btn-light btn-sm" type="button" @disabled(field['value'] === '') @click(clearMedia(field['key']))><i class="ri-delete-bin-line align-bottom me-1" aria-hidden="true"></i>{{ __('admin.media.remove') }}</button>
+                                    </div>
                                 </div>
                             </div>
                         @elseif(field['type'] === 'boolean')
-                            <input class="form-check-input" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="checkbox" aria-describedby="error-{{ field['key'] }}" @checked(field['value'] === true) @change(changeCheckbox(field['key'], $event))>
+                            <div class="form-check form-switch form-switch-md">
+                                <input class="form-check-input" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="checkbox" role="switch" aria-describedby="error-{{ field['key'] }}" @checked(field['value'] === true) @change(changeCheckbox(field['key'], $event))>
+                            </div>
+                        @elseif(field['type'] === 'richtext')
+                            <div class="sa-admin-rich">
+                                <div class="sa-admin-rich-toolbar" role="toolbar" aria-label="{{ __('admin.settings.rich.label') }}" @mousedown.prevent>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.bold') }}" aria-label="{{ __('admin.settings.rich.bold') }}" @click(richCommand(field['key'], 'bold'))><i class="ri-bold" aria-hidden="true"></i></button>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.italic') }}" aria-label="{{ __('admin.settings.rich.italic') }}" @click(richCommand(field['key'], 'italic'))><i class="ri-italic" aria-hidden="true"></i></button>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.underline') }}" aria-label="{{ __('admin.settings.rich.underline') }}" @click(richCommand(field['key'], 'underline'))><i class="ri-underline" aria-hidden="true"></i></button>
+                                    <span class="sa-admin-rich-sep" aria-hidden="true"></span>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.bullets') }}" aria-label="{{ __('admin.settings.rich.bullets') }}" @click(richCommand(field['key'], 'insertUnorderedList'))><i class="ri-list-unordered" aria-hidden="true"></i></button>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.numbers') }}" aria-label="{{ __('admin.settings.rich.numbers') }}" @click(richCommand(field['key'], 'insertOrderedList'))><i class="ri-list-ordered" aria-hidden="true"></i></button>
+                                    <span class="sa-admin-rich-sep" aria-hidden="true"></span>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.link') }}" aria-label="{{ __('admin.settings.rich.link') }}" @click(richLink(field['key']))><i class="ri-link" aria-hidden="true"></i></button>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.unlink') }}" aria-label="{{ __('admin.settings.rich.unlink') }}" @click(richCommand(field['key'], 'unlink'))><i class="ri-link-unlink" aria-hidden="true"></i></button>
+                                    <button class="btn btn-sm btn-light" type="button" title="{{ __('admin.settings.rich.clear') }}" aria-label="{{ __('admin.settings.rich.clear') }}" @click(richCommand(field['key'], 'removeFormat'))><i class="ri-format-clear" aria-hidden="true"></i></button>
+                                </div>
+                                <div class="sa-admin-rich-body form-control" id="setting-{{ field['key'] }}" data-rich-body="{{ field['key'] }}" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ text(field['labelKey']) }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" data-placeholder="{{ (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" @input(changeRich(field['key'], $event)) @paste(pastePlain($event))></div>
+                            </div>
                         @elseif(field['type'] === 'textarea')
-                            <textarea class="form-control" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" rows="3" maxlength="{{ field['maxLength'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>{{ field['value'] }}</textarea>
+                            <textarea class="form-control" id="setting-{{ field['key'] }}" placeholder="{{ (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" rows="3" maxlength="{{ field['maxLength'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>{{ field['value'] }}</textarea>
                         @elseif(field['type'] === 'select')
                             <select class="form-select" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" aria-describedby="error-{{ field['key'] }}" @change(changeText(field['key'], $event))>
                                 @foreach(field['options'] as option)
@@ -72,9 +96,9 @@
                                 @endforeach
                             </select>
                         @elseif(field['type'] === 'integer')
-                            <input class="form-control" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="number" step="1" min="{{ field['min'] }}" max="{{ field['max'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeNumber(field['key'], $event))>
+                            <input class="form-control" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="number" placeholder="{{ (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" step="1" min="{{ field['min'] }}" max="{{ field['max'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeNumber(field['key'], $event))>
                         @else
-                            <input class="form-control" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="{{ field['type'] === 'secret' ? 'password' : 'text' }}" autocomplete="{{ field['type'] === 'secret' ? 'new-password' : 'off' }}" placeholder="{{ field['type'] === 'secret' && field['present'] ? '••••••••' : '' }}" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
+                            <input class="form-control" id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="{{ field['type'] === 'secret' ? 'password' : 'text' }}" autocomplete="{{ field['type'] === 'secret' ? 'new-password' : 'off' }}" placeholder="{{ field['type'] === 'secret' && field['present'] ? '••••••••' : (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
                         @endif
                         <small id="hint-{{ field['key'] }}">
                             @if(field['localized'] && !field['present'] && field['value'] !== '')

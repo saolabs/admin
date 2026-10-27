@@ -1,0 +1,14 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        <div id="resource-field-{{ field['key'] }}" tabindex="-1" role="group" aria-labelledby="resource-label-{{ field['key'] }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" aria-invalid="{{ error ? 'true' : 'false' }}" class="sa-admin-choice-list">
+            @foreach(field['options'] as option)
+                @key(option['value'])
+                <label class="form-check sa-admin-choice"><input class="form-check-input" type="{{ field['type'] === 'multiselect' ? 'checkbox' : 'radio' }}" name="{{ field['key'] }}" value="{{ option['value'] }}" @checked(option['selected'] ?? false) @disabled(locked || field['readOnly']) @change(toggle(option['value'], $event))><span>{{ (option['label'] ?? '') ? option['label'] : text(option['labelKey']) }}</span></label>
+            @endforeach
+        </div>
+</template>

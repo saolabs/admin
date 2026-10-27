@@ -1,0 +1,15 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+    @state(optionQuery: string = '', optionRows: any[] = field['options'] ?? [])
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        <select id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" multiple size="5" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @change(multiple($event))>
+            @foreach((optionQuery === '' ? field['options'] : optionRows) as option)
+                @key(option['value'])
+                <option value="{{ option['value'] }}" @selected(option['selected'] ?? false)>{{ (option['label'] ?? '') ? option['label'] : text(option['labelKey']) }}</option>
+            @endforeach
+        </select>
+</template>

@@ -22,11 +22,11 @@ final class LocaleManager
         $policy = array_replace($this->defaults, $document);
         $locales = [];
         foreach ($this->db->table($this->prefix.'locales')->orderBy('code')->get() as $locale) {
-            $locales[$locale->code] = ['code' => $locale->code, 'name' => $locale->name ?? $locale->code, 'revision' => (int) $locale->published_revision,
+            $locales[$locale->code] = ['code' => $locale->code, 'name' => $locale->name ?? $locale->code, 'country' => $locale->country ?? '', 'currency' => $locale->currency ?? '', 'revision' => (int) $locale->published_revision,
                 'uiEnabled' => !in_array($locale->code, $policy['uiDisabled'] ?? [], true), 'contentEnabled' => in_array($locale->code, $policy['contentLocales'], true)];
         }
         // A host may already use a content language without a UI dictionary.
-        foreach ($policy['contentLocales'] as $code) $locales[$code] ??= ['code' => $code, 'name' => $code, 'revision' => 0, 'uiEnabled' => true, 'contentEnabled' => true];
+        foreach ($policy['contentLocales'] as $code) $locales[$code] ??= ['code' => $code, 'name' => $code, 'country' => '', 'currency' => '', 'revision' => 0, 'uiEnabled' => true, 'contentEnabled' => true];
         ksort($locales);
         return ['revision' => (int) ($row->revision ?? 0), 'uiDefault' => $policy['uiDefault'], 'uiFallback' => $policy['uiFallback'],
             'contentDefault' => $policy['contentDefault'], 'locales' => array_values($locales)];
@@ -76,9 +76,10 @@ final class LocaleManager
         $this->fallback = null;
         app('validator')->make($input, [
             'uiDefault' => ['required', 'string'], 'uiFallback' => ['required', 'string'], 'contentDefault' => ['required', 'string'],
-            'locales' => ['required', 'array', 'max:100'], 'locales.*' => ['required', 'array:code,name,uiEnabled,contentEnabled'],
+            'locales' => ['required', 'array', 'max:100'], 'locales.*' => ['required', 'array:code,name,country,currency,uiEnabled,contentEnabled'],
             'locales.*.code' => ['required', 'string', 'distinct:strict', 'max:40', 'regex:/^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$/D'],
-            'locales.*.name' => ['required', 'string', 'max:100'], 'locales.*.uiEnabled' => ['required', 'boolean'], 'locales.*.contentEnabled' => ['required', 'boolean'],
+            'locales.*.name' => ['required', 'string', 'max:100'],
+            'locales.*.country' => ['sometimes', 'string', 'regex:/^(?:[A-Z]{2})?$/D'], 'locales.*.currency' => ['sometimes', 'string', 'regex:/^(?:[A-Z]{3})?$/D'], 'locales.*.uiEnabled' => ['required', 'boolean'], 'locales.*.contentEnabled' => ['required', 'boolean'],
         ])->validate();
         foreach ($input['locales'] as $row) if (!is_bool($row['uiEnabled']) || !is_bool($row['contentEnabled'])) throw ValidationException::withMessages(['locales' => 'Boolean flags are required.']);
         return $this->db->transaction(function () use ($revision, $input) {
@@ -102,7 +103,7 @@ final class LocaleManager
             $disabled = []; $content = [];
             foreach ($rows as $row) {
                 $this->db->table($this->prefix.'locales')->insertOrIgnore(['code' => $row['code'], 'published_revision' => 0]);
-                $this->db->table($this->prefix.'locales')->where('code', $row['code'])->update(['name' => $row['name']]);
+                $this->db->table($this->prefix.'locales')->where('code', $row['code'])->update(['name' => $row['name'], 'country' => ($row['country'] ?? '') ?: null, 'currency' => ($row['currency'] ?? '') ?: null]);
                 if (!$row['uiEnabled']) $disabled[] = $row['code'];
                 if ($row['contentEnabled']) $content[] = $row['code'];
             }

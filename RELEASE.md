@@ -1,3 +1,11 @@
+# saola/admin v0.1.0-alpha.4
+
+- Theme view names follow the source path: `admin.themes.<theme>.*` (was `admin.<theme>.*`); host sao.config.json must use the `admin.themes.*` keys and `admin/themes/<theme>` Blade directories. Shared screens stay in `pages/`; `modules/` is for host screens (`panel.host_modules`).
+- Inputs: one file per type in `components/inputs/`; `components/input.sao` only lists the kinds and includes `inputs/{template}` (fallback `text`).
+- Placeholders: settings fields accept `placeholderKey`; defaults, languages, media and search now carry placeholders (vi/en).
+- Table edges align with the card's 16px gutter.
+- Languages: optional country and currency per locale (migration `add_locale_country_currency`); settings store sanitizes `richtext` values.
+
 # saola/admin v0.1.0-alpha.3
 
 Settings: new write-only `secret` field type (encrypted with APP_KEY, masked on every read, never public or localized; blank keeps the stored value).

@@ -314,7 +314,10 @@ body:has(.saola-admin) { margin: 0; }
 .sa-admin-resource-manager .sa-admin-table th { white-space: nowrap; }
 .sa-admin-resource-manager .sa-admin-table td { overflow-wrap: anywhere; min-width: 130px; }
 .sa-admin-resource-manager .sa-admin-table th:last-child, .sa-admin-resource-manager .sa-admin-table td:last-child { width: 1%; min-width: 100px; }
-.sa-admin-resource-manager .sa-admin-table .sa-admin-select-cell { width: 44px; min-width: 44px; padding-inline: 16px 0; }
+.sa-admin-resource-manager .sa-admin-table /* Table edges line up with the card's 16px content gutter (toolbar, filters, forms). */
+.sa-admin-table > :is(thead, tbody) > tr > :first-child { padding-inline-start: 16px; }
+.sa-admin-table > :is(thead, tbody) > tr > :last-child { padding-inline-end: 16px; }
+.sa-admin-select-cell { width: 44px; min-width: 44px; padding-inline: 16px 0; }
 .sa-admin-resource-manager .sa-admin-table tbody tr:nth-child(even) { background: #fafbfc; }
 .sa-admin-resource-manager .sa-admin-table tbody tr:hover { background: #f1f4fa; }
 .sa-admin-resource-manager .sa-admin-table th:not(:last-child), .sa-admin-resource-manager .sa-admin-table td:not(:last-child) { border-inline-end: 1px solid var(--sa-admin-border); }

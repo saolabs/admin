@@ -1,6 +1,7 @@
-export type LocaleRow = {code: string; name: string; revision: number; uiEnabled: boolean; contentEnabled: boolean};
+export type LocaleRow = {code: string; name: string; country: string; currency: string; revision: number; uiEnabled: boolean; contentEnabled: boolean};
 export type LocaleDocument = {revision: number; uiDefault: string; uiFallback: string; contentDefault: string; locales: LocaleRow[]};
-export type LanguageEditor = {document: LocaleDocument; permissions: Record<'view' | 'manage' | 'export' | 'import' | 'publish', boolean>;
+export type Reference = {countries: Array<{code: string; name: string}>; currencies: Array<{code: string; name: string}>};
+export type LanguageEditor = {document: LocaleDocument; reference?: Reference; permissions: Record<'view' | 'manage' | 'export' | 'import' | 'publish', boolean>;
     endpoint: string; csrfToken: string; maxBytes: number; batches: Array<{batch: string; locale: string; kind: string; status: string}>};
 type Preview = {batch: string; locale: string; status: string; changes: Record<string, string>; untranslated: string[]};
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
@@ -39,19 +40,20 @@ export class LanguageForm {
         if (!this.editor.permissions.manage || this.busy) return;
         this.document = {...this.document, [key]: value}; this.notice = ''; this.details = '';
     }
-    changeRow(code: string, key: 'name' | 'uiEnabled' | 'contentEnabled', value: string | boolean): void {
+    changeRow(code: string, key: 'name' | 'country' | 'currency' | 'uiEnabled' | 'contentEnabled', value: string | boolean): void {
         if (!this.editor.permissions.manage || this.busy) return;
+        if (key === 'country' || key === 'currency') value = String(value).trim().toUpperCase().slice(0, key === 'country' ? 2 : 3);
         this.document = {...this.document, locales: this.document.locales.map(row => row.code === code ? {...row, [key]: value} : row)};
         this.notice = ''; this.details = '';
     }
-    add(code: string, name: string): boolean {
+    add(code: string, name: string, country = '', currency = ''): boolean {
         if (!this.editor.permissions.manage || this.busy) return false;
-        code = code.trim(); name = name.trim();
-        if (!/^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$/.test(code) || code.length > 40 || !name || name.length > 100
+        code = code.trim(); name = name.trim(); country = country.trim().toUpperCase(); currency = currency.trim().toUpperCase();
+        if (!/^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*$/.test(code) || code.length > 40 || !name || name.length > 100 || !/^([A-Z]{2})?$/.test(country) || !/^([A-Z]{3})?$/.test(currency)
             || this.document.locales.some(row => row.code.replace('_', '-').toLowerCase() === code.replace('_', '-').toLowerCase())) {
             this.notice = 'admin.languages.invalid_locale'; return false;
         }
-        this.document = {...this.document, locales: [...this.document.locales, {code, name, revision: 0, uiEnabled: true, contentEnabled: true}]};
+        this.document = {...this.document, locales: [...this.document.locales, {code, name, country, currency, revision: 0, uiEnabled: true, contentEnabled: true}]};
         this.notice = 'admin.languages.save_new'; return true;
     }
     selectLocale(code: string): boolean {
@@ -91,7 +93,7 @@ export class LanguageForm {
     }
     async save(fetcher: typeof fetch = fetch): Promise<void> {
         if (!this.canSave) return;
-        const body = {...this.document, locales: this.document.locales.map(({code, name, uiEnabled, contentEnabled}) => ({code, name, uiEnabled, contentEnabled}))};
+        const body = {...this.document, locales: this.document.locales.map(({code, name, country, currency, uiEnabled, contentEnabled}) => ({code, name, country, currency, uiEnabled, contentEnabled}))};
         await this.request('', 'PUT', body, 'save', fetcher);
     }
     async reload(fetcher: typeof fetch = fetch): Promise<void> {
@@ -121,7 +123,7 @@ export class LanguageForm {
             || typeof editor.endpoint !== 'string' || !Number.isSafeInteger(editor.maxBytes) || !Array.isArray(editor.batches)
             || ['view', 'manage', 'export', 'import', 'publish'].some(key => typeof (editor.permissions as any)?.[key] !== 'boolean')
             || ['uiDefault', 'uiFallback', 'contentDefault'].some(key => typeof (doc as any)[key] !== 'string')
-            || doc.locales.some(row => !row || typeof row.code !== 'string' || typeof row.name !== 'string' || !Number.isSafeInteger(row.revision) || row.revision < 0
+            || doc.locales.some(row => !row || typeof row.code !== 'string' || typeof row.name !== 'string' || typeof row.country !== 'string' || typeof row.currency !== 'string' || !Number.isSafeInteger(row.revision) || row.revision < 0
                 || typeof row.uiEnabled !== 'boolean' || typeof row.contentEnabled !== 'boolean')) throw new Error('Invalid locale state');
     }
     private async request(path: string, method: string, body: unknown, operation: string, fetcher: typeof fetch): Promise<void> {

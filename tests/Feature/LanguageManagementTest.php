@@ -47,6 +47,17 @@ class LanguageManagementTest extends TestCase
         $this->putJson($this->api, $body)->assertOk()->assertJsonPath('editor.document.revision', 1);
     }
 
+    public function test_locale_country_and_currency_are_stored_and_validated(): void
+    {
+        $body = $this->configuration();
+        $body['locales'][0] += ['country' => 'VN', 'currency' => 'VND'];
+        $code = $body['locales'][0]['code'];
+        $this->putJson($this->api, $body)->assertOk()->assertJsonPath('editor.document.locales.0.country', 'VN')->assertJsonPath('editor.document.locales.0.currency', 'VND');
+        $body['revision'] = 1; $body['locales'][0]['currency'] = 'vnd';
+        $this->putJson($this->api, $body)->assertUnprocessable();
+        $this->assertSame('VN', collect(app(LocaleManager::class)->state()['locales'])->firstWhere('code', $code)['country']);
+    }
+
     public function test_permissions_apply_to_menu_and_each_http_operation(): void
     {
         $this->actingAs(new GenericUser(['id' => 3]));

@@ -1,6 +1,6 @@
 <script setup lang="ts">
     @vars(editor: any = {}, picker: boolean = false, imageOnly: boolean = false, onSelect: any = null, onClose: any = null)
-    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', noticeKind: string = 'error', progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active')
+    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', noticeKind: string = 'error', progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active', dragging: boolean = false)
 
     App.Admin.controllers.mediaLibrary($view, () => ({editor, picker, imageOnly, onSelect, onClose}));
 </script>
@@ -30,9 +30,6 @@
                     </select>
                 @endif
             </form>
-            @if(editor['permissions']['upload'])
-                <label class="sa-admin-media-upload">{{ __('admin.media.upload') }}<input class="form-control" id="media-upload" type="file" multiple accept="{{ imageOnly ? 'image/jpeg,image/png,image/gif,image/webp,image/x-icon,image/vnd.microsoft.icon' : editor['accept'] }}" @disabled(busy || dirty) @change(upload($event))></label>
-            @endif
         </div>
         <p class="sa-admin-media-public-hint">{{ __('admin.media.public_hint') }}</p>
         @if(notice !== '')
@@ -41,8 +38,18 @@
         @if(busy)
             <p class="sa-admin-media-loading" role="status">{{ __('admin.media.loading') }} {{ progress }}</p>
         @endif
-        <div class="sa-admin-media-body" @dragover.prevent @drop.prevent(dropFiles($event))>
+        <div @class({'sa-admin-media-body', 'is-dragging': dragging}) @dragover.prevent(dragOver()) @dragleave(dragLeave($event)) @drop.prevent(dropFiles($event))>
             <div class="sa-admin-media-main">
+                @if(editor['permissions']['upload'])
+                    <label @class({'sa-admin-dropzone', 'dropzone', 'is-dragging': dragging})>
+                        <input class="visually-hidden sa-admin-visually-hidden" id="media-upload" type="file" multiple accept="{{ imageOnly ? 'image/jpeg,image/png,image/gif,image/webp,image/x-icon,image/vnd.microsoft.icon' : editor['accept'] }}" @disabled(busy || dirty) @change(upload($event))>
+                        <span class="dz-message needsclick">
+                            <i class="ri-upload-cloud-2-fill display-5 text-muted" aria-hidden="true"></i>
+                            <span class="sa-admin-dropzone-title">{{ dragging ? text('admin.media.drop_active') : text('admin.media.drop_title') }}</span>
+                            <small class="text-muted">{{ __('admin.media.drop_hint') }}</small>
+                        </span>
+                    </label>
+                @endif
                 <div class="sa-admin-media-grid" aria-label="{{ __('admin.media.title') }}" aria-busy="{{ busy ? 'true' : 'false' }}">
                     @foreach(items as item)
                         @key(item['id'])
@@ -86,11 +93,11 @@
                     </p>
                     <fieldset @disabled(busy || selected['trashed'] || !editor['permissions']['update'])>
                         <label for="media-title">{{ __('admin.media.name') }}</label>
-                        <input class="form-control" id="media-title" type="text" maxlength="200" value="{{ title }}" @input(editTitle($event))>
+                        <input class="form-control" id="media-title" placeholder="{{ __('admin.media.title_placeholder') }}" type="text" maxlength="200" value="{{ title }}" @input(editTitle($event))>
                         <label for="media-alt">{{ __('admin.media.alt') }}</label>
-                        <input class="form-control" id="media-alt" type="text" maxlength="200" value="{{ alt }}" @input(editAlt($event))>
+                        <input class="form-control" id="media-alt" placeholder="{{ __('admin.media.alt_placeholder') }}" type="text" maxlength="200" value="{{ alt }}" @input(editAlt($event))>
                         <label for="media-caption">{{ __('admin.media.caption') }}</label>
-                        <textarea class="form-control" id="media-caption" rows="2" maxlength="2000" @input(editCaption($event))>{{ caption }}</textarea>
+                        <textarea class="form-control" id="media-caption" placeholder="{{ __('admin.media.caption_placeholder') }}" rows="2" maxlength="2000" @input(editCaption($event))>{{ caption }}</textarea>
                     </fieldset>
                     <label for="media-url">{{ __('admin.media.url') }}</label>
                     <input class="form-control" id="media-url" type="text" readonly value="{{ selected['url'] }}">

@@ -1,0 +1,7 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+</script>
+
+<template>
+    @include(__base__ + 'components.inputs.boolean', {field: field, error: error, locked: locked, onChange: onChange, onMedia: onMedia, mediaAvailable: mediaAvailable})
+</template>

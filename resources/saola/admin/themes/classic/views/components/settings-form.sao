@@ -63,8 +63,8 @@
                             </div>
                         @elseif(field['type'] === 'boolean')
                             <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="checkbox" aria-describedby="error-{{ field['key'] }}" @checked(field['value'] === true) @change(changeCheckbox(field['key'], $event))>
-                        @elseif(field['type'] === 'textarea')
-                            <textarea id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" rows="3" maxlength="{{ field['maxLength'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>{{ field['value'] }}</textarea>
+                        @elseif(field['type'] === 'textarea' || field['type'] === 'richtext')
+                            <textarea id="setting-{{ field['key'] }}" placeholder="{{ (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" rows="3" maxlength="{{ field['maxLength'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>{{ field['value'] }}</textarea>
                         @elseif(field['type'] === 'select')
                             <select id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" aria-describedby="error-{{ field['key'] }}" @change(changeText(field['key'], $event))>
                                 @foreach(field['options'] as option)
@@ -72,9 +72,9 @@
                                 @endforeach
                             </select>
                         @elseif(field['type'] === 'integer')
-                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="number" step="1" min="{{ field['min'] }}" max="{{ field['max'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeNumber(field['key'], $event))>
+                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="number" placeholder="{{ (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" step="1" min="{{ field['min'] }}" max="{{ field['max'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeNumber(field['key'], $event))>
                         @else
-                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="{{ field['type'] === 'secret' ? 'password' : 'text' }}" autocomplete="{{ field['type'] === 'secret' ? 'new-password' : 'off' }}" placeholder="{{ field['type'] === 'secret' && field['present'] ? '••••••••' : '' }}" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
+                            <input id="setting-{{ field['key'] }}" name="{{ field['key'] }}" aria-invalid="{{ (errors[field['key']] ?? '') ? 'true' : 'false' }}" type="{{ field['type'] === 'secret' ? 'password' : 'text' }}" autocomplete="{{ field['type'] === 'secret' ? 'new-password' : 'off' }}" placeholder="{{ field['type'] === 'secret' && field['present'] ? '••••••••' : (field['placeholderKey'] ? text(field['placeholderKey']) : '') }}" inputmode="{{ field['type'] === 'url' ? 'url' : 'text' }}" maxlength="{{ field['maxLength'] }}" value="{{ field['value'] }}" aria-describedby="hint-{{ field['key'] }} error-{{ field['key'] }}" @input(changeText(field['key'], $event))>
                         @endif
                         <small id="hint-{{ field['key'] }}">
                             @if(field['localized'] && !field['present'] && field['value'] !== '')

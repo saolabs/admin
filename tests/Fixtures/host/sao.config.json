@@ -21,12 +21,12 @@
                 "admin/app"
             ],
             "views": {
-                "admin.classic": "admin/themes/classic/views",
-                "admin.material": "admin/themes/material/views"
+                "admin.themes.classic": "admin/themes/classic/views",
+                "admin.themes.material": "admin/themes/material/views"
             },
             "blade": {
-                "admin.classic": "admin/classic",
-                "admin.material": "admin/material"
+                "admin.themes.classic": "admin/themes/classic",
+                "admin.themes.material": "admin/themes/material"
             },
             "compiled": {
                 "views": "admin/views",

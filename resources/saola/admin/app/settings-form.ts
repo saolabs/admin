@@ -1,5 +1,5 @@
 export type SettingValue = string | boolean | number;
-export type Field = {key: string; labelKey: string; type: 'text' | 'textarea' | 'url' | 'select' | 'integer' | 'boolean' | 'secret'; localized: boolean; media?: boolean; options?: Array<{value: string; label: string}>;
+export type Field = {key: string; labelKey: string; placeholderKey?: string; type: 'text' | 'textarea' | 'richtext' | 'url' | 'select' | 'integer' | 'boolean' | 'secret'; localized: boolean; media?: boolean; options?: Array<{value: string; label: string}>;
     value: SettingValue; present: boolean; maxLength: number; min: number | ''; max: number | ''};
 export type SettingsDocument = {group: string; schemaVersion: number; revision: number; values: Record<string, SettingValue>;
     localized: Record<string, Record<string, SettingValue>>; contentLocales: string[]; defaultLocale: string};

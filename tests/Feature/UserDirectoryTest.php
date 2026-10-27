@@ -77,7 +77,7 @@ class UserDirectoryTest extends TestCase
         $this->getJson('/control')->assertOk()->assertJsonCount(1, 'data.navigation');
         $this->operator();
         $this->getJson('/control')->assertOk()->assertJsonCount(2, 'data.navigation');
-        $this->getJson('/control/users')->assertOk()->assertJsonPath('view', 'admin.classic.pages.resource');
+        $this->getJson('/control/users')->assertOk()->assertJsonPath('view', 'admin.themes.classic.pages.resource');
         $this->postJson('/control/users', ['password' => 'attempt'])->assertStatus(405);
         $this->putJson('/control/users', ['email' => 'attempt@example.test'])->assertStatus(405);
     }

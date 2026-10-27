@@ -35,7 +35,7 @@ Trong config `saola-admin.php`:
 ],
 ```
 
-`Themes\AdminTheme` tự đọc các `themes/*/theme.manifest.json` trong package, kiểm tra slug/context/CSS và đăng ký context `admin` với base `admin.material`. Page/controller vẫn dùng `@RAW:pages.*`; shell/component vẫn dùng `__base__`. SSR, page-data, component routes và hydration nhận cùng namespace. Không sao chép route, Page/Resource, Policy hay store vào theme.
+`Themes\AdminTheme` tự đọc các `themes/*/theme.manifest.json` trong package, kiểm tra slug/context/CSS và đăng ký context `admin` với base `admin.themes.material`. Page/controller vẫn dùng `@RAW:pages.*`; shell/component vẫn dùng `__base__`. SSR, page-data, component routes và hydration nhận cùng namespace. Không sao chép route, Page/Resource, Policy hay store vào theme.
 
 Mặc định package chọn `classic`. Host kiểm chứng Gehihi chọn `material`. Đổi theme là đổi config rồi khởi động lại worker/xóa config cache theo cách triển khai của host. Chuyển theme bằng tải document đầy đủ để stylesheet và registry của document được chọn đồng bộ; không có endpoint cho khách đổi theme trong một SPA đang mở.
 
@@ -47,12 +47,12 @@ Khai các namespace vào context admin của toolchain host, độc lập nhau:
 {
   "app": ["admin/app"],
   "views": {
-    "admin.classic": "admin/themes/classic/views",
-    "admin.material": "admin/themes/material/views"
+    "admin.themes.classic": "admin/themes/classic/views",
+    "admin.themes.material": "admin/themes/material/views"
   },
   "blade": {
-    "admin.classic": "admin/classic",
-    "admin.material": "admin/material"
+    "admin.themes.classic": "admin/themes/classic",
+    "admin.themes.material": "admin/themes/material"
   }
 }
 ```
@@ -107,4 +107,31 @@ Manifest gốc khai rename `views/*` → `themes/classic/views/*`, `assets/*` �
 
 Cập nhật package local, dry-run/publish, thêm namespace/compiler và CSS inputs như trên rồi build. Không sửa tay Blade/JS/public generated. Không đổi dữ liệu, quyền hoặc schema DB khi đổi theme.
 
-Nguồn của từng theme hiện nằm trong `admin/themes/{name}`. Namespace logic vẫn là `admin.classic`, `admin.material`; Blade output vẫn ánh xạ riêng theo namespace. Manifest giữ cả rename từ source phẳng và từ `admin/{name}` để nâng cấp các lần phát triển trước. Nhiều đường dẫn lịch sử có thể trỏ tới cùng một đích; publisher kiểm ownership và conflict ở mọi đường dẫn trước khi thay đổi.
+Nguồn của từng theme hiện nằm trong `admin/themes/{name}`. Namespace logic vẫn là `admin.themes.classic`, `admin.themes.material`; Blade output vẫn ánh xạ riêng theo namespace. Manifest giữ cả rename từ source phẳng và từ `admin/{name}` để nâng cấp các lần phát triển trước. Nhiều đường dẫn lịch sử có thể trỏ tới cùng một đích; publisher kiểm ownership và conflict ở mọi đường dẫn trước khi thay đổi.
+
+## Phân vai view trong context admin
+
+| Thư mục (trong theme) | Dành cho | Ai viết | Tên view |
+| --- | --- | --- | --- |
+| `pages/` | Màn hình dùng chung của gói: `resource` (mọi CRUD khai bằng Resource), `settings`, `languages`, `media`, `ui-library` | Gói | `admin.themes.<theme>.pages.*`, controller của gói chỉ định tường minh vì một view phục vụ nhiều route |
+| `components/`, `layouts/`, `partials/` | Thành phần dùng lại, khung shell, phần đầu trang | Gói | `admin.themes.<theme>.components.*` … |
+| `modules/` của **host** (`saola-admin.panel.host_modules`) | Màn hình nghiệp vụ riêng của ứng dụng, tên view khớp tên route (`admin.providers.index` → `providers/index.sao`) | Host | `<host_modules>.providers.index` |
+
+CRUD tiêu chuẩn không cần view: host khai `Resource` (model, cột, trường, quy tắc, quyền) và đăng ký vào `panel.pages`, gói dựng danh sách, form, thùng rác và thao tác hàng loạt bằng `pages/resource`. `HostScreenController` lấy module và action từ tên route để chọn view trong `host_modules`.
+
+## Input: mỗi type một file
+
+`components/input.sao` chỉ giữ nhãn, trợ giúp, lỗi, danh sách `inputKinds` và một dòng `@include` chọn `components/inputs/{kind}`: tên file là `template` của trường (luôn có; mặc định bằng `type`) nếu nằm trong danh sách, không thì `text`.
+
+| File | Loại |
+| --- | --- |
+| `text` | mặc định: text, email, url, tel, password, integer, number, range, date, datetime, time, color |
+| `boolean`, `switch` | boolean (`switch` dùng lại `boolean`) |
+| `select`, `relation`, `multiselect` | select, relation (có ô lọc; dùng lại `select`), multiselect |
+| `radio`, `checkboxes` | nhóm lựa chọn (`checkboxes` dùng lại `radio`) |
+| `matrix` | ma trận quyền một bảng |
+| `media`, `image` | media/image (`image` dùng lại `media`) |
+| `tags` | tags |
+| `textarea`, `markdown`, `richtext`, `json` | vùng văn bản (ba loại sau dùng lại `textarea`, có thanh công cụ riêng) |
+
+Thêm type mới: tạo `inputs/<tên>.sao` (hoặc một file `@include` file có sẵn) và thêm tên vào `inputKinds` trong cả hai theme; type phải có ở `Input::TEMPLATES`.

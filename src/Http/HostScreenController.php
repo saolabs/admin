@@ -30,7 +30,9 @@ abstract class HostScreenController extends BaseWebController
         if ($module) $this->module = $module;
         if ($request->isMethod('GET') && !($options['forceJson'] ?? false)) {
             $data = [...app(PanelData::class)->prepare($request, $this->pageKeys()[$module] ?? ''), ...$data];
-            // "@module:" resolves through the "modules" directory, not the theme base.
+            // Core's own derivation (response() without a view) names the view '@RAW:modules.x', which the theme base then prefixes,
+            // and routeToViewPathConfig()'s '@MODULE:module.blade' doubles the module. So derive module/action from the route name here.
+            // "@module:" resolves through the "modules" directory (the host namespace), not the theme base.
             $bladePath ??= $module && $action ? "@module:{$action}" : null;
         }
 

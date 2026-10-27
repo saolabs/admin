@@ -36,7 +36,7 @@ final class DoctorAdminCommand extends Command
         if (!$packageSource && !str_contains($bootstrap, './bundle')) $errors[] = 'Merge ./bundle into admin/app/bootstrap.ts; keep existing host providers.';
         if (!$packageSource && (($config['paths']['saoView'] ?? null) !== 'resources/saola'
             || ($config['contexts']['admin']['views'][$namespace] ?? null) !== 'admin/themes/'.$theme['name'].'/views'
-            || ($config['contexts']['admin']['blade'][$namespace] ?? null) !== 'admin/'.$theme['name']
+            || ($config['contexts']['admin']['blade'][$namespace] ?? null) !== 'admin/themes/'.$theme['name']
             || !in_array('admin/app', $config['contexts']['admin']['app'] ?? [], true))) {
             $errors[] = 'Configure sao.config.json with admin/app and the selected theme view/Blade namespace: '.$namespace;
         }

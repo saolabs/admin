@@ -1,0 +1,11 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+    @state(tagText: string = field['tagText'] ?? '')
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        <input class="form-control" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="text" value="{{ tagText }}" placeholder="{{ text(field['placeholderKey'] ?? '') }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(tags($event))>
+        <small>{{ text('admin.input.tags_hint') }}</small>
+</template>

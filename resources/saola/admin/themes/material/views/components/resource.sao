@@ -28,7 +28,7 @@
                 <form class="sa-admin-list-filters" action="{{ page['listing']['action'] }}" method="get" @submit.prevent(filter($event))>
                     <input type="hidden" name="locale" value="{{ page['listing']['locale'] }}">
                     <label for="resource-search">{{ __('admin.resource.search') }}</label>
-                    <input class="form-control" id="resource-search" name="q" type="search" maxlength="100" value="{{ page['listing']['search'] }}">
+                    <input class="form-control" id="resource-search" placeholder="{{ __('admin.resource.search') }}" name="q" type="search" maxlength="100" value="{{ page['listing']['search'] }}">
                     <label for="resource-sort">{{ __('admin.resource.sort') }}</label>
                     <select class="form-select" id="resource-sort" name="sort">
                         @foreach(page['listing']['sortOptions'] as option)

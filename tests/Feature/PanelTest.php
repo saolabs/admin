@@ -69,7 +69,7 @@ class PanelTest extends TestCase
             ->assertJsonPath('i18n.catalogs.vi.messages.admin.workspace.title', 'Tổng quan');
         $this->assertSame($previousLocale, $this->app->getLocale());
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
-        $this->assertSame('admin.classic.pages.resource', $response->json('view'));
+        $this->assertSame('admin.themes.classic.pages.resource', $response->json('view'));
         $this->assertCount(2, $response->json('data.page.rows'));
         $this->getJson('/control/categories')->assertOk()->assertJsonMissingPath('data.page.rows.0.secret')
             ->assertJsonPath('data.page.rows.0.name', '<b>Category</b>');
@@ -88,13 +88,13 @@ class PanelTest extends TestCase
     public function test_theme_changes_view_context_and_css_without_changing_the_page_or_permissions(): void
     {
         $this->actingAs(new GenericUser(['id' => 1, 'tenant_id' => 7]));
-        $classic = $this->getJson('/control/categories')->assertOk()->assertJsonPath('view', 'admin.classic.pages.resource')->json('data');
+        $classic = $this->getJson('/control/categories')->assertOk()->assertJsonPath('view', 'admin.themes.classic.pages.resource')->json('data');
         config(['saola-admin.panel.theme' => 'material']);
         $theme = app(\Saola\Admin\Themes\AdminTheme::class)->apply();
-        $material = $this->getJson('/control/categories')->assertOk()->assertJsonPath('view', 'admin.material.pages.resource')->json('data');
+        $material = $this->getJson('/control/categories')->assertOk()->assertJsonPath('view', 'admin.themes.material.pages.resource')->json('data');
         $this->assertSame($classic, $material);
         $this->assertSame('resources/saola/admin/themes/material/assets/css/admin.css', config('sao.assets.css.admin'));
-        $this->assertSame('admin.material', $theme['view_context']);
+        $this->assertSame('admin.themes.material', $theme['view_context']);
         $shared = app(\Saola\Core\Services\ClientShare::class);
         $this->assertSame('material', $shared->export(Request::create('/control'))['saola.context.admin']['theme']);
         config(['saola-admin.panel.theme' => 'classic']);
@@ -104,7 +104,7 @@ class PanelTest extends TestCase
         $this->getJson('/control/categories')->assertForbidden();
         config(['saola-admin.panel.theme' => '../classic']);
         try { app(\Saola\Admin\Themes\AdminTheme::class)->apply(); $this->fail('Traversal must fail'); }
-        catch (\InvalidArgumentException) { $this->assertSame('admin.material', app(\Saola\Core\Engines\ViewContextManager::class)->getBaseDirectory('admin', 'base')); }
+        catch (\InvalidArgumentException) { $this->assertSame('admin.themes.material', app(\Saola\Core\Engines\ViewContextManager::class)->getBaseDirectory('admin', 'base')); }
     }
 
     public function test_host_can_select_a_registered_home_page_without_bypassing_its_permission(): void
@@ -172,9 +172,9 @@ class PanelTest extends TestCase
             $relative = substr($file->getPathname(), strlen($source) + 1, -4);
             $name = 'Admin'.str_replace(' ', '', ucwords(str_replace(['/', '-', '_'], ' ', $relative)));
             $result = (new \Saola\Compiler\SaolaCompiler())->compile(file_get_contents($file), new \Saola\Compiler\CompileOptions(
-                viewPath: 'admin.'.$theme.'.'.str_replace('/', '.', $relative), functionName: $name, factoryName: $name, lang: \Saola\Compiler\Lang::Ts,
+                viewPath: 'admin.themes.'.$theme.'.'.str_replace('/', '.', $relative), functionName: $name, factoryName: $name, lang: \Saola\Compiler\Lang::Ts,
             ));
-            $out = $this->root.'/resources/views/admin/'.$theme.'/'.$relative.'.blade.php';
+            $out = $this->root.'/resources/views/admin/themes/'.$theme.'/'.$relative.'.blade.php';
             (new Filesystem())->ensureDirectoryExists(dirname($out)); file_put_contents($out, $result->blade);
             $js = $this->root.'/resources/js/saola/admin/views/'.$theme.'/'.$relative.'.ts';
             (new Filesystem())->ensureDirectoryExists(dirname($js)); file_put_contents($js, $result->js);
@@ -184,7 +184,7 @@ class PanelTest extends TestCase
         $this->actingAs(new GenericUser(['id' => 1, 'tenant_id' => 7, 'name' => 'Workbench Operator', 'email' => 'operator@workbench.test']));
         $response = $this->get('/control?locale=vi')->assertOk();
         $response->assertSee('Tổng quan')->assertSee('Workbench')->assertSee('window.APP_CONFIGS=', false)
-            ->assertSee('admin.classic.pages.resource', false)->assertSee('admin:', false)->assertSee('Workbench Operator')
+            ->assertSee('admin.themes.classic.pages.resource', false)->assertSee('admin:', false)->assertSee('Workbench Operator')
             ->assertSee('id="admin-language-toggle"', false)->assertSee('id="admin-account-toggle"', false)
             ->assertSee('sa-admin-nav-icon', false)->assertSee('Thu gọn thanh bên');
         config(['saola-admin.panel.theme' => 'material']);
@@ -194,7 +194,7 @@ class PanelTest extends TestCase
             ->assertSee('id="page-topbar"', false)->assertSee('navbar-menu', false)->assertSee('ri-dashboard-2-line', false);
         $this->getJson('/control/_ui')->assertNotFound();
         config(['saola-admin.panel.ui_catalog' => true]);
-        $this->getJson('/control/_ui?locale=vi')->assertOk()->assertJsonPath('view', 'admin.material.pages.ui-library')
+        $this->getJson('/control/_ui?locale=vi')->assertOk()->assertJsonPath('view', 'admin.themes.material.pages.ui-library')
             ->assertJsonCount(4, 'data.samples.cards')->assertJsonPath('data.currentPage', 'ui-library');
         app(\Saola\Core\View\Services\ViewHelperService::class)->reset();
         $catalog = $this->get('/control/_ui?locale=vi')->assertOk()->assertSee('Default Buttons')
@@ -209,7 +209,7 @@ class PanelTest extends TestCase
         $this->assertSame('resources/saola/admin/themes/classic/assets/css/admin.css', config('sao.assets.css.admin'));
         $this->assertCount(8, SPA::getRoutes('admin'));
         $routes = app(\Saola\Core\View\Services\ViewHelperService::class)->exportComponentRoutes('admin');
-        $this->assertContains('admin.classic.pages.settings', array_column($routes, 'component'));
+        $this->assertContains('admin.themes.classic.pages.settings', array_column($routes, 'component'));
         $this->assertArrayHasKey('saola.admin.page', $this->app['router']->getRoutes()->compile()['attributes']);
         $this->getJson('/control/settings')->assertForbidden();
         Gate::define('view-site-settings', fn () => true);
@@ -217,13 +217,13 @@ class PanelTest extends TestCase
         Gate::define('view-system-settings', fn () => true);
         Gate::define('update-system-settings', fn () => true);
         $this->getJson('/control/settings?content_locale=vi')->assertOk()
-            ->assertJsonPath('view', 'admin.classic.pages.settings')
+            ->assertJsonPath('view', 'admin.themes.classic.pages.settings')
             ->assertJsonPath('data.editor.contentLocale', 'vi')->assertJsonPath('data.editor.fields.0.value', 'Workbench')
             ->assertJsonPath('data.editor.canUpdate', true)->assertJsonCount(4, 'data.navigation');
         foreach (['view', 'manage', 'export', 'import', 'publish'] as $operation) Gate::define($operation.'-admin-languages', fn () => true);
         app(\Saola\Core\View\Services\ViewHelperService::class)->reset();
         $this->get('/control/languages?locale=vi')->assertOk()->assertSee('Ngôn ngữ')->assertSee('language-save', false);
-        $this->getJson('/control/languages?locale=vi')->assertOk()->assertJsonPath('view', 'admin.classic.pages.languages')
+        $this->getJson('/control/languages?locale=vi')->assertOk()->assertJsonPath('view', 'admin.themes.classic.pages.languages')
             ->assertJsonPath('data.languageEditor.document.uiDefault', 'en')->assertJsonPath('data.languageEditor.permissions.publish', true);
         foreach (['view', 'upload', 'update', 'delete'] as $operation) Gate::define($operation.'-media', fn () => true);
         $this->post('/control/_api/media', ['file' => \Illuminate\Http\UploadedFile::fake()->createWithContent('fixture-logo.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a3e0AAAAASUVORK5CYII='))], ['Accept' => 'application/json'])->assertCreated();

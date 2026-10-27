@@ -1,6 +1,6 @@
 # Material UI components
 
-Nguồn: `resources/saola/admin/themes/material/views/components/ui/`. Namespace: `admin.material.components.ui.*`.
+Nguồn: `resources/saola/admin/themes/material/views/components/ui/`. Namespace: `admin.themes.material.components.ui.*`.
 
 UI dùng markup, class, CSS, font và icon từ **Velzon Material** trong `admin-material`. Không thêm bộ CSS thiết kế mới; không chạy template `app.js` hoặc Bootstrap DOM plugins cùng Saola. Bản ghi nguồn/SHA-256: `themes/material/assets/ui.sources.json`. Bốn ảnh card mẫu được sao chép nguyên bản. Classic giữ renderer hiện có, không tự nạp CSS Material.
 

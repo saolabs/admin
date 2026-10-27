@@ -8,6 +8,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\ValidationException;
+use Saola\Admin\Resources\RichText;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /** No global cache or actor state. A conditional revision update is the write boundary. */
@@ -52,6 +53,9 @@ final class DatabaseSettingsStore implements SettingsStore
     public function update(SettingsGroup $group, int $revision, array $patch): array
     {
         $this->validate($group, $patch);
+        // Rich text is stored in its sanitized form, so what the response projects is what readers get.
+        foreach ($patch['values'] ?? [] as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'richtext') $patch['values'][$key] = RichText::clean($value);
+        foreach ($patch['localized'] ?? [] as $locale => $fields) foreach ($fields as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'richtext') $patch['localized'][$locale][$key] = RichText::clean($value);
         return $this->db->transaction(function () use ($group, $revision, $patch) {
             $this->db->table($this->table)->insertOrIgnore(['group_key' => $group->key, 'schema_version' => $group->version,
                 'revision' => 0, 'document' => '{}']);

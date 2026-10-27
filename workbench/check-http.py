@@ -25,7 +25,7 @@ def request(path, method='GET', body=None, token=None, accept='application/json'
 status, raw, headers = request('/control/settings?locale=en&content_locale=vi')
 assert status == 200, ('editor', status)
 page = json.loads(raw)
-assert page['view'] == 'admin.classic.pages.settings'
+assert page['view'] == 'admin.themes.classic.pages.settings'
 assert page['data']['uiLocale'] == 'en'
 assert page['data']['account']['name'] == 'Workbench Operator'
 assert page['data']['account']['initials'] == 'WO' and page['data']['account']['logoutUrl'] == ''
@@ -182,7 +182,7 @@ def media_upload(csrf=None):
     except urllib.error.HTTPError as error: return error.code, error.read()
 
 status, raw, _ = request('/control/media?locale=vi')
-assert status == 200 and json.loads(raw)['view'] == 'admin.classic.pages.media'
+assert status == 200 and json.loads(raw)['view'] == 'admin.themes.classic.pages.media'
 media_editor = json.loads(raw)['data']['mediaEditor']; token = media_editor['csrfToken']
 assert media_upload()[0] == 419
 status, raw = media_upload(token)

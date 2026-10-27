@@ -42,7 +42,7 @@ final class SettingsEditorController extends BaseWebController
             $values = $localized ? ($document['localized'][$locale] ?? []) : $document['values'];
             $fallback = $localized ? ($document['localized'][$document['defaultLocale']][$name] ?? $field['default']) : $field['default'];
             $present = array_key_exists($name, $values);
-            $fields[] = ['key' => $name, 'labelKey' => $field['labelKey'], 'type' => $field['type'], 'localized' => $localized,
+            $fields[] = ['key' => $name, 'labelKey' => $field['labelKey'], 'placeholderKey' => $field['placeholderKey'] ?? '', 'type' => $field['type'], 'localized' => $localized,
                 'value' => $field['type'] === 'secret' ? '' : ($present ? $values[$name] : $fallback), 'present' => $present, 'media' => $field['media'] ?? false,
                 'options' => array_map(fn ($value, $label) => ['value' => $value, 'label' => $label], array_keys($field['options'] ?? []), array_values($field['options'] ?? [])),
                 'maxLength' => $field['maxLength'] ?? 2048, 'min' => $field['min'] ?? '', 'max' => $field['max'] ?? ''];

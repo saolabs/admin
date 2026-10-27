@@ -12,7 +12,7 @@ Project cung cấp model, scope, Policy, Resource/Settings schema, nhãn và hoo
 
 Classic và Material dùng cùng props/state/action contract. Material dùng Bootstrap/Velzon Material đã được cung cấp; CSS vendor, icon và nguồn asset có inventory riêng. Các script demo, Popper/Bootstrap event handlers của template không được chạy trên view Saola. Dropdown, sidebar, media overlay và form chỉ có một bộ lifecycle/action trong `app/views`.
 
-Mỗi theme có manifest và CSS entry riêng. Root bundle chỉ đăng ký service; không import mọi stylesheet. View context logic hiện là `admin.classic` hoặc `admin.material`; namespace được ánh xạ sang source trong `admin/themes/`. Đổi theme bằng document load mới để registry, SSR và CSS cùng phiên bản. Xem [Asset inventory](ASSET_INVENTORY.md).
+Mỗi theme có manifest và CSS entry riêng. Root bundle chỉ đăng ký service; không import mọi stylesheet. View context logic hiện là `admin.themes.classic` hoặc `admin.themes.material`; namespace được ánh xạ sang source trong `admin/themes/`. Đổi theme bằng document load mới để registry, SSR và CSS cùng phiên bản. Xem [Asset inventory](ASSET_INVENTORY.md).
 
 Source publisher theo dõi ownership/hash, nâng cấp cả đường dẫn phẳng và `admin/{name}` cũ, giữ file host và dừng toàn bộ batch nếu file đã đổi chỗ có chỉnh sửa local. Không sửa output Blade/JS bằng tay. `admin:doctor` kiểm source, namespace, renderer, asset và các storage adapter đã cấu hình.
 

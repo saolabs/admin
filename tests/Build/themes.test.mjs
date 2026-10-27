@@ -20,7 +20,8 @@ test('production builds emit the original catalogue photographs at stable URLs',
 });
 test('themes bind the same package controllers without duplicating feature scripts', () => {
     const bindings = {
-        'components/input': 'input', 'components/manager': 'manager', 'components/resource': 'resource',
+        ...Object.fromEntries(['boolean', 'matrix', 'radio', 'select', 'multiselect', 'media', 'tags', 'textarea', 'text'].map(kind => [`components/inputs/${kind}`, 'input'])),
+        'components/manager': 'manager', 'components/resource': 'resource',
         'components/settings-form': 'settings', 'components/languages': 'languages',
         'components/media-library': 'mediaLibrary', 'layouts/shell': 'shell',
         'pages/resource': 'page', 'pages/settings': 'page', 'pages/languages': 'page', 'pages/media': 'page',

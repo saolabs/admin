@@ -1,0 +1,19 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        @if(field['type'] === 'markdown' || field['type'] === 'richtext')
+            <div class="sa-admin-editor-toolbar" role="toolbar" aria-label="{{ text('admin.input.formatting') }}">
+                @foreach(field['commands'] ?? [] as command)
+                    <button type="button" @disabled(locked || field['readOnly']) @click(format(command['key']))>{{ text(command['labelKey']) }}</button>
+                @endforeach
+            </div>
+        @elseif(field['type'] === 'json')
+            <div class="sa-admin-editor-toolbar"><button type="button" @disabled(locked || field['readOnly']) @click(formatJson())>{{ text('admin.input.format_json') }}</button></div>
+        @endif
+        <textarea id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" class="{{ field['type'] === 'textarea' ? '' : 'sa-admin-code-input' }}" rows="{{ field['rows'] ?? 6 }}" maxlength="{{ field['maxLength'] }}" placeholder="{{ (field['placeholderKey'] ?? '') ? text(field['placeholderKey']) : '' }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(input($event))>{{ field['value'] }}</textarea>
+        @if(field['type'] === 'richtext')<small>{{ text('admin.input.html_hint') }}</small>@endif
+</template>

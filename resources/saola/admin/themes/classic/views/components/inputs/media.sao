@@ -1,0 +1,13 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        <div class="sa-admin-media-field">
+            @if(field['type'] === 'image' && (field['previewUrl'] ?? '') !== '')<img class="sa-admin-media-field-preview" src="{{ field['previewUrl'] }}" alt="{{ text(field['labelKey']) }}">@endif
+            <input id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="text" value="{{ field['value'] }}" placeholder="{{ text('admin.media.url') }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(input($event))>
+            <div class="sa-admin-media-field-actions"><button type="button" @disabled(locked || field['readOnly'] || !mediaAvailable) @click(media())>{{ text('admin.media.choose') }}</button><button type="button" @disabled(locked || field['readOnly'] || !field['value']) @click(clear())>{{ text('admin.media.remove') }}</button></div>
+        </div>
+</template>

@@ -49,22 +49,27 @@
                         </select>
                     </div>
                 </div>
+                <p class="text-muted small sa-admin-muted sa-admin-locale-hint">{{ __('admin.languages.locale_hint') }}</p>
                 <div class="table-responsive sa-admin-table-scroll">
                     <table class="table table-hover align-middle mb-0 sa-admin-table sa-admin-locales-table">
-                        <thead><tr><th scope="col">{{ __('admin.languages.code') }}</th><th scope="col">{{ __('admin.languages.name') }}</th><th scope="col">{{ __('admin.languages.ui_enabled') }}</th><th scope="col">{{ __('admin.languages.content_enabled') }}</th><th scope="col">{{ __('admin.languages.status_label') }}</th></tr></thead>
+                        <thead><tr><th scope="col">{{ __('admin.languages.code') }}</th><th scope="col">{{ __('admin.languages.name') }}</th><th scope="col">{{ __('admin.languages.country') }}</th><th scope="col">{{ __('admin.languages.currency') }}</th><th scope="col" class="text-center">{{ __('admin.languages.ui_enabled') }}</th><th scope="col" class="text-center">{{ __('admin.languages.content_enabled') }}</th><th scope="col">{{ __('admin.languages.status_label') }}</th></tr></thead>
                         <tbody>
                             @foreach(localeDoc['locales'] as row)
                                 @key(row['code'])
                                 <tr>
-                                    <td>{{ row['code'] }}</td>
+                                    <td><code class="sa-admin-locale-code">{{ row['code'] }}</code></td>
                                     <td><input class="form-control" aria-label="{{ __('admin.languages.name') }} {{ row['code'] }}" type="text" maxlength="100" value="{{ row['name'] }}" @input(changeName(row['code'], $event))></td>
-                                    <td><input class="form-check-input" aria-label="{{ __('admin.languages.ui_enabled') }} {{ row['code'] }}" type="checkbox" @checked(row['uiEnabled']) @change(changeFlag(row['code'], 'uiEnabled', $event))></td>
-                                    <td><input class="form-check-input" aria-label="{{ __('admin.languages.content_enabled') }} {{ row['code'] }}" type="checkbox" @checked(row['contentEnabled']) @change(changeFlag(row['code'], 'contentEnabled', $event))></td>
+                                    <td><input class="form-control sa-admin-locale-short" list="sa-admin-countries" placeholder="VN" aria-label="{{ __('admin.languages.country') }} {{ row['code'] }}" type="text" maxlength="2" value="{{ row['country'] }}" @input(changeText(row['code'], 'country', $event))></td>
+                                    <td><input class="form-control sa-admin-locale-short" list="sa-admin-currencies" placeholder="VND" aria-label="{{ __('admin.languages.currency') }} {{ row['code'] }}" type="text" maxlength="3" value="{{ row['currency'] }}" @input(changeText(row['code'], 'currency', $event))></td>
+                                    <td class="text-center"><div class="form-check form-switch form-switch-md d-inline-block"><input class="form-check-input" role="switch" aria-label="{{ __('admin.languages.ui_enabled') }} {{ row['code'] }}" type="checkbox" @checked(row['uiEnabled']) @change(changeFlag(row['code'], 'uiEnabled', $event))></div></td>
+                                    <td class="text-center"><div class="form-check form-switch form-switch-md d-inline-block"><input class="form-check-input" role="switch" aria-label="{{ __('admin.languages.content_enabled') }} {{ row['code'] }}" type="checkbox" @checked(row['contentEnabled']) @change(changeFlag(row['code'], 'contentEnabled', $event))></div></td>
                                     <td><span class="badge bg-primary-subtle text-primary sa-admin-badge">{{ row['revision'] > 0 ? text('admin.languages.status.published') : text('admin.languages.unpublished') }}</span></td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
+                    <datalist id="sa-admin-countries">@foreach(editor['reference']['countries'] ?? [] as item)<option value="{{ item['code'] }}" label="{{ item['name'] }}"></option>@endforeach</datalist>
+                    <datalist id="sa-admin-currencies">@foreach(editor['reference']['currencies'] ?? [] as item)<option value="{{ item['code'] }}" label="{{ item['name'] }}"></option>@endforeach</datalist>
                 </div>
             </fieldset>
             <div class="sa-admin-form-actions">
@@ -78,9 +83,13 @@
                 <summary>{{ __('admin.languages.add') }}</summary>
                 <form class="sa-admin-locale-add-form" @submit.prevent(add($event))>
                     <div class="sa-admin-form-field"><label for="language-new-code">{{ __('admin.languages.code') }}</label>
-                        <input class="form-control" id="language-new-code" name="code" type="text" maxlength="40" required @disabled(busy)></div>
+                        <input class="form-control" id="language-new-code" placeholder="{{ __('admin.languages.code_placeholder') }}" name="code" type="text" maxlength="40" required @disabled(busy)></div>
                     <div class="sa-admin-form-field"><label for="language-new-name">{{ __('admin.languages.name') }}</label>
-                        <input class="form-control" id="language-new-name" name="name" type="text" maxlength="100" required @disabled(busy)></div>
+                        <input class="form-control" id="language-new-name" placeholder="{{ __('admin.languages.name_placeholder') }}" name="name" type="text" maxlength="100" required @disabled(busy)></div>
+                    <div class="sa-admin-form-field"><label for="language-new-country">{{ __('admin.languages.country') }}</label>
+                        <input class="form-control" id="language-new-country" list="sa-admin-countries" placeholder="VN" name="country" type="text" maxlength="2" @disabled(busy)></div>
+                    <div class="sa-admin-form-field"><label for="language-new-currency">{{ __('admin.languages.currency') }}</label>
+                        <input class="form-control" id="language-new-currency" list="sa-admin-currencies" placeholder="VND" name="currency" type="text" maxlength="3" @disabled(busy)></div>
                     <button class="btn btn-primary" type="submit" @disabled(busy)><i class="ri-add-line align-bottom me-1" aria-hidden="true"></i>{{ __('admin.languages.add') }}</button>
                 </form>
             </details>
@@ -116,7 +125,7 @@
                 @if(permissions['import'])
                     <div class="sa-admin-form-field">
                         <label for="language-baseline">{{ __('admin.languages.baseline') }}</label>
-                        <input class="form-control" id="language-baseline" type="text" value="{{ baseline }}" @disabled(busy) @input(changeBaseline($event))>
+                        <input class="form-control" id="language-baseline" placeholder="{{ __('admin.languages.baseline_placeholder') }}" type="text" value="{{ baseline }}" @disabled(busy) @input(changeBaseline($event))>
                     </div>
                 @endif
             </details>

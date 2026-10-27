@@ -1,0 +1,19 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+    @state(optionQuery: string = '', optionRows: any[] = field['options'] ?? [])
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        @if((field['template'] ?? '') === 'relation')
+            <input type="search" class="sa-admin-option-search" aria-label="{{ text('admin.input.search_options') }}" placeholder="{{ text('admin.input.search_options') }}" @disabled(locked || field['readOnly']) @input(filterOptions($event))>
+        @endif
+        <select id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @change(input($event))>
+            <option value="" @selected(field['value'] === '' || field['value'] === null)>{{ text('admin.input.choose_option') }}</option>
+            @foreach((optionQuery === '' ? field['options'] : optionRows) as option)
+                @key(option['value'])
+                <option value="{{ option['value'] }}" @selected(option['selected'] ?? false)>{{ (option['label'] ?? '') ? option['label'] : text(option['labelKey']) }}</option>
+            @endforeach
+        </select>
+</template>

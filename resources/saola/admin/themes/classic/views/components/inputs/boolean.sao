@@ -1,0 +1,11 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        <div class="sa-admin-input-check {{ (field['template'] ?? '') === 'switch' ? 'sa-admin-input-switch' : '' }}">
+            <input id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="checkbox" role="{{ (field['template'] ?? '') === 'switch' ? 'switch' : 'checkbox' }}" @checked(field['value']) @disabled(locked || field['readOnly']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @change(check($event))>
+        </div>
+</template>

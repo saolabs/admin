@@ -78,9 +78,9 @@
                 <summary>{{ __('admin.languages.add') }}</summary>
                 <form class="sa-admin-locale-add-form" @submit.prevent(add($event))>
                     <div class="sa-admin-form-field"><label for="language-new-code">{{ __('admin.languages.code') }}</label>
-                        <input id="language-new-code" name="code" type="text" maxlength="40" required @disabled(busy)></div>
+                        <input id="language-new-code" placeholder="{{ __('admin.languages.code_placeholder') }}" name="code" type="text" maxlength="40" required @disabled(busy)></div>
                     <div class="sa-admin-form-field"><label for="language-new-name">{{ __('admin.languages.name') }}</label>
-                        <input id="language-new-name" name="name" type="text" maxlength="100" required @disabled(busy)></div>
+                        <input id="language-new-name" placeholder="{{ __('admin.languages.name_placeholder') }}" name="name" type="text" maxlength="100" required @disabled(busy)></div>
                     <button type="submit" @disabled(busy)>{{ __('admin.languages.add') }}</button>
                 </form>
             </details>
@@ -116,7 +116,7 @@
                 @if(permissions['import'])
                     <div class="sa-admin-form-field">
                         <label for="language-baseline">{{ __('admin.languages.baseline') }}</label>
-                        <input id="language-baseline" type="text" value="{{ baseline }}" @disabled(busy) @input(changeBaseline($event))>
+                        <input id="language-baseline" placeholder="{{ __('admin.languages.baseline_placeholder') }}" type="text" value="{{ baseline }}" @disabled(busy) @input(changeBaseline($event))>
                     </div>
                 @endif
             </details>

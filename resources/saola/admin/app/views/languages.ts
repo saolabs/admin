@@ -102,6 +102,10 @@ export function bindLanguages(view: View, App: Application, readProps: () => Lan
         form.changeRow(code, 'name', (event.target as HTMLInputElement).value);
         refresh();
     }
+    function changeText(code: string, key: string, event: Event) {
+        form.changeRow(code, key, (event.target as HTMLInputElement).value);
+        refresh();
+    }
     function changeFlag(code: string, key: string, event: Event) {
         form.changeRow(code, key, (event.target as HTMLInputElement).checked);
         refresh();
@@ -109,7 +113,7 @@ export function bindLanguages(view: View, App: Application, readProps: () => Lan
     function add(event: SubmitEvent) {
         const input = event.currentTarget as HTMLFormElement;
         const data = new FormData(input);
-        if (form.add(String(data.get('code') || ''), String(data.get('name') || '')))
+        if (form.add(String(data.get('code') || ''), String(data.get('name') || ''), String(data.get('country') || ''), String(data.get('currency') || '')))
             input.reset();
         refresh();
     }
@@ -178,7 +182,7 @@ export function bindLanguages(view: View, App: Application, readProps: () => Lan
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         form.download = null;
     }
-    const actions = { started, resumed, paused, stopped, destroyed, changeDefault, changeName, changeFlag, add, selectLocale, changeBaseline, loadFile, save, reload, discard, previewJson, apply, openBatch, useBaseline, exportJson };
+    const actions = { started, resumed, paused, stopped, destroyed, changeDefault, changeName, changeText, changeFlag, add, selectLocale, changeBaseline, loadFile, save, reload, discard, previewJson, apply, openBatch, useBaseline, exportJson };
     view.__ctrl__.setUserDefinedConfig(actions);
     return actions;
 }

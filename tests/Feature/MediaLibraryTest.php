@@ -66,7 +66,7 @@ class MediaLibraryTest extends TestCase
         $this->getJson('/control/_api/media?page=2')->assertOk()->assertJsonCount(0, 'data.items')->assertJsonPath('data.total', 2);
         $this->getJson('/control/_api/media?kind=bad')->assertUnprocessable();
         $this->getJson('/control/_api/media?page=-1')->assertUnprocessable();
-        $this->getJson('/control/media?locale=vi')->assertOk()->assertJsonPath('view', 'admin.classic.pages.media')
+        $this->getJson('/control/media?locale=vi')->assertOk()->assertJsonPath('view', 'admin.themes.classic.pages.media')
             ->assertJsonPath('data.currentPage', 'media')->assertJsonPath('data.mediaEditor.initial.total', 2);
     }
 

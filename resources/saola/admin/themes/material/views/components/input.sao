@@ -1,96 +1,12 @@
 <script setup lang="ts">
-    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
-    @state(tagText: string = field['tagText'] ?? '', optionRows: any[] = field['options'] ?? [], optionQuery: string = '')
-
-    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false,
+        inputKinds: string[] = ['boolean', 'switch', 'matrix', 'radio', 'checkboxes', 'select', 'relation', 'multiselect', 'image', 'media', 'tags', 'textarea', 'markdown', 'richtext', 'json'])
 </script>
 
 <template>
     <div class="sa-admin-input" data-input-template="{{ field['template'] ?? field['type'] }}">
         <label id="resource-label-{{ field['key'] }}" for="resource-field-{{ field['key'] }}">{{ text(field['labelKey']) }} @if(field['required'] && !field['readOnly'])<span class="sa-admin-required" aria-hidden="true">*</span>@endif</label>
-        @if(field['type'] === 'boolean')
-            <div class="form-check sa-admin-input-check {{ (field['template'] ?? '') === 'switch' ? 'sa-admin-input-switch' : '' }}">
-                <input class="form-check-input" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="checkbox" role="{{ (field['template'] ?? '') === 'switch' ? 'switch' : 'checkbox' }}" @checked(field['value']) @disabled(locked || field['readOnly']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @change(check($event))>
-            </div>
-        @elseif((field['template'] ?? '') === 'matrix' && field['matrix'])
-            <div id="resource-field-{{ field['key'] }}" tabindex="-1" role="group" aria-labelledby="resource-label-{{ field['key'] }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" aria-invalid="{{ error ? 'true' : 'false' }}" class="sa-admin-matrix table-responsive">
-                <table class="table table-sm align-middle sa-admin-matrix-table">
-                    <thead>
-                        <tr>
-                            <th class="sa-admin-matrix-name" scope="col">{{ text('admin.matrix.item') }}</th>
-                            <th class="sa-admin-matrix-cell" scope="col"><label class="sa-admin-choice"><input class="form-check-input" type="checkbox" aria-label="{{ text('admin.matrix.all') }}" @checked(field['matrix']['all']) @disabled(locked || field['readOnly']) @change(toggleMany(field['matrix']['values'], $event))><span>{{ text('admin.matrix.all') }}</span></label></th>
-                            @foreach(field['matrix']['headers'] as header)
-                                @key(header['key'])
-                                <th class="sa-admin-matrix-cell" scope="col"><label class="sa-admin-choice"><input class="form-check-input" type="checkbox" aria-label="{{ (header['label'] ?? '') ? header['label'] : text(header['labelKey']) }}" @checked(header['all']) @disabled(locked || field['readOnly'] || !header['any']) @change(toggleMany(header['values'], $event))><span>{{ (header['label'] ?? '') ? header['label'] : text(header['labelKey']) }}</span></label></th>
-                            @endforeach
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach(field['matrix']['rows'] as row)
-                            @key(row['key'])
-                            <tr class="sa-admin-matrix-row sa-admin-matrix-{{ row['kind'] }} sa-admin-matrix-depth-{{ row['depth'] }}">
-                                <th class="sa-admin-matrix-name" scope="row">{{ (row['label'] ?? '') ? row['label'] : text(row['labelKey']) }}</th>
-                                <td class="sa-admin-matrix-cell"><input class="form-check-input" type="checkbox" aria-label="{{ text('admin.matrix.all') }}" @checked(row['all']) @disabled(locked || field['readOnly'] || !row['any']) @change(toggleMany(row['values'], $event))></td>
-                                @foreach(row['cells'] as cell)
-                                    <td class="sa-admin-matrix-cell">@if(cell['enabled'])<input class="form-check-input" type="checkbox" @checked(cell['all']) @disabled(locked || field['readOnly']) @change(toggleMany(cell['values'], $event))>@endif</td>
-                                @endforeach
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @elseif((field['template'] ?? '') === 'radio' || (field['template'] ?? '') === 'checkboxes')
-            <div id="resource-field-{{ field['key'] }}" tabindex="-1" role="group" aria-labelledby="resource-label-{{ field['key'] }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" aria-invalid="{{ error ? 'true' : 'false' }}" class="sa-admin-choice-list">
-                @foreach(field['options'] as option)
-                    @key(option['value'])
-                    <label class="form-check sa-admin-choice"><input class="form-check-input" type="{{ field['type'] === 'multiselect' ? 'checkbox' : 'radio' }}" name="{{ field['key'] }}" value="{{ option['value'] }}" @checked(option['selected'] ?? false) @disabled(locked || field['readOnly']) @change(toggle(option['value'], $event))><span>{{ (option['label'] ?? '') ? option['label'] : text(option['labelKey']) }}</span></label>
-                @endforeach
-            </div>
-        @elseif(field['type'] === 'select' || field['type'] === 'multiselect')
-            @if((field['template'] ?? '') === 'relation')
-                <input class="form-control sa-admin-option-search" type="search" aria-label="{{ text('admin.input.search_options') }}" placeholder="{{ text('admin.input.search_options') }}" @disabled(locked || field['readOnly']) @input(filterOptions($event))>
-            @endif
-            @if(field['type'] === 'multiselect')
-                <select class="form-select" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" multiple size="5" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @change(multiple($event))>
-                    @foreach((optionQuery === '' ? field['options'] : optionRows) as option)
-                        @key(option['value'])
-                        <option value="{{ option['value'] }}" @selected(option['selected'] ?? false)>{{ (option['label'] ?? '') ? option['label'] : text(option['labelKey']) }}</option>
-                    @endforeach
-                </select>
-            @else
-                <select class="form-select" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @change(input($event))>
-                    <option value="" @selected(field['value'] === '' || field['value'] === null)>{{ text('admin.input.choose_option') }}</option>
-                    @foreach((optionQuery === '' ? field['options'] : optionRows) as option)
-                        @key(option['value'])
-                        <option value="{{ option['value'] }}" @selected(option['selected'] ?? false)>{{ (option['label'] ?? '') ? option['label'] : text(option['labelKey']) }}</option>
-                    @endforeach
-                </select>
-            @endif
-        @elseif(field['type'] === 'image' || field['type'] === 'media')
-            <div class="sa-admin-media-field">
-                @if(field['type'] === 'image' && (field['previewUrl'] ?? '') !== '')<img class="sa-admin-media-field-preview" src="{{ field['previewUrl'] }}" alt="{{ text(field['labelKey']) }}">@endif
-                <input class="form-control" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="text" value="{{ field['value'] }}" placeholder="{{ text('admin.media.url') }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(input($event))>
-                <div class="sa-admin-media-field-actions"><button class="btn btn-light btn-sm" type="button" @disabled(locked || field['readOnly'] || !mediaAvailable) @click(media())>{{ text('admin.media.choose') }}</button><button class="btn btn-light btn-sm" type="button" @disabled(locked || field['readOnly'] || !field['value']) @click(clear())>{{ text('admin.media.remove') }}</button></div>
-            </div>
-        @elseif(field['type'] === 'tags')
-            <input class="form-control" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="text" value="{{ tagText }}" placeholder="{{ text(field['placeholderKey'] ?? '') }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(tags($event))>
-            <small>{{ text('admin.input.tags_hint') }}</small>
-        @elseif(field['type'] === 'textarea' || field['type'] === 'markdown' || field['type'] === 'richtext' || field['type'] === 'json')
-            @if(field['type'] === 'markdown' || field['type'] === 'richtext')
-                <div class="sa-admin-editor-toolbar" role="toolbar" aria-label="{{ text('admin.input.formatting') }}">
-                    @foreach(field['commands'] ?? [] as command)
-                        <button class="btn btn-light btn-sm" type="button" @disabled(locked || field['readOnly']) @click(format(command['key']))>{{ text(command['labelKey']) }}</button>
-                    @endforeach
-                </div>
-            @elseif(field['type'] === 'json')
-                <div class="sa-admin-editor-toolbar"><button class="btn btn-light btn-sm" type="button" @disabled(locked || field['readOnly']) @click(formatJson())>{{ text('admin.input.format_json') }}</button></div>
-            @endif
-            <textarea id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" class="form-control {{ field['type'] === 'textarea' ? '' : 'sa-admin-code-input' }}" rows="{{ field['rows'] ?? 6 }}" maxlength="{{ field['maxLength'] }}" placeholder="{{ (field['placeholderKey'] ?? '') ? text(field['placeholderKey']) : '' }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(input($event))>{{ field['value'] }}</textarea>
-            @if(field['type'] === 'richtext')<small>{{ text('admin.input.html_hint') }}</small>@endif
-        @else
-            <input class="form-control" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="{{ (field['template'] ?? '') === 'range' ? 'range' : (field['type'] === 'integer' || field['type'] === 'number' ? 'number' : (field['type'] === 'datetime' ? 'datetime-local' : field['type'])) }}" value="{{ field['value'] }}" min="{{ field['min'] ?? '' }}" max="{{ field['max'] ?? '' }}" step="{{ field['step'] ?? 'any' }}" maxlength="{{ field['maxLength'] }}" placeholder="{{ (field['placeholderKey'] ?? '') ? text(field['placeholderKey']) : '' }}" autocomplete="{{ field['writeOnly'] ? 'new-password' : 'off' }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(input($event))>
-            @if((field['template'] ?? '') === 'range')<output for="resource-field-{{ field['key'] }}">{{ field['value'] }}</output>@endif
-        @endif
+        @include(inputKinds.includes(field['template']) ? __base__ + 'components.inputs.' + field['template'] : __base__ + 'components.inputs.text', {field: field, error: error, locked: locked, onChange: onChange, onMedia: onMedia, mediaAvailable: mediaAvailable})
         <small id="resource-help-{{ field['key'] }}">{{ (field['helpKey'] ?? '') ? text(field['helpKey']) : '' }}</small>
         <p id="resource-error-{{ field['key'] }}" class="sa-admin-field-error">{{ error }}</p>
     </div>

@@ -26,6 +26,7 @@ export interface MediaLibraryState {
     query: string;
     kind: string;
     status: string;
+    dragging: boolean;
 }
 /** Shared actions and lifecycle; each binding owns its own draft and subscriptions. */
 export function bindMediaLibrary(view: View, App: Application, readProps: () => MediaLibraryProps) {
@@ -192,7 +193,17 @@ export function bindMediaLibrary(view: View, App: Application, readProps: () => 
         run(form.upload(Array.from(input.files || [])));
         input.value = '';
     }
+    function dragOver() {
+        if (readProps().editor['permissions']['upload'] && !binding.get('dragging'))
+            binding.set('dragging', true);
+    }
+    function dragLeave(event: DragEvent) {
+        const next = event.relatedTarget as Node | null;
+        if (!next || !(event.currentTarget as HTMLElement).contains(next))
+            binding.set('dragging', false);
+    }
     function dropFiles(event: DragEvent) {
+        binding.set('dragging', false);
         if (readProps().editor['permissions']['upload'])
             run(form.upload(Array.from(event.dataTransfer?.files || [])));
     }
@@ -205,7 +216,7 @@ export function bindMediaLibrary(view: View, App: Application, readProps: () => 
         if (item && active && typeof readProps().onSelect === 'function')
             readProps().onSelect(item);
     }
-    const actions = { started, resumed, paused, stopped, destroyed, updateQuery, search, changeKind, changeStatus, changePage, selectItem, editTitle, editAlt, editCaption, discard, save, move, upload, dropFiles, close, choose };
+    const actions = { started, resumed, paused, stopped, destroyed, updateQuery, search, changeKind, changeStatus, changePage, selectItem, editTitle, editAlt, editCaption, discard, save, move, upload, dragOver, dragLeave, dropFiles, close, choose };
     view.__ctrl__.setUserDefinedConfig(actions);
     return actions;
 }

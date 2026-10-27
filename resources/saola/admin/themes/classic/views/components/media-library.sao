@@ -1,6 +1,6 @@
 <script setup lang="ts">
     @vars(editor: any = {}, picker: boolean = false, imageOnly: boolean = false, onSelect: any = null, onClose: any = null)
-    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', noticeKind: string = 'error', progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active')
+    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', noticeKind: string = 'error', progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active', dragging: boolean = false)
 
     App.Admin.controllers.mediaLibrary($view, () => ({editor, picker, imageOnly, onSelect, onClose}));
 </script>
@@ -86,11 +86,11 @@
                     </p>
                     <fieldset @disabled(busy || selected['trashed'] || !editor['permissions']['update'])>
                         <label for="media-title">{{ __('admin.media.name') }}</label>
-                        <input id="media-title" type="text" maxlength="200" value="{{ title }}" @input(editTitle($event))>
+                        <input id="media-title" placeholder="{{ __('admin.media.title_placeholder') }}" type="text" maxlength="200" value="{{ title }}" @input(editTitle($event))>
                         <label for="media-alt">{{ __('admin.media.alt') }}</label>
-                        <input id="media-alt" type="text" maxlength="200" value="{{ alt }}" @input(editAlt($event))>
+                        <input id="media-alt" placeholder="{{ __('admin.media.alt_placeholder') }}" type="text" maxlength="200" value="{{ alt }}" @input(editAlt($event))>
                         <label for="media-caption">{{ __('admin.media.caption') }}</label>
-                        <textarea id="media-caption" rows="2" maxlength="2000" @input(editCaption($event))>{{ caption }}</textarea>
+                        <textarea id="media-caption" placeholder="{{ __('admin.media.caption_placeholder') }}" rows="2" maxlength="2000" @input(editCaption($event))>{{ caption }}</textarea>
                     </fieldset>
                     <label for="media-url">{{ __('admin.media.url') }}</label>
                     <input id="media-url" type="text" readonly value="{{ selected['url'] }}">

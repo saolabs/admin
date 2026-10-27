@@ -45,7 +45,7 @@ final class LanguagesController extends BaseWebController
     {
         $permissions = [];
         foreach (['view', 'manage', 'export', 'import', 'publish'] as $operation) $permissions[$operation] = Gate::forUser($request->user())->allows(config('saola-admin.language.abilities.'.$operation));
-        return ['document' => app(LocaleManager::class)->state(), 'permissions' => $permissions, 'csrfToken' => csrf_token(),
+        return ['document' => app(LocaleManager::class)->state(), 'reference' => \Saola\Admin\Language\Reference::all(), 'permissions' => $permissions, 'csrfToken' => csrf_token(),
             'endpoint' => route('saola.admin.languages.api', [], false), 'maxBytes' => (int) config('saola-admin.language.exchange.max_bytes', 2097152),
             'batches' => app(LanguageExchange::class)->recent($this->actor($request))];
     }

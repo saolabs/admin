@@ -1,0 +1,10 @@
+<script setup lang="ts">
+    @vars(field: any = {}, error: string = '', locked: boolean = false, onChange: any = null, onMedia: any = null, mediaAvailable: boolean = false)
+
+    App.Admin.controllers.input($view, () => ({field, error, locked, onChange, onMedia, mediaAvailable}));
+</script>
+
+<template>
+        <input class="form-control" id="resource-field-{{ field['key'] }}" name="{{ field['key'] }}" type="{{ (field['template'] ?? '') === 'range' ? 'range' : (field['type'] === 'integer' || field['type'] === 'number' ? 'number' : (field['type'] === 'datetime' ? 'datetime-local' : field['type'])) }}" value="{{ field['value'] }}" min="{{ field['min'] ?? '' }}" max="{{ field['max'] ?? '' }}" step="{{ field['step'] ?? 'any' }}" maxlength="{{ field['maxLength'] }}" placeholder="{{ (field['placeholderKey'] ?? '') ? text(field['placeholderKey']) : '' }}" autocomplete="{{ field['writeOnly'] ? 'new-password' : 'off' }}" @disabled(locked || field['readOnly']) @required(field['required']) aria-invalid="{{ error ? 'true' : 'false' }}" aria-describedby="resource-help-{{ field['key'] }} resource-error-{{ field['key'] }}" @input(input($event))>
+        @if((field['template'] ?? '') === 'range')<output for="resource-field-{{ field['key'] }}">{{ field['value'] }}</output>@endif
+</template>

@@ -14,7 +14,7 @@ final class AdminTheme
         $themes = $this->all();
         $theme = $themes[$name] ?? null;
         if (!is_array($theme)) throw new \InvalidArgumentException('Admin theme is not registered: '.$name);
-        $base = $theme['view_context'] ?? 'admin.'.$name;
+        $base = $theme['view_context'] ?? 'admin.themes.'.$name;
         $css = $theme['css'] ?? 'resources/saola/admin/themes/'.$name.'/assets/css/admin.css';
         if (!is_string($base) || !preg_match('/^admin\.[a-z][a-z0-9_-]*(?:\.[a-z][a-z0-9_-]*)*$/D', $base)
             || !is_string($css) || !preg_match('~^resources/saola/admin/themes/[a-z][a-z0-9-]*/assets/[A-Za-z0-9_./-]+\.css$~D', $css)
@@ -30,7 +30,7 @@ final class AdminTheme
             $manifest = json_decode(file_get_contents($file), true, 32, JSON_THROW_ON_ERROR);
             $name = basename(dirname($file));
             if (($manifest['contract'] ?? null) !== 1 || ($manifest['name'] ?? null) !== $name) throw new \InvalidArgumentException('Invalid admin theme manifest: '.$name);
-            $themes[$name] = ['view_context' => $manifest['view_context'] ?? 'admin.'.$name,
+            $themes[$name] = ['view_context' => $manifest['view_context'] ?? 'admin.themes.'.$name,
                 'css' => 'resources/saola/admin/themes/'.$name.'/'.($manifest['css'] ?? 'assets/css/admin.css')];
         }
         return array_replace($themes, config('saola-admin.themes', []));

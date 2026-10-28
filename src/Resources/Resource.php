@@ -57,7 +57,13 @@ abstract class Resource implements Page, AuthorizesPage, NavigablePage
     }
     public function rules(Request $request, ?Model $record): array { return []; }
     public function prepareValues(array $values, Request $request, ?Model $record): array { return $values; }
-    public function supportsTrash(): bool { return in_array(SoftDeletes::class, class_uses_recursive($this->model()), true); }
+    /** Saola core models always carry SoftDeletes; their deleteMode decides whether it is on. */
+    public function supportsTrash(): bool
+    {
+        if (!in_array(SoftDeletes::class, class_uses_recursive($this->model()), true)) return false;
+        $model = app($this->model());
+        return !method_exists($model, 'isSoftDeleteMode') || $model->isSoftDeleteMode();
+    }
     public function supportsPurge(): bool { return false; }
     public function newRecord(Request $request): Model { return app($this->model()); }
     public function save(Model $record, array $values, Request $request): void { $record->forceFill($values)->save(); }

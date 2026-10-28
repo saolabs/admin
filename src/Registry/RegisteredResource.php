@@ -98,8 +98,8 @@ final class RegisteredResource extends Resource
         if (isset($field['options']) && !$this->isCallable($field['options'])) $engine['options'] = $field['options'];
         if (in_array('nullable', $rules, true)) $engine['nullable'] = true;
         // Front end: the rules a browser can check itself, and the message keys, travel with the field.
-        $engine['clientRules'] = array_values(array_filter($rules, fn ($r) => is_string($r) && preg_match('/^(required|email|url|numeric|integer|boolean|date|confirmed|nullable|(min|max|between|size|in|not_in|regex|digits|digits_between):.+)$/', $r)));
-        $engine['messageKeys'] = [...($this->form['messages'] ?? []), ...($field['messages'] ?? [])];
+        $engine['clientRules'] = AdminRegistry::clientRules($rules);
+        $engine['messageKeys'] = AdminRegistry::clientMessages([...($this->form['messages'] ?? []), ...($field['messages'] ?? [])]);
         return $engine;
     }
 

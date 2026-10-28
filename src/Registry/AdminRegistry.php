@@ -159,10 +159,52 @@ final class AdminRegistry
         return isset($menu['route']) ? route($menu['route'], [], false) : (string) $menu['url'];
     }
 
-    /** JSON-ready snapshot of what was registered (no closures: callables are [class, method] pairs). */
-    public function toArray(): array
+    /**
+     * Rules the browser may check itself. Everything else stays on the server: unique/exists name tables and columns,
+     * rule objects and closures are backend code, regex is PCRE (and often an internal format).
+     */
+    public static function clientRules(array $rules): array
     {
-        return ['menus' => $this->menus, 'groups' => $this->groups, 'lists' => $this->lists, 'forms' => $this->forms];
+        return array_values(array_filter($rules, fn ($r) => is_string($r)
+            && preg_match('/^(required|nullable|email|url|numeric|integer|boolean|date|confirmed|(min|max|between|size|digits|digits_between):[0-9.,]+|(in|not_in):[^,]+(,[^,]+)*)$/D', $r)));
+    }
+
+    /** Message keys of those browser rules only: a key named after a server rule ("unique") would still tell what the server checks. */
+    public static function clientMessages(array $messages): array
+    {
+        return array_intersect_key($messages, array_flip(['required', 'email', 'url', 'numeric', 'integer', 'boolean', 'date', 'confirmed',
+            'min', 'max', 'between', 'size', 'digits', 'digits_between', 'in', 'not_in']));
+    }
+
+    /**
+     * What the front end may see of the registration, for this request: entries and fields the user may open, presentation
+     * keys only. Never service/callable class names, queries, abilities, route names or server-only rules.
+     */
+    public function toArray(Request $request): array
+    {
+        $gate = Gate::forUser($request->user());
+        $allowed = fn (?string $ability) => $ability === null || $gate->allows($ability);
+        $pick = fn (array $from, array $keys) => array_intersect_key($from, array_flip($keys));
+        $lists = $forms = [];
+        foreach ($this->lists as $key => $list) {
+            if (!$allowed($list['ability'] ?? $this->menus[$key]['ability'] ?? null)) continue;
+            $lists[$key] = $pick($list, ['title', 'description', 'search', 'sort']) + ['columns' => array_map(
+                fn ($column) => $pick($column, ['label', 'type', 'decimals']),
+                array_filter($list['columns'], fn ($column) => $allowed($column['ability'] ?? null)),
+            )];
+            if (!isset($this->forms[$key])) continue;
+            $form = $this->forms[$key];
+            $forms[$key] = $pick($form, ['sections', 'layout']) + ['messages' => self::clientMessages($form['messages'] ?? [])] + ['fields' => array_map(function ($field) use ($pick) {
+                $out = $pick($field, ['type', 'label', 'placeholder', 'help', 'default', 'section', 'span', 'readOnly', 'writeOnly',
+                    'optionalOnUpdate', 'rows', 'maxItems', 'itemMaxLength', 'step', 'translatable']);
+                $out['rules'] = self::clientRules($field['rules'] ?? []);
+                $out['messages'] = self::clientMessages($field['messages'] ?? []);
+                // Options from a service are resolved per record by the editor endpoint; only literal lists travel here.
+                if (isset($field['options']) && !(array_is_list($field['options']) && count($field['options']) === 2 && is_string($field['options'][0]) && class_exists($field['options'][0]))) $out['options'] = $field['options'];
+                return $out;
+            }, array_filter($form['fields'], fn ($field) => $allowed($field['ability'] ?? null)))];
+        }
+        return ['navigation' => $this->navigation($request), 'lists' => $lists, 'forms' => $forms];
     }
 
     private function assertKey(string $key, string $what): void

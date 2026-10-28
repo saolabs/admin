@@ -108,10 +108,20 @@ class RegistryCrudTest extends TestCase
         $this->assertArrayNotHasKey('serial', $fields);
         $this->assertSame(['red', 'blue'], array_column($fields['colour']['options'], 'value'));
         $this->assertSame(['required', 'max:20'], $fields['name']['rules']);                 // the browser checks these; unique stays on the server
-        $this->assertSame(['required' => 'admin.resource.details', 'unique' => 'admin.users.email'], $fields['name']['messages']);
+        $this->assertSame(['required' => 'admin.resource.details'], $fields['name']['messages']);  // "unique" is checked (and worded) by the server only
         // unique:…,{id} ignores the record being edited
         $this->putJson('/control/gadgets/_api/'.$id, ['revision' => $editor['revision'], 'values' => ['name' => 'Desk', 'colour' => 'blue']])->assertOk();
         $this->assertDatabaseHas('gadgets', ['id' => $id, 'colour' => 'blue']);
+    }
+
+    public function test_front_end_export_hides_backend_architecture(): void
+    {
+        $json = json_encode(app(\Saola\Admin\Registry\AdminRegistry::class)->toArray(request()->setUserResolver(fn () => new GenericUser(['id' => 1]))));
+        foreach (['GadgetService', 'saveFromAdmin', 'tidy', 'colours', 'unique', 'gadgets,name', 'shop.gadgets', 'admin.gadgets.index', 'serial', 'see-serial', 'persist'] as $secret) {
+            $this->assertStringNotContainsString($secret, $json);
+        }
+        $this->assertSame(['required', 'max:20'], json_decode($json, true)['forms']['gadgets']['fields']['name']['rules']);
+        $this->assertSame(['required', 'in:a,b', 'between:1,5'], \Saola\Admin\Registry\AdminRegistry::clientRules(['required', 'in:a,b', 'between:1,5', 'regex:/^x$/', 'exists:users,id', 'required_if:x,y', new \Illuminate\Validation\Rules\In(['a'])]));
     }
 
     public function test_pages_render_on_module_routes_and_the_menu_comes_from_the_registry(): void

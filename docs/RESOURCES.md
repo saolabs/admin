@@ -55,9 +55,9 @@ Khóa đăng ký = đoạn thứ hai của tên route (`admin.{key}.*`); đặt 
 | `Admin::form(key, …)` | `service`, `fields`; `save` (callable `($record|null, $values, $request)` trả model đã lưu), `prepare` (callable `($values, $request, $record|null)` chuẩn hóa trước validate), `messages`, `sections`, `layout` (`sections`/`tabs`) |
 | field | `type`, `label`; `rules`, `messages`, `placeholder`, `help`, `options` (mảng hoặc callable `($request, $record)`), `default`, `section`, `span`, `readOnly`, `writeOnly`, `persist`, `ability`, `optionalOnUpdate`, `rows`, `maxItems`, `itemMaxLength`, `step`, `translatable` |
 
-Callable luôn là `[Class::class, 'method']`, gọi trên instance lấy từ container; không nhận closure để cấu hình còn xuất được JSON (`AdminRegistry::toArray()`).
+Callable luôn là `[Class::class, 'method']`, gọi trên instance lấy từ container; không nhận closure để cấu hình còn xuất được JSON. `AdminRegistry::toArray($request)` là bản cho frontend: chỉ mục/field người dùng được mở, chỉ khóa trình bày; không có tên class service/callable, `query`, ability, tên route, và `rules` chỉ còn luật trình duyệt tự kiểm (`AdminRegistry::clientRules()`).
 
-- `rules`: luật Laravel. `required`, `nullable`, `max:`/`min:` còn được suy ra cho input; `{id}` thay bằng khóa của bản ghi đang sửa. Luật trình duyệt tự kiểm được (required, email, min/max, in, regex…) đi kèm field trong JSON, còn `unique`/`exists` chỉ chạy ở server.
+- `rules`: luật Laravel. `required`, `nullable`, `max:`/`min:` còn được suy ra cho input; `{id}` thay bằng khóa của bản ghi đang sửa. Chỉ luật trình duyệt tự kiểm được (required, nullable, email, url, numeric, integer, boolean, date, confirmed, min/max/between/size/digits, in/not_in) đi kèm field trong JSON; `unique`/`exists` (lộ tên bảng, cột), `regex` (PCRE, định dạng nội bộ), Rule object và mọi luật khác chỉ chạy ở server.
 - `messages`: `rule => khóa bản dịch`, ở form (mọi field) hoặc field (ghi đè). Nhãn field làm tên thuộc tính trong câu lỗi.
 - `ability`: ability Gate cho cả đọc và ghi field. Field không đọc được không có trong list/form; client tự gửi field không ghi được bị từ chối 422.
 - `persist: false`: giá trị không ghi vào model nhưng có trong request (`$request->input('values.x')`) cho hook `save`, ví dụ ma trận quyền, `password_confirmation`.

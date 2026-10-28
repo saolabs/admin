@@ -1,4 +1,4 @@
-# saola/admin (chưa phát hành)
+# saola/admin v0.1.0-alpha.7
 
 Breaking: admin UI is registered as arrays, modules hold no UI classes. See docs/RESOURCES.md and docs/ADMIN_REGISTRY_PLAN.md.
 
@@ -7,7 +7,7 @@ Breaking: admin UI is registered as arrays, modules hold no UI classes. See docs
 - `->menu()->list()->form()` on a route-builder module (macros, needs core with `Router::macro()` and the `routes()` alias of `group()`): key = route name without the context, nested modules give dotted keys (`products.categories`) and the nearest ancestor with a menu becomes its sidebar group. `AdminRegistry::routeKey()` maps a route name to its key.
 - List/form data travels only with the page URL (SSR + `@await` JSON); `/_api` takes writes only (no GET). `AdminRegistry::toArray()` removed; client rules/messages are filtered (`clientRules()`/`clientMessages()`).
 - Removed: `Pages\*` (except `ResourceDocument`), `Users\*`, `PageController`, `ResourceController`, `HostScreenController`, `admin:make:resource|screen` and stubs, routes `/{prefix}/{page}` and `/{prefix}/_api/resources/*`, config `panel.pages|icons|discover`, `users.*`, `generator.*`.
-- Requires saola/core with `Http\Controllers\AdminController`.
+- Requires saola/core ^2.5 (`Http\Controllers\AdminController`, `Router::macro()`).
 
 # saola/admin v0.1.0-alpha.6
 

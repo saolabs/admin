@@ -61,6 +61,8 @@
 .sa-admin-language-code { text-transform: uppercase; }
 .sa-admin-sidebar-backdrop { position: fixed; inset: 0; z-index: 1001; border: 0; background: rgba(0,0,0,.45); }
 .sa-admin-content { min-width: 0; }
+/* Contain absolute descendants (e.g. .visually-hidden headers) so they cannot widen the page past the scroll box. */
+.table-responsive { position: relative; }
 .sa-admin-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 16px; margin: 0; padding: 16px; }
 .sa-admin-field dt { color: var(--vz-secondary-color); font-size: 12px; margin-bottom: 4px; }
 .sa-admin-field dd { margin: 0; overflow-wrap: anywhere; }

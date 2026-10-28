@@ -126,7 +126,7 @@
                     </div>
                 </div>
             </div></header>
-            <main id="admin-content" class="sa-admin-content page-content container-fluid" tabindex="-1">
+            <main id="admin-content" class="sa-admin-content page-content" tabindex="-1"><div class="container-fluid">
                 <div class="sa-admin-page-title page-title-box d-sm-flex align-items-center justify-content-between">
                     @useBlock('heading')
                     <nav class="page-title-right" aria-label="{{ __('admin.shell.breadcrumb') }}"><ol class="breadcrumb m-0">
@@ -152,7 +152,7 @@
                     <p class="sa-admin-alert" role="alert">{{ text(notice) }}</p>
                 @endif
                 @useBlock('content')
-            </main>
+            </div></main>
         </div>
     </div>
     @pageEnd

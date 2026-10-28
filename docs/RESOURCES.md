@@ -13,7 +13,7 @@ Ba lớp controller: gói cung cấp lớp nền theo context; project luôn có
 class ProductController extends \App\Http\Controllers\AdminController {}
 
 // app/Modules/Shop/ModuleServiceProvider.php
-public function routes(): void
+public function define(): void   // core ≥ 2.6; trước đó hook này tên routes()
 {
     System::context('admin')->module('products')->controller(ProductController::class)
         ->menu(['title' => 'shop.products.title', 'ability' => 'shop.products.view', 'icon' => 'ri-store-line', 'order' => 20])

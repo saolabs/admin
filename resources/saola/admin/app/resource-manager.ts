@@ -113,10 +113,9 @@ export class ResourceManager {
         if (!this.canLeave()) { this.notice = 'admin.resource.unsaved'; return; }
         const query = search || (this.data.listUrl ? this.data.listUrl.slice(this.data.returnUrl.length) : this.data.mode === 'list' && typeof window !== 'undefined' ? window.location.search : '');
         await this.run(async signal => {
-            const response = await fetcher(this.data.endpoint + query, this.options('GET', signal));
-            const body = await this.read(response);
-            this.validateResource(body.resource);
-            return () => { this.data = structuredClone(body.resource); this.fields = this.decorateFields(this.data.fields); this.changes.clear(); this.selected.clear(); this.blocked = false; this.completed = false; };
+            const resource = await this.fetchList(fetcher, query, signal);
+            this.validateResource(resource);
+            return () => { this.data = structuredClone(resource); this.fields = this.decorateFields(this.data.fields); this.changes.clear(); this.selected.clear(); this.blocked = false; this.completed = false; };
         });
     }
     async transition(operation: string, id?: string, fetcher: typeof fetch = fetch): Promise<void> {
@@ -135,8 +134,7 @@ export class ResourceManager {
             let result: any;
             try {
                 const query = this.data.listUrl ? this.data.listUrl.slice(this.data.returnUrl.length) : window.location.search;
-                const list = await fetcher(this.data.endpoint + query, this.options('GET', signal));
-                result = await this.read(list); this.validateResource(result.resource);
+                result = {resource: await this.fetchList(fetcher, query, signal)}; this.validateResource(result.resource);
             } catch { throw {changed: true}; }
             return () => { this.data = structuredClone(result.resource); this.selected.clear(); this.notice = 'admin.resource.changed'; };
         });
@@ -145,6 +143,11 @@ export class ResourceManager {
         if (!data || data.schema !== 1 || data.key !== this.data.key || data.mode !== this.data.mode || data.endpoint !== this.data.endpoint
             || data.returnUrl !== this.data.returnUrl || (data.listUrl && data.listUrl !== this.data.returnUrl && !data.listUrl.startsWith(this.data.returnUrl + '?'))
             || !Array.isArray(data.fields) || !Array.isArray(data.rows) || !Array.isArray(data.columns)) throw new Error('Invalid Resource response.');
+    }
+    /** Reads go through the page URL (`_api` only takes writes); the JSON form of the page carries the listing as `data.management`. */
+    private async fetchList(fetcher: typeof fetch, query: string, signal: AbortSignal): Promise<any> {
+        const body = await this.read(await fetcher(this.data.returnUrl + query, this.options('GET', signal)));
+        return body.data?.management ?? body.resource;
     }
     private options(method: string, signal: AbortSignal, body?: any): RequestInit {
         return {method, signal, credentials: 'same-origin', headers: {Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.data.csrfToken},

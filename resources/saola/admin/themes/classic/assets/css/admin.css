@@ -380,7 +380,7 @@ body:has(.saola-admin) { margin: 0; }
 .sa-admin-resource-manager th[aria-sort=ascending] .sa-admin-sort-link, .sa-admin-resource-manager th[aria-sort=descending] .sa-admin-sort-link { color: var(--sa-admin-accent); }
 
 /* Input templates: layout only, actions and value conversion are shared. */
-.sa-admin-input { min-width: 0; display: grid; gap: 8px; }
+.sa-admin-input { min-width: 0; display: grid; gap: 8px; align-content: start; } /* a taller neighbour in the row must not stretch the label or the control */
 .sa-admin-input > label { font-weight: 600; margin: 0; }
 .sa-admin-input small { color: var(--sa-admin-muted); }
 .sa-admin-choice-list { display: flex; flex-wrap: wrap; gap: 12px 24px; padding-block: 8px; }
@@ -406,7 +406,7 @@ body:has(.saola-admin) { margin: 0; }
 .sa-admin-form-fieldset { display: block; min-width: 0; margin: 0; padding: 0; border: 0; }
 .sa-admin-form-fieldset > legend.sa-admin-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .sa-admin-settings-fields { align-items: start; }
-.sa-admin-settings-fields > .sa-admin-form-field { align-content: start; }
+.sa-admin-settings-fields > .sa-admin-form-field, .sa-admin-resource-fields > .sa-admin-form-field { align-content: start; }
 .sa-admin-settings-fields [aria-invalid=true] { border-color: #c93547; }
 .sa-admin-input :focus-visible, .sa-admin-form-field :focus-visible, .sa-admin-editor-toolbar button:focus-visible, .sa-admin-form-tabs button:focus-visible { outline: 2px solid var(--sa-admin-accent); outline-offset: 2px; }
 .sa-admin-locale-add-form { display: grid; grid-template-columns: minmax(120px,1fr) minmax(180px,2fr) auto; align-items: end; gap: 12px; padding: 0 16px 16px; }

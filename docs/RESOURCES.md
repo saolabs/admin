@@ -1,4 +1,4 @@
-# Danh sách, form và thùng rác: `Admin::list()` / `Admin::form()`
+# Danh sách, form và thùng rác: `->menu()->list()->form()`
 
 Mốc 28/10/2026, chưa phát hành tag. Module chỉ lo nghiệp vụ và dữ liệu (Model, Repository, Service của core); giao diện admin được **khai báo bằng mảng** từ `ModuleServiceProvider` của module. Gói dựng list, tìm kiếm/sắp xếp/phân trang, thêm/sửa, xóa mềm, thùng rác, khôi phục và thao tác nhiều dòng từ các mảng đó. Không còn class `Page`/`Resource` trong project, không quét thư mục, không sửa config khi thêm tính năng. Kế hoạch và các quyết định: [ADMIN_REGISTRY_PLAN.md](ADMIN_REGISTRY_PLAN.md).
 
@@ -15,34 +15,46 @@ class ProductController extends \App\Http\Controllers\AdminController {}
 // app/Modules/Shop/ModuleServiceProvider.php
 public function routes(): void
 {
-    System::context('admin')->module(['slug' => 'products', 'prefix' => 'products'])->controller(ProductController::class)->as('products')
-        ->group(fn ($m) => ProductController::routes($m));
-}
-
-public function menus(): void   // hook có sẵn của core ModuleServiceProvider
-{
-    Admin::menu('products', ['title' => 'shop.products.title', 'route' => 'admin.products.index', 'ability' => 'shop.products.view', 'icon' => 'ri-store-line', 'order' => 20]);
-    Admin::list('products', [
-        'service' => ProductService::class,
-        'columns' => ['name' => ['label' => 'shop.products.name'], 'price' => ['label' => 'shop.products.price', 'type' => 'number', 'decimals' => 2]],
-        'search' => ['name'],
-        'sort' => ['name', 'price'],
-    ]);
-    Admin::form('products', [
-        'service' => ProductService::class,
-        'messages' => ['required' => 'shop.errors.required'],
-        'fields' => [
-            'name' => ['type' => 'text', 'label' => 'shop.products.name', 'rules' => ['required', 'max:120', 'unique:products,name,{id}'], 'messages' => ['unique' => 'shop.errors.name_taken']],
-            'category_id' => ['type' => 'select', 'label' => 'shop.products.category', 'options' => [ProductService::class, 'categoryOptions']],
-            'price' => ['type' => 'number', 'label' => 'shop.products.price', 'rules' => ['required', 'numeric', 'min:0']],
-        ],
-    ]);
+    System::context('admin')->module('products')->controller(ProductController::class)
+        ->menu(['title' => 'shop.products.title', 'ability' => 'shop.products.view', 'icon' => 'ri-store-line', 'order' => 20])
+        ->list([
+            'service' => ProductService::class,
+            'columns' => ['name' => ['label' => 'shop.products.name'], 'price' => ['label' => 'shop.products.price', 'type' => 'number', 'decimals' => 2]],
+            'search' => ['name'],
+            'sort' => ['name', 'price'],
+        ])
+        ->form([
+            'service' => ProductService::class,
+            'messages' => ['required' => 'shop.errors.required'],
+            'fields' => [
+                'name' => ['type' => 'text', 'label' => 'shop.products.name', 'rules' => ['required', 'max:120', 'unique:products,name,{id}'], 'messages' => ['unique' => 'shop.errors.name_taken']],
+                'category_id' => ['type' => 'select', 'label' => 'shop.products.category', 'options' => [ProductService::class, 'categoryOptions']],
+                'price' => ['type' => 'number', 'label' => 'shop.products.price', 'rules' => ['required', 'numeric', 'min:0']],
+            ],
+        ])
+        ->routes(fn ($m) => ProductController::routes($m));   // routes() = group()
 }
 ```
 
-`ProductController::routes($m)` khai 7 route chuẩn trỏ vào action của lớp nền: trang `index` `/`, `create` `/create`, `edit` `/{record}/edit` (SSR + SPA, view `@BASE:pages.resource`) và API `api` `/_api` (GET list, POST tạo), `api.bulk` `/_api/bulk`, `api.item` `/_api/{record}` (GET form, PUT sửa), `api.state` `/_api/{record}/{trash|restore|purge}`. Action của gói tên `listPage/createPage/editPage/apiRecords/apiRecord/apiTransition/apiBulk`, để `index/create/edit/store/update/destroy` hoàn toàn thuộc về module. Module muốn xử lý khác thì override action hoặc tự khai route trỏ vào hàm của mình. Dùng route Laravel thường thì gọi `ProductController::routes()` trong `Route::prefix('admin/products')->name('admin.products.')->group(...)`.
+`module('products')` đặt cả slug lẫn prefix. `menu()/list()/form()` là phương thức của module trên route builder (gói đăng ký bằng `Router::macro()`), gọi trước `routes()`; tên route của module (`as`) mặc định theo slug. Khóa = tên route bỏ context: `admin.products` → `products`. `menu()` tự trỏ `route` vào `{tên route}.index` (đặt `route`/`url` để trỏ khác).
 
-Khóa đăng ký = đoạn thứ hai của tên route (`admin.{key}.*`); đặt `protected $module = 'products';` trên controller để chỉ định khác. Ghi đi qua `create/update/moveToTrash/restoreFromTrash` của service, tức CRUD của core, nên sự kiện của repository vẫn phát.
+Module lồng nhau theo cây module, khóa có dấu chấm và nhóm menu suy từ cha:
+
+```php
+// app/Modules/Products/Categories/ModuleServiceProvider.php
+System::context('admin')->module('products')->menu(['title' => 'shop.catalog', 'icon' => 'ri-store-line', 'order' => 20])   // có menu con → thành nhóm
+    ->sub('categories')->controller(CategoryController::class)
+    ->menu(['title' => 'shop.categories.title', 'ability' => 'shop.categories.view'])->list([...])->form([...])
+    ->routes(fn ($m) => CategoryController::routes($m));   // /admin/products/categories, admin.products.categories.*, khóa products.categories
+```
+
+Module tổ tiên gần nhất có `menu()` (hoặc nhóm đăng ký bằng `Admin::group()`) làm nhóm; tầng không có `menu()` bị bỏ qua; sidebar lồng đúng một cấp. Nhóm dùng chung cho các module phẳng: `->menu([..., 'group' => 'ai'])` cùng `Admin::group('ai', …)` trong hook `menus()`. `Admin::menu/group/list/form(key, …)` vẫn là API nền cho route Laravel thường và mục menu không phải route.
+
+`ProductController::routes($m)` khai 7 route chuẩn trỏ vào action của lớp nền: trang `index` `/`, `create` `/create`, `edit` `/{record}/edit` (SSR + SPA, view `@BASE:pages.resource`) và API chỉ ghi `api` `/_api` (POST tạo), `api.bulk` `/_api/bulk`, `api.item` `/_api/{record}` (PUT sửa), `api.state` `/_api/{record}/{trash|restore|purge}`. Action của gói tên `listPage/createPage/editPage/apiRecords/apiRecord/apiTransition/apiBulk`, để `index/create/edit/store/update/destroy` hoàn toàn thuộc về module. Module muốn xử lý khác thì override action hoặc tự khai route trỏ vào hàm của mình. Dùng route Laravel thường thì gọi `ProductController::routes()` trong `Route::prefix('admin/products')->name('admin.products.')->group(...)`.
+
+Dữ liệu list/form đi qua chính URL trang: tải thẳng thì SSR render sẵn HTML kèm dữ liệu để hydrate, điều hướng SPA và lọc/sắp xếp/phân trang thì `@await` của view lấy JSON từ cùng URL đó; không có GET nào dưới `/_api`.
+
+Khóa của request = khóa đăng ký dài nhất mà tên route nối tiếp (`AdminRegistry::routeKey()`: `admin.products.categories.api.item` → `products.categories` + `api.item`); đặt `protected $module = 'products';` trên controller để chỉ định khác. Ghi đi qua `create/update/moveToTrash/restoreFromTrash` của service, tức CRUD của core, nên sự kiện của repository vẫn phát.
 
 ## Tham chiếu khóa
 
@@ -55,7 +67,7 @@ Khóa đăng ký = đoạn thứ hai của tên route (`admin.{key}.*`); đặt 
 | `Admin::form(key, …)` | `service`, `fields`; `save` (callable `($record|null, $values, $request)` trả model đã lưu), `prepare` (callable `($values, $request, $record|null)` chuẩn hóa trước validate), `messages`, `sections`, `layout` (`sections`/`tabs`) |
 | field | `type`, `label`; `rules`, `messages`, `placeholder`, `help`, `options` (mảng hoặc callable `($request, $record)`), `default`, `section`, `span`, `readOnly`, `writeOnly`, `persist`, `ability`, `optionalOnUpdate`, `rows`, `maxItems`, `itemMaxLength`, `step`, `translatable` |
 
-Callable luôn là `[Class::class, 'method']`, gọi trên instance lấy từ container; không nhận closure để cấu hình còn xuất được JSON. `AdminRegistry::toArray($request)` là bản cho frontend: chỉ mục/field người dùng được mở, chỉ khóa trình bày; không có tên class service/callable, `query`, ability, tên route, và `rules` chỉ còn luật trình duyệt tự kiểm (`AdminRegistry::clientRules()`).
+Callable luôn là `[Class::class, 'method']`, gọi trên instance lấy từ container; không nhận closure. Registry không bao giờ đổ nguyên ra JSON: trang list/form chỉ mang field người dùng được mở, khóa trình bày, và `rules` chỉ còn luật trình duyệt tự kiểm (`AdminRegistry::clientRules()`/`clientMessages()`).
 
 - `rules`: luật Laravel. `required`, `nullable`, `max:`/`min:` còn được suy ra cho input; `{id}` thay bằng khóa của bản ghi đang sửa. Chỉ luật trình duyệt tự kiểm được (required, nullable, email, url, numeric, integer, boolean, date, confirmed, min/max/between/size/digits, in/not_in) đi kèm field trong JSON; `unique`/`exists` (lộ tên bảng, cột), `regex` (PCRE, định dạng nội bộ), Rule object và mọi luật khác chỉ chạy ở server.
 - `messages`: `rule => khóa bản dịch`, ở form (mọi field) hoặc field (ghi đè). Nhãn field làm tên thuộc tính trong câu lỗi.
@@ -121,7 +133,7 @@ Host cấu hình TrimStrings để không cắt password lồng trong `values` (
 
 ## Luồng và an toàn dữ liệu
 
-Route do module khai (xem trên): `/{module}`, `/{module}/create`, `/{module}/{id}/edit`; API dưới `/{module}/_api`. Gói dùng web middleware/CSRF và guard của host, JSON version `schema:1`, response private/no-store. UUID, ULID và ID số dùng cùng contract; composite key chưa hỗ trợ. Form ghi dùng POST làm fallback để không đưa mật khẩu lên URL khi JS không chạy; CRUD cần runtime client, không có luồng submit HTML độc lập.
+Route do module khai (xem trên): `/{module}`, `/{module}/create`, `/{module}/{id}/edit`; API ghi dưới `/{module}/_api`. Gói dùng web middleware/CSRF và guard của host, JSON version `schema:1`, response private/no-store. UUID, ULID và ID số dùng cùng contract; composite key chưa hỗ trợ. Form ghi dùng POST làm fallback để không đưa mật khẩu lên URL khi JS không chạy; CRUD cần runtime client, không có luồng submit HTML độc lập.
 
 Update/trash/restore/purge dùng revision HMAC từ raw record và audit sequence, không chỉ timestamp. Dữ liệu đổi hoặc trải qua trash/restore làm request cũ trả 409. Form giữ draft/lỗi validation, chặn retry sau 409/thu hồi quyền, cần bỏ draft rồi tải lại. Create dùng UUID requestId và receipt theo actor/resource: retry cùng nội dung sau mất response không tạo trùng. Client không tự gửi lại request ghi. UI có guard khi rời trang/đổi ngôn ngữ, reset form và password khi quay lại lần tạo đã hoàn tất/hủy.
 

@@ -88,7 +88,7 @@ abstract class Resource
     /** Schema stays declarative; never execute class names, SQL or HTML from a request. */
     final public function schema(): array
     {
-        if (!preg_match('/^[a-z][a-z0-9_-]{0,63}$/D', $this->key())) throw new \LogicException('Resource key must be a route-safe identifier of at most 64 characters.');
+        if (!preg_match('/^[a-z][a-z0-9_-]{0,63}(\.[a-z][a-z0-9_-]{0,63}){0,7}$/D', $this->key())) throw new \LogicException('Resource key must be a route-safe identifier (nested with dots).');
         $model = $this->model();
         if (!is_subclass_of($model, Model::class)) throw new \LogicException('Resource requires an Eloquent model.');
         $fields = $this->fields(); $sections = $this->sections();

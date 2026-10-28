@@ -16,6 +16,7 @@ use Saola\Core\Database\Repositories\BaseRepository;
 use Saola\Core\Models\Model;
 use Saola\Core\Services\ModuleService;
 use Saola\Core\Support\SPA;
+use Saola\Core\System;
 
 class Gadget extends Model { use HasUuids; protected $table = 'gadgets'; protected $guarded = []; protected $deleteMode = 'soft'; }
 class GadgetRepository extends BaseRepository { protected $model = Gadget::class; }
@@ -78,7 +79,7 @@ class RegistryCrudTest extends TestCase
         Route::getRoutes()->refreshNameLookups(); Route::getRoutes()->refreshActionLookups();
         $this->actingAs(new GenericUser(['id' => 1]));
     }
-    protected function tearDown(): void { SPA::resetRoutes(); parent::tearDown(); }
+    protected function tearDown(): void { SPA::resetRoutes(); System::reset(); parent::tearDown(); }
 
     private function create(array $values) { return $this->postJson('/control/gadgets/_api', ['requestId' => (string) Str::uuid(), 'values' => $values]); }
 
@@ -90,7 +91,7 @@ class RegistryCrudTest extends TestCase
         $this->assertSame(['created'], $events);
         $this->assertSame(['from the form'], GadgetService::$saved);
         $this->assertDatabaseHas('gadgets', ['id' => $id, 'name' => 'Lamp', 'colour' => 'red']);
-        $this->getJson('/control/gadgets/_api')->assertOk()->assertJsonPath('resource.rows.0.values.name', 'Lamp')->assertJsonPath('resource.createUrl', '/control/gadgets/create');
+        $this->getJson('/control/gadgets')->assertOk()->assertJsonPath('data.management.rows.0.values.name', 'Lamp')->assertJsonPath('data.management.createUrl', '/control/gadgets/create');
     }
 
     public function test_rules_messages_options_and_field_ability(): void
@@ -103,7 +104,7 @@ class RegistryCrudTest extends TestCase
         $this->create(['name' => 'Desk', 'serial' => 'S-1'])->assertUnprocessable();                                                         // field the user may not write
         $id = $this->create(['name' => 'Desk'])->assertCreated()->json('id');
 
-        $editor = $this->getJson('/control/gadgets/_api/'.$id)->assertOk()->json('resource');
+        $editor = $this->getJson('/control/gadgets/'.$id.'/edit')->assertOk()->json('data.management');
         $fields = array_column($editor['fields'], null, 'key');
         $this->assertArrayNotHasKey('serial', $fields);
         $this->assertSame(['red', 'blue'], array_column($fields['colour']['options'], 'value'));
@@ -114,14 +115,35 @@ class RegistryCrudTest extends TestCase
         $this->assertDatabaseHas('gadgets', ['id' => $id, 'colour' => 'blue']);
     }
 
-    public function test_front_end_export_hides_backend_architecture(): void
+    public function test_module_builder_declares_menu_list_form_next_to_the_routes(): void
     {
-        $json = json_encode(app(\Saola\Admin\Registry\AdminRegistry::class)->toArray(request()->setUserResolver(fn () => new GenericUser(['id' => 1]))));
-        foreach (['GadgetService', 'saveFromAdmin', 'tidy', 'colours', 'unique', 'gadgets,name', 'shop.gadgets', 'admin.gadgets.index', 'serial', 'see-serial', 'persist'] as $secret) {
-            $this->assertStringNotContainsString($secret, $json);
-        }
-        $this->assertSame(['required', 'max:20'], json_decode($json, true)['forms']['gadgets']['fields']['name']['rules']);
+        Route::aliasMiddleware('next', \Saola\Core\Http\Middleware\Next::class);
+        System::context('admin', ['as' => 'admin', 'slug' => 'admin', 'prefix' => 'control', 'middleware' => ['web', AdminAccess::class]])
+            ->module('shop')->menu(['title' => 'admin.resource.records', 'icon' => 'list', 'order' => 5])      // has a sub-menu → group
+            ->sub('items')->controller(GadgetController::class)
+            ->menu(['title' => 'admin.resource.details', 'ability' => 'shop.gadgets.view'])
+            ->list(['service' => GadgetService::class, 'columns' => ['name' => ['label' => 'admin.users.name']], 'sort' => ['name']])
+            ->form(['service' => GadgetService::class, 'fields' => ['name' => ['type' => 'text', 'label' => 'admin.users.name', 'rules' => ['required', 'max:20', 'unique:gadgets,name,{id}']]]])
+            ->routes(fn ($m) => GadgetController::routes($m));
+        System::context('admin')->pushLaravelRoute();
+        Route::getRoutes()->refreshNameLookups(); Route::getRoutes()->refreshActionLookups();
+        $registry = app(\Saola\Admin\Registry\AdminRegistry::class); $registry->verify();
+
+        $this->assertSame(['shop.items', 'api.item'], $registry->routeKey('admin.shop.items.api.item'));
+        $this->assertSame('admin.shop.items.index', $registry->menuOf('shop.items')['route']);
+        $shop = collect($registry->navigation(request()->setUserResolver(fn () => new GenericUser(['id' => 1]))))->firstWhere('key', 'shop');
+        $this->assertSame(['shop.items'], array_column($shop['children'], 'key'));
+        $this->assertSame('/control/shop/items', $shop['url']);
+
+        $this->postJson('/control/shop/items/_api', ['requestId' => (string) Str::uuid(), 'values' => ['name' => 'Desk']])->assertCreated();
+        $page = $this->getJson('/control/shop/items')->assertOk()->assertJsonPath('data.management.rows.0.values.name', 'Desk');
+        $this->assertSame('shop.items', $page->json('data.currentPage'));
+        $this->getJson('/control/shop/items/_api')->assertStatus(405);                                   // reads go through the page URL
+        $this->assertSame(['required', 'max:20'], $this->getJson('/control/shop/items/create')->json('data.management.fields.0.rules')); // unique stays on the server
         $this->assertSame(['required', 'in:a,b', 'between:1,5'], \Saola\Admin\Registry\AdminRegistry::clientRules(['required', 'in:a,b', 'between:1,5', 'regex:/^x$/', 'exists:users,id', 'required_if:x,y', new \Illuminate\Validation\Rules\In(['a'])]));
+
+        $this->expectException(\InvalidArgumentException::class);
+        System::context('web', ['as' => 'web'])->module('blog')->list(['service' => GadgetService::class, 'columns' => ['name' => ['label' => 'x']]]);
     }
 
     public function test_pages_render_on_module_routes_and_the_menu_comes_from_the_registry(): void
@@ -133,7 +155,7 @@ class RegistryCrudTest extends TestCase
         $this->assertContains('admin.gadgets.index', array_column(SPA::getRoutes('admin'), 'name'));
         Gate::define('shop.gadgets.view', fn () => false);
         $this->getJson('/control/gadgets')->assertForbidden();
-        $this->getJson('/control/gadgets/_api')->assertForbidden();
+        $this->getJson('/control/gadgets')->assertForbidden();
     }
 
     public function test_install_points_the_project_admin_controller_at_the_package(): void

@@ -35,6 +35,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->register(SaolaServiceProvider::class);
         $this->app->register(\Saola\Core\Providers\BladeDirectiveServiceProvider::class);
         $this->app->singleton(AdminRegistry::class);
+        \Saola\Admin\Registry\ModuleMenus::register();
         $this->app->scoped(\Saola\Admin\Media\MediaLibrary::class);
         $this->app->bind(\Saola\Admin\Media\MediaScope::class, \Saola\Admin\Media\GlobalMediaScope::class);
         $this->app->singleton(\Saola\Admin\Settings\SettingsRegistry::class);

@@ -19,14 +19,15 @@ use Saola\Core\Http\Controllers\AdminController as CoreAdminController;
  */
 abstract class AdminController extends CoreAdminController
 {
-    /** Registered key served by this controller; null = second segment of the route name (core's view helpers default it to 'test'). */
+    /** Registered key served by this controller; null = the key the route name continues (admin.{key}.*, key may be products.categories). */
     protected $module = null;
 
     /**
      * Standard CRUD routes for a module, pointing at the actions below; the module declares them in its own route group.
      *  - Saola route builder: System::context('admin')->module([...])->controller(UserController::class)->as('users')->group(fn ($m) => UserController::routes($m));
      *  - Laravel routes:      Route::prefix('admin/users')->name('admin.users.')->middleware([...])->group(fn () => UserController::routes());
-     * The list/form pages render the package's resource screen; the _api paths are what that screen calls.
+     * The list/form pages render the package's resource screen, as HTML on a full load and as JSON for the view's @await
+     * (filters and paging navigate to the same URLs); the _api paths only take writes.
      */
     public static function routes(?object $m = null): void
     {
@@ -48,9 +49,9 @@ abstract class AdminController extends CoreAdminController
         $add('get', '/', 'listPage', 'index', true);
         $add('get', '/create', 'createPage', 'create', true);
         $add('get', '/{record}/edit', 'editPage', 'edit', true);
-        $add(['GET', 'POST'], '/_api', 'apiRecords', 'api');
+        $add('post', '/_api', 'apiRecords', 'api');
         $add('post', '/_api/bulk', 'apiBulk', 'api.bulk');
-        $add(['GET', 'PUT'], '/_api/{record}', 'apiRecord', 'api.item');
+        $add('put', '/_api/{record}', 'apiRecord', 'api.item');
         $add('post', '/_api/{record}/{operation}', 'apiTransition', 'api.state');
     }
 
@@ -58,7 +59,7 @@ abstract class AdminController extends CoreAdminController
     protected function adminKey(): string
     {
         if (is_string($this->module ?? null) && $this->module !== '') return $this->module;
-        return explode('.', (string) request()->route()?->getName())[1] ?? '';
+        return app(AdminRegistry::class)->routeKey((string) request()->route()?->getName())[0];
     }
 
     /** Outcome of a write (POST/PUT/DELETE), delivered to the view's App.Http. */
@@ -113,16 +114,14 @@ abstract class AdminController extends CoreAdminController
     public function apiRecords(Request $request)
     {
         $definition = $this->crudDefinition($request);
-        if ($request->isMethod('POST')) return response()->json($this->crudStore($definition)->create($definition, $request), 201);
-        return response()->json(['schema' => 1, 'resource' => $this->crudStore($definition)->listing($definition, $request)]);
+        return response()->json($this->crudStore($definition)->create($definition, $request), 201);
     }
 
     public function apiRecord(Request $request, string $record)
     {
         abort_unless(preg_match('/^[A-Za-z0-9_-]{1,191}$/D', $record), 404);
-        $definition = $this->crudDefinition($request); $store = $this->crudStore($definition);
-        if ($request->isMethod('PUT')) return response()->json($store->update($definition, $request, $record));
-        return response()->json(['schema' => 1, 'resource' => $store->editor($definition, $request, $record)]);
+        $definition = $this->crudDefinition($request);
+        return response()->json($this->crudStore($definition)->update($definition, $request, $record));
     }
 
     public function apiTransition(Request $request, string $record, string $operation)

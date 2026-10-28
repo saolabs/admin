@@ -10,7 +10,7 @@ Gói quản trị dùng chung cho ứng dụng Saola/Laravel: quản lý ngườ
 
 **Source đang phát triển (chưa phát hành):** thêm [quản lý ngôn ngữ](docs/LANGUAGE_MANAGEMENT.md) tại `/{prefix}/languages`: thêm locale, mặc định UI/fallback/nội dung trong DB, tải JSON tổng và upload preview → draft → publish. Có quyền riêng từng thao tác, session choice và dirty guard. AI chưa triển khai. Tag alpha.1 phía trên giữ nguyên phạm vi cũ.
 
-Source 28/10 (chưa phát hành): [CRUD và thùng rác dùng chung](docs/RESOURCES.md) khai bằng `Admin::list()`/`Admin::form()` từ module, ghi qua service của core: list/search/sort/pagination, thêm/sửa, xóa mềm/khôi phục, bulk nguyên tử và purge opt-in. Không còn class Page/Resource trong project.
+Source 28/10 (chưa phát hành): [CRUD và thùng rác dùng chung](docs/RESOURCES.md) khai bằng `->menu()->list()->form()` trên module của route builder (hoặc `Admin::list()`/`Admin::form()`), ghi qua service của core: list/search/sort/pagination, thêm/sửa, xóa mềm/khôi phục, bulk nguyên tử và purge opt-in. Không còn class Page/Resource trong project.
 
 Đã có trên [Packagist](https://packagist.org/packages/saola/admin); [kiểm chứng phát hành](docs/RELEASE_VERIFICATION.md).
 

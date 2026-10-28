@@ -11,12 +11,12 @@ use Saola\Admin\Resources\Input;
 
 /**
  * Admin UI configuration registered by modules from their ModuleServiceProvider: menu entries, lists and forms,
- * as plain arrays. Modules hold no UI classes; the package renders from this data and exports it as JSON.
+ * as plain arrays. Modules hold no UI classes; the package renders from this data.
  * Every entry is checked when it is registered (at boot), so a wrong key fails before any request.
  */
 final class AdminRegistry
 {
-    private const KEY = '/^[a-z][a-z0-9_-]{0,63}$/D';
+    private const KEY = '/^[a-z][a-z0-9_-]{0,63}(\.[a-z][a-z0-9_-]{0,63}){0,7}$/D'; // dots: nested modules (products.categories)
     private const MENU_KEYS = ['title', 'icon', 'order', 'route', 'url', 'ability', 'group', 'hidden'];
     private const GROUP_KEYS = ['title', 'icon', 'order'];
     private const LIST_KEYS = ['service', 'query', 'ability', 'columns', 'search', 'sort', 'title', 'description'];
@@ -29,6 +29,8 @@ final class AdminRegistry
     private array $groups = [];
     private array $lists = [];
     private array $forms = [];
+    /** ->menu() on route modules, resolved by verify() once every module is in: [menu, route name, ancestor keys nearest first]. */
+    private array $moduleMenus = [];
 
     public function menu(string $key, array $menu): void
     {
@@ -96,9 +98,36 @@ final class AdminRegistry
         $this->forms[$key] = $form;
     }
 
+    /**
+     * ->menu() on a route module (see ModuleMenus). The route and group come from the module tree, so they are settled in verify():
+     * a module whose descendants have menus becomes their group; any other gets a menu entry for its {route}.index.
+     */
+    public function moduleMenu(string $key, string $route, array $ancestors, array $menu): void
+    {
+        $this->assertKey($key, 'menu');
+        $this->assertKeys($menu, self::MENU_KEYS, "menu '{$key}'");
+        if (isset($this->moduleMenus[$key])) throw new InvalidArgumentException("Admin menu '{$key}' is registered twice.");
+        $this->moduleMenus[$key] = [$menu, $route, $ancestors];
+    }
+
     /** Cross-entry checks, run once every module has booted (registration order between modules is not fixed). */
     public function verify(): void
     {
+        $pending = $this->moduleMenus; $this->moduleMenus = [];
+        $parent = []; // nearest ancestor that is a module menu or a registered group
+        foreach ($pending as $key => [$menu, , $ancestors]) {
+            if (isset($menu['group'])) { $parent[$key] = $menu['group']; continue; } // a group from Admin::group(), e.g. shared by several modules
+            foreach ($ancestors as $ancestor) if (isset($pending[$ancestor]) || isset($this->groups[$ancestor])) { $parent[$key] = $ancestor; break; }
+        }
+        $groups = array_flip(array_filter($parent, fn ($p) => isset($pending[$p])));
+        foreach ($pending as $key => [$menu]) if (isset($groups[$key])) {
+            if (isset($parent[$key])) throw new InvalidArgumentException("Admin menu '{$key}' has sub-menus and a parent menu; the sidebar nests one level.");
+            $this->group($key, array_intersect_key($menu, array_flip(self::GROUP_KEYS)));
+        }
+        foreach ($pending as $key => [$menu, $route]) if (!isset($groups[$key])) {
+            $this->menu($key, $menu + (isset($menu['url']) || isset($menu['route']) ? [] : ['route' => $route.'.index']) + (isset($parent[$key]) ? ['group' => $parent[$key]] : []));
+        }
+
         foreach ($this->menus as $key => $menu) {
             if (isset($menu['group']) && !isset($this->groups[$menu['group']])) throw new InvalidArgumentException("Admin menu '{$key}' uses unknown group '{$menu['group']}'; register it with Admin::group().");
             if (isset($this->groups[$key])) throw new InvalidArgumentException("Admin menu '{$key}' collides with a menu group.");
@@ -109,6 +138,21 @@ final class AdminRegistry
     public function hasList(string $key): bool { return isset($this->lists[$key]) || isset($this->engines[$key]); }
     /** @return list<string> keys with a list (registered or engine), for admin:doctor. */
     public function listKeys(): array { return array_values(array_unique([...array_keys($this->lists), ...array_keys($this->engines)])); }
+    /**
+     * [registered key, action] of an admin route name: the longest key the name continues ("admin.products.categories.api.item"
+     * -> ['products.categories', 'api.item']); a name with no registered key splits at its second segment.
+     */
+    public function routeKey(string $routeName): array
+    {
+        $rest = explode('.', $routeName, 2)[1] ?? '';
+        $best = '';
+        foreach ([...array_keys($this->menus), ...array_keys($this->lists), ...array_keys($this->engines)] as $key) {
+            if (strlen($key) > strlen($best) && ($rest === $key || str_starts_with($rest, $key.'.'))) $best = (string) $key;
+        }
+        if ($best === '') [$best] = explode('.', $rest, 2);
+        return [$best, (string) substr($rest, strlen($best) + 1)];
+    }
+
     public function menuOf(string $key): ?array { return $this->menus[$key] ?? null; }
     public function menus(): array { return $this->menus; }
 
@@ -176,40 +220,9 @@ final class AdminRegistry
             'min', 'max', 'between', 'size', 'digits', 'digits_between', 'in', 'not_in']));
     }
 
-    /**
-     * What the front end may see of the registration, for this request: entries and fields the user may open, presentation
-     * keys only. Never service/callable class names, queries, abilities, route names or server-only rules.
-     */
-    public function toArray(Request $request): array
-    {
-        $gate = Gate::forUser($request->user());
-        $allowed = fn (?string $ability) => $ability === null || $gate->allows($ability);
-        $pick = fn (array $from, array $keys) => array_intersect_key($from, array_flip($keys));
-        $lists = $forms = [];
-        foreach ($this->lists as $key => $list) {
-            if (!$allowed($list['ability'] ?? $this->menus[$key]['ability'] ?? null)) continue;
-            $lists[$key] = $pick($list, ['title', 'description', 'search', 'sort']) + ['columns' => array_map(
-                fn ($column) => $pick($column, ['label', 'type', 'decimals']),
-                array_filter($list['columns'], fn ($column) => $allowed($column['ability'] ?? null)),
-            )];
-            if (!isset($this->forms[$key])) continue;
-            $form = $this->forms[$key];
-            $forms[$key] = $pick($form, ['sections', 'layout']) + ['messages' => self::clientMessages($form['messages'] ?? [])] + ['fields' => array_map(function ($field) use ($pick) {
-                $out = $pick($field, ['type', 'label', 'placeholder', 'help', 'default', 'section', 'span', 'readOnly', 'writeOnly',
-                    'optionalOnUpdate', 'rows', 'maxItems', 'itemMaxLength', 'step', 'translatable']);
-                $out['rules'] = self::clientRules($field['rules'] ?? []);
-                $out['messages'] = self::clientMessages($field['messages'] ?? []);
-                // Options from a service are resolved per record by the editor endpoint; only literal lists travel here.
-                if (isset($field['options']) && !(array_is_list($field['options']) && count($field['options']) === 2 && is_string($field['options'][0]) && class_exists($field['options'][0]))) $out['options'] = $field['options'];
-                return $out;
-            }, array_filter($form['fields'], fn ($field) => $allowed($field['ability'] ?? null)))];
-        }
-        return ['navigation' => $this->navigation($request), 'lists' => $lists, 'forms' => $forms];
-    }
-
     private function assertKey(string $key, string $what): void
     {
-        if (!preg_match(self::KEY, $key)) throw new InvalidArgumentException("Admin {$what} key '{$key}' must be lowercase letters, digits, - or _.");
+        if (!preg_match(self::KEY, $key)) throw new InvalidArgumentException("Admin {$what} key '{$key}' must be lowercase letters, digits, - or _, nested with dots.");
     }
 
     private function assertKeys(array $data, array $allowed, string $where): void

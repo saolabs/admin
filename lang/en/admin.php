@@ -13,7 +13,7 @@ return ['admin' => [
         'settings' => 'Account settings',
         'logout' => 'Sign out',
         'title' => 'Administration', 'workspace' => 'Workspace', 'navigation' => 'Navigation', 'menu' => 'Menu',
-        'skip' => 'Skip to content', 'language' => 'Interface language', 'unsaved' => 'Save or discard your changes before switching language.',
+        'skip' => 'Skip to content', 'breadcrumb' => 'Page location', 'language' => 'Interface language', 'unsaved' => 'Save or discard your changes before switching language.',
         'language_error' => 'This language could not be loaded.',
     ],
     'workspace' => [

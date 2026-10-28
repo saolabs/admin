@@ -35,7 +35,8 @@
 .sa-admin-flyout-title > .sa-admin-chevron { transform: rotate(45deg); }
 .saola-admin.is-sidebar-compact .sa-admin-submenu .sa-admin-nav-child::before { display: none; }
 .sa-admin-topbar { gap: 12px; padding-inline-end: 0; }
-.sa-admin-topbar h1 { margin: 0; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sa-admin-page-title { gap: 8px; }
+.sa-admin-page-title h1 { margin: 0; font-weight: 700; font-size: 15px; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sa-admin-header-actions { display: flex; align-items: center; gap: 10px; margin-inline-start: auto; height: 70px; }
 .sa-admin-header-dropdown { position: relative; }
 .sa-admin-header-trigger, .sa-admin-account-trigger { display: flex; align-items: center; gap: 10px; height: 70px; border: 0; }
@@ -118,7 +119,6 @@
 @media (max-width: 767.98px) {
     .saola-admin.is-mobile-menu-open .app-menu { margin-left: 0; }
     .sa-admin-topbar { gap: 4px; }
-    .sa-admin-topbar h1 { font-size: 16px; }
     .sa-admin-account-caption, .sa-admin-account-trigger > .sa-admin-dropdown-chevron { display: none; }
     .sa-admin-account-trigger, .sa-admin-header-trigger { padding: 6px; gap: 5px; }
     .sa-admin-resource-filters { display: grid; grid-template-columns: minmax(0,1fr) auto; }

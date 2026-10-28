@@ -69,7 +69,6 @@
                 <button id="admin-menu-toggle" class="sa-admin-menu-toggle btn shadow-none btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger" type="button" aria-label="{{ mobileView ? text('admin.shell.menu') : (sidebarCompact ? text('admin.shell.expand_sidebar') : text('admin.shell.collapse_sidebar')) }}" aria-controls="sa-admin-navigation" aria-expanded="{{ (mobileView ? menuOpen : !sidebarCompact) ? 'true' : 'false' }}" @click(toggleMenu())>
                     <span @class({'hamburger-icon', 'open': compactView}) aria-hidden="true"><span></span><span></span><span></span></span>
                 </button>
-                @useBlock('heading')
                 <div class="sa-admin-header-actions">
                     <div class="sa-admin-languages sa-admin-header-dropdown dropdown" aria-label="{{ __('admin.shell.language') }}">
                         <button id="admin-language-toggle" class="sa-admin-header-trigger btn btn-ghost-secondary shadow-none" type="button" aria-label="{{ __('admin.shell.language') }}" aria-expanded="{{ languageOpen ? 'true' : 'false' }}" aria-controls="admin-language-menu" @disabled(languageBusy) @click(toggleLanguage())>
@@ -128,6 +127,27 @@
                 </div>
             </div></header>
             <main id="admin-content" class="sa-admin-content page-content container-fluid" tabindex="-1">
+                <div class="sa-admin-page-title page-title-box d-sm-flex align-items-center justify-content-between">
+                    @useBlock('heading')
+                    <nav class="page-title-right" aria-label="{{ __('admin.shell.breadcrumb') }}"><ol class="breadcrumb m-0">
+                        @foreach(navItems as item)
+                            @key(item['key'])
+                            @if(item['active'] ?? false)
+                                @if((item['children'] ?? []).length > 0)
+                                    <li class="breadcrumb-item">{{ text(item['titleKey']) }}</li>
+                                    @foreach(item['children'] as child)
+                                        @key(child['key'])
+                                        @if(child['active'] ?? false)
+                                            <li class="breadcrumb-item active" aria-current="page">{{ text(child['titleKey']) }}</li>
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <li class="breadcrumb-item active" aria-current="page">{{ text(item['titleKey']) }}</li>
+                                @endif
+                            @endif
+                        @endforeach
+                    </ol></nav>
+                </div>
                 @if(notice !== '')
                     <p class="sa-admin-alert" role="alert">{{ text(notice) }}</p>
                 @endif

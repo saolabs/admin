@@ -15,6 +15,8 @@ use Saola\Core\Support\SPA;
 
 class ResourceInputsTest extends TestCase
 {
+    use \Saola\Admin\Tests\Support\RegistersCrud;
+
     protected function getPackageProviders($app): array { return [AdminServiceProvider::class]; }
     protected function defineEnvironment($app): void
     {
@@ -23,11 +25,11 @@ class ResourceInputsTest extends TestCase
         $app['config']->set('database.connections.testing', ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']);
         $app['config']->set('saola-admin.panel.enabled', true);
         $app['config']->set('saola-admin.panel.prefix', 'control');
-        $app['config']->set('saola-admin.panel.pages', [InputResource::class]);
     }
     protected function setUp(): void
     {
         SPA::resetRoutes(); parent::setUp();
+        $this->crud('inputs', InputResource::class);
         foreach (glob(__DIR__.'/../../database/migrations/*.php') as $file) (require $file)->up();
         Schema::create('input_records', function (Blueprint $table) {
             $table->id(); $table->integer('tenant_id'); $table->string('name');
@@ -40,11 +42,11 @@ class ResourceInputsTest extends TestCase
         $this->actingAs(new GenericUser(['id' => 1, 'tenant_id' => 7]));
     }
     protected function tearDown(): void { SPA::resetRoutes(); parent::tearDown(); }
-    private function create(array $values) { return $this->postJson('/control/_api/resources/inputs', ['requestId' => (string) Str::uuid(), 'values' => ['name' => 'New'] + $values]); }
+    private function create(array $values) { return $this->postJson('/control/inputs/_api', ['requestId' => (string) Str::uuid(), 'values' => ['name' => 'New'] + $values]); }
 
     public function test_presets_project_groups_options_and_values_without_exposing_foreign_tenant_choices(): void
     {
-        $editor = $this->getJson('/control/_api/resources/inputs/1')->assertOk()->json('resource');
+        $editor = $this->getJson('/control/inputs/_api/1')->assertOk()->json('resource');
         $fields = array_column($editor['fields'], null, 'key');
         $this->assertSame('tabs', $editor['formLayout']);
         $this->assertSame('main', $editor['firstSection']);
@@ -72,12 +74,12 @@ class ResourceInputsTest extends TestCase
         $this->assertSame(['one', 'two'], $record->tags);
         $this->assertSame(['zero' => 0, 'enabled' => false], $record->document);
         $this->assertSame('<h2>Hello</h2><a>bad</a><strong>Good</strong>', $record->body);
-        $fields = array_column($this->getJson('/control/_api/resources/inputs/'.$id)->assertOk()->json('resource.fields'), null, 'key');
+        $fields = array_column($this->getJson('/control/inputs/_api/'.$id)->assertOk()->json('resource.fields'), null, 'key');
         $this->assertSame('/media/image.png', $fields['image']['previewUrl']);
         $this->assertSame('2026-10-26T13:45', $fields['at']['value']);
         $this->assertSame('13:45', $fields['time']['value']);
-        $revision = $this->getJson('/control/_api/resources/inputs/'.$id)->json('resource.revision');
-        $this->putJson('/control/_api/resources/inputs/'.$id, ['revision' => $revision, 'values' => ['many' => [], 'tags' => []]])->assertOk();
+        $revision = $this->getJson('/control/inputs/_api/'.$id)->json('resource.revision');
+        $this->putJson('/control/inputs/_api/'.$id, ['revision' => $revision, 'values' => ['many' => [], 'tags' => []]])->assertOk();
         $this->assertSame([], $record->fresh()->many);
     }
     public function test_type_constraints_options_and_scope_cannot_be_bypassed_by_a_client(): void
@@ -109,13 +111,13 @@ class ResourceInputsTest extends TestCase
         $this->app->bind(InputResource::class, fn () => new class extends InputResource {
             public function fields(): array { $fields = parent::fields(); foreach ($fields as &$field) if (($field['section'] ?? '') === 'content') $field['readAbility'] = 'read-content'; return $fields; }
         });
-        $this->getJson('/control/_api/resources/inputs/1')->assertOk()->assertJsonCount(1, 'resource.groups')->assertJsonMissingPath('resource.groups.1');
+        $this->getJson('/control/inputs/_api/1')->assertOk()->assertJsonCount(1, 'resource.groups')->assertJsonMissingPath('resource.groups.1');
         $this->create(['body' => 'hidden'])->assertUnprocessable();
     }
     public function test_sanitized_list_renderers_and_custom_computed_values_do_not_render_html_or_unsafe_urls(): void
     {
         InputRecord::findOrFail(1)->forceFill(['url' => 'javascript:alert(1)', 'image' => '//evil.test/a.png', 'price' => '12.5', 'enabled' => true])->save();
-        $list = $this->getJson('/control/_api/resources/inputs')->assertOk()->json('resource');
+        $list = $this->getJson('/control/inputs/_api')->assertOk()->json('resource');
         $this->assertSame('', $list['rows'][0]['values']['url']);
         $this->assertSame('', $list['rows'][0]['values']['image']);
         $this->assertSame('1', $list['rows'][0]['values']['enabled']);

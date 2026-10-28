@@ -91,9 +91,9 @@ final class DoctorAdminCommand extends Command
                 $disk = config('saola-admin.media.disk', 'local');
                 if (!is_array(config('filesystems.disks.'.$disk))) $errors[] = 'Media filesystem disk is missing: '.$disk;
             }
-            foreach (app(\Saola\Admin\Pages\PageRegistry::class)->classes() as $class) {
-                $resource = app($class);
-                if (!$resource instanceof \Saola\Admin\Resources\Resource) continue;
+            $registry = app(\Saola\Admin\Registry\AdminRegistry::class);
+            foreach ($registry->listKeys() as $class) {
+                $resource = $registry->definition($class);
                 $resource->schema();
                 if (!$resource->store() || !app($resource->store()) instanceof \Saola\Admin\Resources\ResourceStore) $errors[] = 'Resource store must implement ResourceStore: '.$class;
                 if ($resource->store() !== \Saola\Admin\Resources\EloquentResourceStore::class) continue;
@@ -106,9 +106,10 @@ final class DoctorAdminCommand extends Command
             }
         } catch (\Throwable $error) { $errors[] = 'Cannot inspect configured storage: '.$error->getMessage(); }
         if (config('saola-admin.panel.enabled') && config('sao.assets.css.admin') !== $theme['css']) $errors[] = 'The admin CSS source configuration differs from the selected theme CSS entry.';
-        if (config('saola-admin.users.enabled', false)) {
-            try { $errors = [...$errors, ...app(\Saola\Admin\Users\UserDirectory::class)->diagnostics()]; }
-            catch (\Throwable $error) { $errors[] = 'Cannot inspect user directory: '.$error->getMessage(); }
+        // The project's admin base must extend the package's controller, or module controllers lose the CRUD actions and shell.
+        $projectBase = 'App\\Http\\Controllers\\AdminController';
+        if (class_exists($projectBase) && !is_subclass_of($projectBase, \Saola\Admin\Http\AdminController::class)) {
+            $errors[] = $projectBase.' must extend '.\Saola\Admin\Http\AdminController::class.' (run admin:install, or change its extends line).';
         }
         $this->line(json_encode(['ok' => !$errors, 'contract' => 1, 'errors' => $errors,
             'next' => 'Configure the host Gate/guard, migrate and sync lang explicitly, build, then enable saola-admin.panel.enabled.'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));

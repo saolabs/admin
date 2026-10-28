@@ -10,12 +10,10 @@ return [
         'ability' => 'access-admin',
         'brand' => 'Saola Admin',
         'ui_catalog' => false, // Read-only Material component catalogue; normal panel authorization applies.
-        'home_page' => 'workspace', // Key of a registered Page; authorization still applies.
+        'home_page' => null, // Menu key opened at /{prefix}; null = first menu the user may open.
         'theme' => 'classic', // Presentation source: resources/saola/admin/themes/{theme}/.
-        'icons' => [], // Page/group key => dashboard/users/media/language/settings/list/folder.
-        'host_modules' => null, // View namespace of host-rendered screens, e.g. 'admin.modules' (see Saola\Admin\Http\HostScreenController); the theme stays the context base.
+        'host_modules' => null, // View namespace of host-rendered screens, e.g. 'admin.modules' (see Saola\Admin\Http\AdminController); the theme stays the context base.
         'language_scope' => 'admin',
-        'pages' => [\Saola\Admin\Pages\WorkspacePage::class],
     ],
     'themes' => [], // Optional theme descriptors; bundled theme manifests are discovered automatically.
     'account' => [
@@ -26,16 +24,6 @@ return [
         'profile_route' => null,
         'settings_route' => null,
         'logout_route' => null, // Host POST/DELETE route. Never turn logout into a GET link.
-    ],
-    // Defaults of admin:make:resource / admin:make:screen: abilities "{ability_prefix}.{key}", labels "{lang_prefix}.{key}".
-    // Unset: abilities admin.{key}, labels {module}.{key}. Set once per project, never per feature.
-    'generator' => ['ability_prefix' => null, 'lang_prefix' => null],
-    'users' => [
-        'enabled' => false,
-        'model' => null, // Resolve from panel.guard -> auth provider; host may bind UserDirectory instead.
-        'read_ability' => 'view-admin-users',
-        'query_scope' => null, // Required host class implementing UserQueryScope; no guessed tenant scope.
-        'columns' => ['name' => 'name', 'email' => 'email'],
     ],
     'media' => [
         'enabled' => true,

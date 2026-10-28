@@ -35,7 +35,7 @@ Trong config `saola-admin.php`:
 ],
 ```
 
-`Themes\AdminTheme` tự đọc các `themes/*/theme.manifest.json` trong package, kiểm tra slug/context/CSS và đăng ký context `admin` với base `admin.themes.material`. Page/controller vẫn dùng `@RAW:pages.*`; shell/component vẫn dùng `__base__`. SSR, page-data, component routes và hydration nhận cùng namespace. Không sao chép route, Page/Resource, Policy hay store vào theme.
+`Themes\AdminTheme` tự đọc các `themes/*/theme.manifest.json` trong package, kiểm tra slug/context/CSS và đăng ký context `admin` với base `admin.themes.material`. Page/controller vẫn dùng `@RAW:pages.*`; shell/component vẫn dùng `__base__`. SSR, page-data, component routes và hydration nhận cùng namespace. Không sao chép route, đăng ký list/form, Policy hay store vào theme.
 
 Mặc định package chọn `classic`. Host kiểm chứng Gehihi chọn `material`. Đổi theme là đổi config rồi khởi động lại worker/xóa config cache theo cách triển khai của host. Chuyển theme bằng tải document đầy đủ để stylesheet và registry của document được chọn đồng bộ; không có endpoint cho khách đổi theme trong một SPA đang mở.
 
@@ -113,11 +113,11 @@ Nguồn của từng theme hiện nằm trong `admin/themes/{name}`. Namespace l
 
 | Thư mục (trong theme) | Dành cho | Ai viết | Tên view |
 | --- | --- | --- | --- |
-| `pages/` | Màn hình dùng chung của gói: `resource` (mọi CRUD khai bằng Resource), `settings`, `languages`, `media`, `ui-library` | Gói | `admin.themes.<theme>.pages.*`, controller của gói chỉ định tường minh vì một view phục vụ nhiều route |
+| `pages/` | Màn hình dùng chung của gói: `resource` (mọi CRUD khai bằng `Admin::list/form`), `settings`, `languages`, `media`, `ui-library` | Gói | `admin.themes.<theme>.pages.*`, controller của gói chỉ định tường minh vì một view phục vụ nhiều route |
 | `components/`, `layouts/`, `partials/` | Thành phần dùng lại, khung shell, phần đầu trang | Gói | `admin.themes.<theme>.components.*` … |
 | `modules/` của **host** (`saola-admin.panel.host_modules`) | Màn hình nghiệp vụ riêng của ứng dụng, tên view khớp tên route (`admin.providers.index` → `providers/index.sao`) | Host | `<host_modules>.providers.index` |
 
-CRUD tiêu chuẩn không cần view: host khai `Resource` (model, cột, trường, quy tắc, quyền) trong `app/Modules/*/Resources` (tự phát hiện), gói dựng danh sách, form, thùng rác và thao tác hàng loạt bằng `pages/resource`. `HostScreenController` lấy module và action từ tên route để chọn view trong `host_modules`. Input, ô danh sách và cả màn hình của từng Resource có thể là view của project: xem [RESOURCES.md](RESOURCES.md#tùy-biến-khi-cần-view-của-project-cùng-chạy-ssr-hydrate-và-csr).
+CRUD tiêu chuẩn không cần view: module khai `Admin::list/form` (cột, trường, rules, quyền) trong provider, gói dựng danh sách, form, thùng rác và thao tác hàng loạt bằng `pages/resource`. `Saola\Admin\Http\AdminController` lấy module và action từ tên route để chọn view trong `host_modules` cho màn hình riêng. Input, ô danh sách và cả màn hình của từng list/form có thể là view của project: xem [RESOURCES.md](RESOURCES.md#tùy-biến-khi-cần-view-của-project-cùng-chạy-ssr-hydrate-và-csr).
 
 ## Input: mỗi type một file
 

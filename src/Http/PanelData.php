@@ -6,7 +6,6 @@ namespace Saola\Admin\Http;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Saola\Admin\Pages\PageRegistry;
 use Saola\Admin\Settings\SettingsRegistry;
 use Saola\Core\Language\ClientCatalogs;
 
@@ -21,7 +20,7 @@ final class PanelData
         $catalogs = app(ClientCatalogs::class);
         app(DictionaryAccess::class)->authorize($request, $catalogs, $scope);
         $request->attributes->set('saola.i18n', $catalogs->clientConfig($scope, $locale));
-        $navigation = app(PageRegistry::class)->navigation($request);
+        $navigation = app(\Saola\Admin\Registry\AdminRegistry::class)->navigation($request);
         if (config('saola-admin.panel.ui_catalog', false) && config('saola-admin.panel.theme') === 'material') {
             $navigation[] = ['key' => 'ui-library', 'titleKey' => 'admin.ui.title', 'url' => route('saola.admin.ui.catalog')];
         }

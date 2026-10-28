@@ -1,3 +1,12 @@
+# saola/admin (chưa phát hành)
+
+Breaking: admin UI is registered as arrays, modules hold no UI classes. See docs/RESOURCES.md and docs/ADMIN_REGISTRY_PLAN.md.
+
+- `Saola\Admin\Admin::menu/group/list/form()` from a module's `ModuleServiceProvider::menus()`; checked at boot. Fields carry `type`, `rules` (Laravel, server + browser), `messages`; options/save/prepare/query are `[Service::class, 'method']`; writes go through the module's core service, so repository events fire.
+- `Saola\Admin\Http\AdminController` (extends core's `AdminController`): `routes($m)` declares the CRUD routes on the module's own route group. `admin:install` points `App\Http\Controllers\AdminController` at it; `admin:doctor` checks.
+- Removed: `Pages\*` (except `ResourceDocument`), `Users\*`, `PageController`, `ResourceController`, `HostScreenController`, `admin:make:resource|screen` and stubs, routes `/{prefix}/{page}` and `/{prefix}/_api/resources/*`, config `panel.pages|icons|discover`, `users.*`, `generator.*`.
+- Requires saola/core with `Http\Controllers\AdminController`.
+
 # saola/admin v0.1.0-alpha.6
 
 - Pages are discovered: every instantiable `Page`/`Resource` under `app/Modules/*/{Resources,Pages}` registers itself; `panel.pages`/`panel.icons` become optional. Menu data lives on the class (`NavigablePage::navigation()`: icon, order, hidden).

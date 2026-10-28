@@ -1,32 +1,80 @@
-# Resource: danh sách, form và thùng rác dùng chung
+# Danh sách, form và thùng rác: `Admin::list()` / `Admin::form()`
 
-Mốc 26/10/2026, source sau alpha.1, chưa phát hành tag mới. `Saola\Admin\Resources\Resource` là định nghĩa PHP để admin cung cấp list, tìm kiếm/sắp xếp/phân trang, thêm/sửa, xóa mềm, xem thùng rác, khôi phục và thao tác nhiều dòng. Module thông thường không cần thêm controller, route, JS hoặc `.sao` riêng.
+Mốc 28/10/2026, chưa phát hành tag. Module chỉ lo nghiệp vụ và dữ liệu (Model, Repository, Service của core); giao diện admin được **khai báo bằng mảng** từ `ModuleServiceProvider` của module. Gói dựng list, tìm kiếm/sắp xếp/phân trang, thêm/sửa, xóa mềm, thùng rác, khôi phục và thao tác nhiều dòng từ các mảng đó. Không còn class `Page`/`Resource` trong project, không quét thư mục, không sửa config khi thêm tính năng. Kế hoạch và các quyết định: [ADMIN_REGISTRY_PLAN.md](ADMIN_REGISTRY_PLAN.md).
 
-Ý tưởng giữ sự tiện dụng của hệ cũ ai-services: cấu hình form/list một lần rồi dùng bộ màn hình chung. Thiết kế mới dùng model, scope và Policy của host; không đưa repository/controller kế thừa của hệ cũ vào package. `Page`/`ResourceDocument` chỉ đọc hiện có vẫn hoạt động. Settings, language exchange và media giữ contract riêng, không ép tất cả thành CRUD.
+Một khai báo field phục vụ ba việc: giao diện (`type`), validate ở server và trình duyệt (`rules`, cú pháp Laravel qua Validator của core) và thông báo lỗi (`messages`, khóa bản dịch). Mọi mảng được kiểm khi boot: khóa lạ, thiếu `title`/`ability`, service không phải `ModuleService`, callable không tồn tại đều ném lỗi trước request đầu tiên.
 
-## Thêm tính năng: thêm file, không sửa config (28/10/2026)
+## Thêm một CRUD vào admin
 
-Trang được **tự phát hiện**: mọi class `Page` (kể cả `Resource`) không trừu tượng trong `app/Modules/*/Resources` và `app/Modules/*/Pages` tự đăng ký. Không còn danh sách `panel.pages` hay `panel.icons` phải sửa (vẫn đọc nếu có, cho trang nằm ngoài quy ước; đổi thư mục quét bằng `panel.discover`).
+Ba lớp controller: gói cung cấp lớp nền theo context; project luôn có `App\Http\Controllers\AdminController` (dòng `extends` chọn gói phục vụ context admin, `admin:install` tự trỏ sang gói này, `admin:doctor` kiểm); controller của module chỉ kế thừa lớp của project.
 
-| Việc | Cách làm |
+```php
+// app/Modules/Shop/Http/Controllers/Admin/ProductController.php
+class ProductController extends \App\Http\Controllers\AdminController {}
+
+// app/Modules/Shop/ModuleServiceProvider.php
+public function routes(): void
+{
+    System::context('admin')->module(['slug' => 'products', 'prefix' => 'products'])->controller(ProductController::class)->as('products')
+        ->group(fn ($m) => ProductController::routes($m));
+}
+
+public function menus(): void   // hook có sẵn của core ModuleServiceProvider
+{
+    Admin::menu('products', ['title' => 'shop.products.title', 'route' => 'admin.products.index', 'ability' => 'shop.products.view', 'icon' => 'ri-store-line', 'order' => 20]);
+    Admin::list('products', [
+        'service' => ProductService::class,
+        'columns' => ['name' => ['label' => 'shop.products.name'], 'price' => ['label' => 'shop.products.price', 'type' => 'number', 'decimals' => 2]],
+        'search' => ['name'],
+        'sort' => ['name', 'price'],
+    ]);
+    Admin::form('products', [
+        'service' => ProductService::class,
+        'messages' => ['required' => 'shop.errors.required'],
+        'fields' => [
+            'name' => ['type' => 'text', 'label' => 'shop.products.name', 'rules' => ['required', 'max:120', 'unique:products,name,{id}'], 'messages' => ['unique' => 'shop.errors.name_taken']],
+            'category_id' => ['type' => 'select', 'label' => 'shop.products.category', 'options' => [ProductService::class, 'categoryOptions']],
+            'price' => ['type' => 'number', 'label' => 'shop.products.price', 'rules' => ['required', 'numeric', 'min:0']],
+        ],
+    ]);
+}
+```
+
+`ProductController::routes($m)` khai 7 route chuẩn trỏ vào action của lớp nền: trang `index` `/`, `create` `/create`, `edit` `/{record}/edit` (SSR + SPA, view `@BASE:pages.resource`) và API `api` `/_api` (GET list, POST tạo), `api.bulk` `/_api/bulk`, `api.item` `/_api/{record}` (GET form, PUT sửa), `api.state` `/_api/{record}/{trash|restore|purge}`. Action của gói tên `listPage/createPage/editPage/apiRecords/apiRecord/apiTransition/apiBulk`, để `index/create/edit/store/update/destroy` hoàn toàn thuộc về module. Module muốn xử lý khác thì override action hoặc tự khai route trỏ vào hàm của mình. Dùng route Laravel thường thì gọi `ProductController::routes()` trong `Route::prefix('admin/products')->name('admin.products.')->group(...)`.
+
+Khóa đăng ký = đoạn thứ hai của tên route (`admin.{key}.*`); đặt `protected $module = 'products';` trên controller để chỉ định khác. Ghi đi qua `create/update/moveToTrash/restoreFromTrash` của service, tức CRUD của core, nên sự kiện của repository vẫn phát.
+
+## Tham chiếu khóa
+
+| Hàm | Khóa |
 | --- | --- |
-| CRUD mới | `php artisan admin:make:resource Shop/Product` sinh `app/Modules/Shop/Resources/ProductResource.php`, trường lấy từ cột bảng của model; in ra khoá nhãn cần thêm. Sau đó `admin:lang:sync`. |
-| Màn hình riêng | `php artisan admin:make:screen Shop/reports` sinh Page, controller và `resources/saola/admin/views/modules/reports/index.sao`; in ra dòng route cần thêm vào `ModuleServiceProvider` của module. |
-| Mục menu | `navigation()` trên class: `['icon' => 'ri-store-line', 'order' => 20, 'hidden' => false]`. Nhóm con dùng `GroupedPage`. Menu sắp theo `order` (mặc định 100), nhóm theo con đầu tiên. |
-| Quyền | `abilityPrefix()` = `'shop.products'` thì gói kiểm `shop.products.view/create/update/delete/restore`, không cần Policy. Model có Policy đăng ký thì Policy thắng (luật riêng như "nhân sự không sửa chủ"). |
-| Màn hình riêng gắn route | Page implements `ModulePage` (`module()` = đoạn thứ hai của tên route `admin.{module}.*`); `HostScreenController` tự tìm trang, không cần `pageKeys()`. |
+| `Admin::menu(key, …)` | `title`, `ability` (bắt buộc); đúng một trong `route`/`url`; `icon`, `order` (mặc định 100), `group`, `hidden` |
+| `Admin::group(key, …)` | `title`, `icon`, `order`. Nhiều module đăng ký cùng nhóm với cùng định nghĩa là hợp lệ |
+| `Admin::list(key, …)` | `service`, `columns` (bắt buộc); `query` (callable thu hẹp phạm vi), `ability` (mặc định của menu), `search`, `sort`, `title`, `description` |
+| cột | `label`; `type` (renderer: text, badge, image, link, boolean, number, date hoặc view của project), `decimals`, `value` (callable `($record, $request)`), `ability` |
+| `Admin::form(key, …)` | `service`, `fields`; `save` (callable `($record|null, $values, $request)` trả model đã lưu), `prepare` (callable `($values, $request, $record|null)` chuẩn hóa trước validate), `messages`, `sections`, `layout` (`sections`/`tabs`) |
+| field | `type`, `label`; `rules`, `messages`, `placeholder`, `help`, `options` (mảng hoặc callable `($request, $record)`), `default`, `section`, `span`, `readOnly`, `writeOnly`, `persist`, `ability`, `optionalOnUpdate`, `rows`, `maxItems`, `itemMaxLength`, `step`, `translatable` |
 
-Stub có thể ghi đè ở `stubs/admin.resource.stub`, `stubs/admin.screen.{page,controller,view}.stub` của project. Tiền tố ability/nhãn mặc định đặt một lần cho cả project ở `saola-admin.generator` (`ability_prefix`, `lang_prefix`).
+Callable luôn là `[Class::class, 'method']`, gọi trên instance lấy từ container; không nhận closure để cấu hình còn xuất được JSON (`AdminRegistry::toArray()`).
 
-### Tùy biến khi cần: view của project, cùng chạy SSR, hydrate và CSR
+- `rules`: luật Laravel. `required`, `nullable`, `max:`/`min:` còn được suy ra cho input; `{id}` thay bằng khóa của bản ghi đang sửa. Luật trình duyệt tự kiểm được (required, email, min/max, in, regex…) đi kèm field trong JSON, còn `unique`/`exists` chỉ chạy ở server.
+- `messages`: `rule => khóa bản dịch`, ở form (mọi field) hoặc field (ghi đè). Nhãn field làm tên thuộc tính trong câu lỗi.
+- `ability`: ability Gate cho cả đọc và ghi field. Field không đọc được không có trong list/form; client tự gửi field không ghi được bị từ chối 422.
+- `persist: false`: giá trị không ghi vào model nhưng có trong request (`$request->input('values.x')`) cho hook `save`, ví dụ ma trận quyền, `password_confirmation`.
+- `type` lạ (không phải template dựng sẵn) là view `inputs/{type}.sao` của project; dữ liệu validate như text.
+
+Quyền thao tác: ability `….view` cho suy ra `….create/update/delete/restore`; model có Policy đăng ký thì Policy thắng (luật riêng như "nhân sự không sửa chủ").
+
+## Tùy biến khi cần: view của project, cùng chạy SSR, hydrate và CSR
 
 Các view dưới đây nằm cạnh `modules/` (thư mục của `panel.host_modules`), vào chung bundle và cây Blade, nên theme `@include` được ở cả server lẫn client. Đổi theme không phải viết lại chúng nếu chỉ ghép component của theme (`__base__ + 'components.…'`).
 
 | Muốn | Thêm file | Khai báo |
 | --- | --- | --- |
-| Loại input mới | `resources/saola/admin/views/inputs/{template}.sao` | `Input::make('color-hex', 'shop.color', ['type' => 'text'])`: `type` có sẵn giữ validate, `template` lạ trỏ tới file |
-| Ô danh sách riêng | `resources/saola/admin/views/columns/{renderer}.sao` (nhận `value`, `row`, `column`) | `['key' => 'name', 'labelKey' => …, 'renderer' => 'person']`; `columnValue()` có thể trả map phẳng các giá trị scalar |
-| Cả màn hình của một Resource | `resources/saola/admin/views/resources/{key}.sao` (nhận `resource`, có `resource['mode']` = list/create/edit) | Không cần: có file là dùng. Gọi lại `@include(__base__ + 'components.manager', {resource: resource})` để chỉ bọc thêm |
+| Loại input mới | `resources/saola/admin/views/inputs/{type}.sao` | `'color' => ['type' => 'color-hex', 'label' => …]` |
+| Ô danh sách riêng | `resources/saola/admin/views/columns/{type}.sao` (nhận `value`, `row`, `column`) | `'name' => ['label' => …, 'type' => 'person']`; `value` callable có thể trả map phẳng các giá trị scalar |
+| Cả màn hình của một list/form | `resources/saola/admin/views/resources/{key}.sao` (nhận `resource`, có `resource['mode']` = list/create/edit) | Không cần: có file là dùng. Gọi lại `@include(__base__ + 'components.manager', {resource: resource})` để chỉ bọc thêm |
+| Màn hình nghiệp vụ riêng | `resources/saola/admin/views/modules/{module}/{action}.sao` | Route của module trỏ vào action riêng, `$this->response($data)`; shell và menu tự có |
 
 Input riêng phải gắn controller chung để form ghi nhận thay đổi, giống input của theme:
 
@@ -42,62 +90,13 @@ Input riêng phải gắn controller chung để form ghi nhận thay đổi, gi
 
 Giá trị vẫn được escape; ô và input riêng không nhận HTML thô từ dữ liệu.
 
-## Bắt đầu bằng một Resource của project
-
-```php
-namespace App\Admin;
-
-use App\Models\Category;
-use Illuminate\Database\Eloquent\{Builder, Model};
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Saola\Admin\Resources\Resource;
-
-final class CategoryResource extends Resource
-{
-    public function key(): string { return 'categories'; }
-    public function titleKey(): string { return 'catalog.categories.title'; }
-    public function ability(): string { return 'manage-categories'; }
-    public function model(): string { return Category::class; }
-    public function searchable(): array { return ['name']; }
-
-    public function fields(): array
-    {
-        return ['name' => [
-            'labelKey' => 'catalog.categories.name',
-            'type' => 'text', 'required' => true, 'maxLength' => 100,
-        ]];
-    }
-
-    public function query(Request $request): Builder
-    {
-        return Category::where('account_id', $request->user()->account_id);
-    }
-
-    public function newRecord(Request $request): Model
-    {
-        return new Category(['account_id' => $request->user()->account_id]);
-    }
-
-    public function rules(Request $request, ?Model $record): array
-    {
-        return ['name' => [
-            ...($record ? ['sometimes'] : []), 'required', 'string', 'max:100',
-            Rule::unique('categories')->where('account_id', $request->user()->account_id)->ignore($record?->getKey()),
-        ]];
-    }
-}
-```
-
-Đặt file trong `app/Modules/{Module}/Resources/` để tự đăng ký (hoặc liệt kê trong `saola-admin.panel.pages` nếu nằm chỗ khác). Khai báo Gate `manage-categories`, đăng ký model Policy và nguồn `lang/{locale}/catalog.php` qua LanguageSources của host, cho phép nhãn cần dùng trong scope dictionary admin rồi sync. Tên file/catalog không buộc thêm namespace vendor; giá trị `titleKey`/`labelKey` là key lồng tùy ý. `.sao` dùng `__()`/`text()`, compiler hạ `__()` thành `text()`; không thay Laravel `__()`.
-
-Host tạo migration/model `Category` của mình. Muốn thùng rác, model dùng Eloquent `SoftDeletes` và bảng có `deleted_at`. Không có SoftDeletes thì chỉ list/create/edit, không tự xóa cứng thay thế. Installer không sửa bảng hoặc gắn trait vào model của host. Chạy migration package có bảng `saola_resource_events` trên connection mặc định; tên bảng có cấu hình `resources.audit_table`.
+Muốn thùng rác, model dùng chế độ xóa mềm của core (`$deleteMode = 'soft'`) và bảng có `deleted_at`; không có thì chỉ list/create/edit. Chạy migration package có bảng `saola_resource_events` (audit, revision, receipt) trên connection mặc định.
 
 ## Quyền và phạm vi dữ liệu
 
-| Hành vi | Điều kiện ngoài guard/Gate của panel và Resource ability |
+| Hành vi | Điều kiện ngoài guard/Gate của panel và ability của list |
 | --- | --- |
-| List/count/search | Model Policy `viewAny`, phạm vi từ `query(Request)` |
+| List/count/search | Model Policy `viewAny`, phạm vi từ callable `query` của list |
 | Xem form hiện có | Policy `view` trên record trong scope |
 | Thêm | Policy `create` trên model class |
 | Sửa | Policy `update` trên record trong scope |
@@ -106,39 +105,37 @@ Host tạo migration/model `Category` của mình. Muốn thùng rác, model dù
 | Khôi phục | Policy `restore` trên record |
 | Xóa vĩnh viễn | `supportsPurge(): true` do host khai báo và Policy `forceDelete`; mặc định tắt |
 
-`query()` phải giới hạn visibility trước count/search/pagination và mọi lookup ghi. Host không có tenant vẫn trả query tường minh. Không lọc quyền sau pagination. `viewAny` cho phép xem các cột đã khai báo trong scope; `view` quyết định quyền mở chi tiết, không dùng để lọc lại từng dòng list. Giữ global scopes của host, bỏ điều kiện SoftDeletes để package chọn active/trash; không dùng `onlyTrashed()` trong `query()`. Query giới hạn hàng, không joins/group/unions/limit/offset; không trả model khác.
+Callable `query` phải giới hạn visibility trước count/search/pagination và mọi lookup ghi. Host không có tenant vẫn trả query tường minh. Không lọc quyền sau pagination. `viewAny` cho phép xem các cột đã khai báo trong scope; `view` quyết định quyền mở chi tiết, không dùng để lọc lại từng dòng list. Giữ global scopes của host, bỏ điều kiện SoftDeletes để package chọn active/trash; không dùng `onlyTrashed()` trong `query`. Query giới hạn hàng, không joins/group/unions/limit/offset; không trả model khác.
 
-Form/toolbar chỉ hiển thị thao tác được cấp quyền nhưng server vẫn kiểm lại mỗi request, kể cả bulk. Quyền theo trường dùng `readAbility`/`writeAbility` (Gate nhận model class khi list/create, nhận record khi edit/write). Trường không đọc được không xuất hiện ở list/search/sort/form; trường không ghi được bị từ chối khi client tự gửi. Muốn chỉ ghi, khai báo `writeOnly` rõ ràng.
+Form/toolbar chỉ hiển thị thao tác được cấp quyền nhưng server vẫn kiểm lại mỗi request, kể cả bulk. Quyền theo trường dùng `ability` (Gate nhận model class khi list/create, nhận record khi edit/write). Trường không đọc được không xuất hiện ở list/search/sort/form; trường không ghi được bị từ chối khi client tự gửi. Muốn chỉ ghi, khai báo `writeOnly` rõ ràng.
 
-Project quyết định tự xóa, quản trị viên cuối cùng, tenant, uniqueness và quan hệ liên quan. Không suy ra quyền từ tên cột `is_admin`, không tự tạo grants. Nếu phải bảo vệ bất biến khi nhiều request cùng chạy, host khóa dữ liệu liên quan trong `beforeMutation()` hoặc service của mình, cùng transaction.
+Project quyết định tự xóa, quản trị viên cuối cùng, tenant, uniqueness và quan hệ liên quan. Không suy ra quyền từ tên cột `is_admin`, không tự tạo grants. Nếu phải bảo vệ bất biến khi nhiều request cùng chạy, host khóa dữ liệu liên quan trong hook `save` (service của mình), cùng transaction.
 
 ## Fields và cột
 
-`fields()` trả map `column_name => metadata`, không phải HTML. Các template dựng sẵn được liệt kê ở phần bên dưới. Metadata gồm `labelKey`, `required`, `optionalOnUpdate`, `nullable`, `default`, `readOnly`, `writeOnly`, `persist`, `maxLength`, `options` (giá trị => key nhãn) và hai ability theo trường. Key là identifier cột; không nhận tên bảng/cột/class/SQL từ request. Relation select, media picker và editor nội dung dùng contract input chung bên dưới.
+Field là metadata, không phải HTML. Key là tên cột; không nhận tên bảng/cột/class/SQL từ request. Cột của list không khai trong form hiện ở form dưới dạng chỉ đọc. Scalar được escape ở view; giá trị đọc là raw attribute, không serialize model/appends/relations. `default` chỉ dùng ở form tạo mới; bất biến như account/owner gán trong service.
 
-Mặc định `columns()` lấy fields được lưu và không write-only; có thể override để chọn cột, thứ tự và `labelKey`. `sortable()` mặc định các cột list, `searchable()` mặc định rỗng. Scalar được escape ở view, không render HTML từ dữ liệu. Giá trị đọc là raw attribute, không serialize model/appends/relations. Default chỉ dùng ở form tạo mới; bất biến như account/owner vẫn phải gán tại `newRecord()`.
+Validation luôn chạy ở server. Update chỉ gửi trường đã đổi, nên `required` chỉ áp khi field có mặt. `prepare` chuẩn hóa trước validate (trim, lowercase email để `unique` thấy đúng dạng lưu). `save` nhận đúng trường đã validate/allowlist; không khai thì gói gọi `create/update` của service. Password phải `writeOnly`; luôn trả rỗng, không có hash trong SSR/JSON. Để giữ nguyên mật khẩu khi sửa, dùng `optionalOnUpdate: true`.
 
-`rules()` thay rule mặc định theo từng field; validation luôn chạy server-side. Update gửi các trường đã đổi, nên custom rule thường dùng `sometimes` cùng `required`. `prepareValues()` chuẩn hóa trước validation. `save()` nhận đúng trường đã validate/allowlist, mặc định forceFill/save; chỉ khai fields mà host thực sự cho sửa. `persist:false` phục vụ xác nhận như password_confirmation, không ghi vào model. Password phải `writeOnly`; luôn trả giá trị rỗng, không có hash trong SSR/JSON. Để giữ nguyên mật khẩu khi sửa, dùng `optionalOnUpdate:true`, bỏ chuỗi rỗng và rule `sometimes`.
-
-Host cần cấu hình TrimStrings/ConvertEmptyStringsToNull phù hợp với password lồng trong `values`, không cắt whitespace của mật khẩu. Không flash `values.password` hoặc `values.password_confirmation`. Hashing, đổi remember token, email verification và session revocation thuộc model/service host.
+Host cấu hình TrimStrings để không cắt password lồng trong `values` (ví dụ ngoại trừ `{prefix}/*/_api*`). Hashing, đổi remember token, email verification thuộc model/service host.
 
 ## Luồng và an toàn dữ liệu
 
-Route được tạo dưới prefix đã chọn (`admin` mặc định, Gehihi dùng `control`): `/{key}`, `/{key}/create`, `/{key}/{id}/edit`; API dưới `/_api/resources/{key}`. Gói dùng web middleware/CSRF và guard của host, JSON version `schema:1`, response private/no-store. UUID, ULID và ID số dùng cùng contract; composite key chưa hỗ trợ. Form ghi dùng POST làm fallback để không đưa mật khẩu lên URL khi JS không chạy; CRUD cần runtime client, không có luồng submit HTML độc lập.
+Route do module khai (xem trên): `/{module}`, `/{module}/create`, `/{module}/{id}/edit`; API dưới `/{module}/_api`. Gói dùng web middleware/CSRF và guard của host, JSON version `schema:1`, response private/no-store. UUID, ULID và ID số dùng cùng contract; composite key chưa hỗ trợ. Form ghi dùng POST làm fallback để không đưa mật khẩu lên URL khi JS không chạy; CRUD cần runtime client, không có luồng submit HTML độc lập.
 
 Update/trash/restore/purge dùng revision HMAC từ raw record và audit sequence, không chỉ timestamp. Dữ liệu đổi hoặc trải qua trash/restore làm request cũ trả 409. Form giữ draft/lỗi validation, chặn retry sau 409/thu hồi quyền, cần bỏ draft rồi tải lại. Create dùng UUID requestId và receipt theo actor/resource: retry cùng nội dung sau mất response không tạo trùng. Client không tự gửi lại request ghi. UI có guard khi rời trang/đổi ngôn ngữ, reset form và password khi quay lại lần tạo đã hoàn tất/hủy.
 
 Bulk chỉ xóa mềm/khôi phục tối đa 50 record, khóa theo thứ tự ID, kiểm quyền/revision tất cả và ghi trong một transaction. Lỗi ở bất kỳ record/hook nào rollback cả dữ liệu và audit; không báo thành công một phần. Sau ghi client tải lại list/count/quyền với bộ lọc hiện tại. Nếu đã ghi thành công nhưng tải list lỗi, UI yêu cầu tải lại, không cho lặp thao tác trên danh sách cũ. Purge chỉ từng dòng, có xác nhận riêng; không có bulk purge.
 
-Audit lưu actor, resource, record key, operation, tên trường đổi và create receipt HMAC, không lưu giá trị/password/token. Bảng audit đồng thời giữ sequence cho revision và receipt bền vững; không tùy tiện truncate/xóa receipt khi client còn có thể retry. Với dữ liệu đổi ngoài Resource, revision bắt raw attribute thay đổi; host chịu trách nhiệm đồng bộ các service/khóa nghiệp vụ ngoài package.
+Audit lưu actor, resource, record key, operation, tên trường đổi và create receipt HMAC, không lưu giá trị/password/token. Bảng audit đồng thời giữ sequence cho revision và receipt bền vững; không tùy tiện truncate/xóa receipt khi client còn có thể retry. Với dữ liệu đổi ngoài form admin, revision bắt raw attribute thay đổi; host chịu trách nhiệm đồng bộ các service/khóa nghiệp vụ ngoài package.
 
-Store mặc định yêu cầu model và audit cùng connection mặc định để ghi nguyên tử. `store()` có thể trả class triển khai `ResourceStore` riêng cho service/persistence khác; định nghĩa Resource hiện vẫn dùng Eloquent model/schema. Không giữ request/query/draft trong singleton. Hooks chạy trong transaction, nên mail/job/webhook hoặc side effect ngoài DB phải dùng afterCommit/outbox tại host; rollback DB không thể thu hồi side effect đã gửi.
+Store mặc định yêu cầu model và audit cùng connection mặc định để ghi nguyên tử; model lấy từ repository của service. Không giữ request/query/draft trong singleton. Hooks chạy trong transaction, nên mail/job/webhook hoặc side effect ngoài DB phải dùng afterCommit/outbox tại host; rollback DB không thể thu hồi side effect đã gửi.
 
 ## Ví dụ đã tích hợp và mức kiểm chứng
 
-Gehihi dùng `App\Admin\UserResource`, model User UUID thật, `VisibleUsers`, `UserPolicy` và migration `deleted_at` của host. UI list/thêm/sửa/thùng rác/khôi phục do package render toàn bộ. User mới luôn là tài khoản thường; không có trường nâng quyền. Policy chặn tự xóa, xóa admin và sửa danh tính admin khác; purge tắt. Khôi phục giữ UUID/workspace; cấp quyền quản trị vẫn là hành động riêng của Gehihi. Cấu hình `users.enabled=false` vì Resource đã cung cấp Page `users`; không đăng ký trùng directory chỉ đọc.
+Gehihi đăng ký `users` và `roles` trong `app/Modules/Users/ModuleServiceProvider.php`: list/form bằng mảng, hook `prepareAdmin`/`saveFromAdmin`/`roleOptions` trên `UserService`, `grantsMatrix`/`saveFromAdmin` trên `RoleService`, `UserPolicy`/`RolePolicy` của host. UI list/thêm/sửa/thùng rác/khôi phục do gói render toàn bộ. Policy chặn tự xóa, xóa chủ và sửa danh tính người khác; purge tắt.
 
-Kiểm chứng hiện có: PHP package trên SQLite (scope/field permissions/CAS/idempotency/rollback/purge opt-in), integration Gehihi trên PostgreSQL riêng, compiler/typecheck/build thật và client CSR/cache/dirty guards. Chưa chứng nhận tranh chấp đồng thời nhiều connection, MySQL hoặc mọi model/workflow. Đây là nền CRUD; role assignment và nghiệp vụ chuyên sâu tiếp tục phát triển theo Policy/service host.
+Kiểm chứng: PHP package trên SQLite (`RegistryCrudTest`: sự kiện CRUD của core, rules/messages/options/ability, `prepare`, route module, `admin:install`), integration Gehihi trên PostgreSQL, SSR và SPA trên trình duyệt. Chưa chứng nhận tranh chấp đồng thời nhiều connection hoặc MySQL.
 
 ## List UI theo ai-services — 26/10/2026
 
@@ -151,7 +148,7 @@ Gehihi chỉ khai cột họ tên/email; UUID giữ trong giao thức thao tác.
 
 ## Input template và bố cục dựng sẵn
 
-Khai báo map `fields()` như trước hoặc dùng `Input::make(template, labelKey, attributes)`. Cách khai báo mảng cũ tương thích. `type` là kiểu dữ liệu/validation; `template` là cách trình bày. Ví dụ `switch` dùng boolean, `radio` và `relation` dùng select, `checkboxes` dùng multiselect, `range` dùng number. Schema kiểm tra template phải tương thích type; project không đưa HTML/CSS/JS vào cấu hình.
+`type` của field là template trình bày; kiểu dữ liệu/validate suy ra từ nó. Ví dụ `switch` dùng boolean, `radio` và `relation` dùng select, `checkboxes` dùng multiselect, `range` dùng number. Project không đưa HTML/CSS/JS vào cấu hình.
 
 | Template | Trường hợp dùng |
 | --- | --- |
@@ -174,12 +171,10 @@ Khai báo map `fields()` như trước hoặc dùng `Input::make(template, label
 
 `multiselect`, `checkboxes`, `tags` cần cast Eloquent `array`/`json` khi persist; `json` còn hỗ trợ cast `object`. Các lựa chọn nhiều lưu mảng; JSON được decode trước lưu và encode đẹp khi mở editor. Date là `Y-m-d`, datetime là `Y-m-dTH:i` không mang timezone, time là `H:i`; host quyết định chuyển timezone khi cần. Update gửi field đã đổi; ô optional chưa nhập khi tạo được bỏ qua để giữ default của model. Input dựng sẵn không tự đồng bộ pivot/relation nhiều-nhiều: host thực hiện qua service/custom store; select quan hệ đơn lưu foreign key đã khai báo.
 
-`options` nhận map giá trị → key bản dịch. Với dữ liệu từ model, override `fieldOptions(key, Request, ?Model)` và trả map giá trị → `['label' => tên thực]`. Host phải lọc tenant/quyền và có thể loại chính record đang sửa. Cùng tập options được đọc lại khi validate ghi; không nhận foreign key ngoài scope dù tự sửa request. Giới hạn 1000 options; tìm trên client cho tập nhỏ, chưa phải AJAX relation picker. Không đặt tên class/query hoặc endpoint từ client trong schema.
+`options` nhận map giá trị → key bản dịch. Với dữ liệu từ DB, khai `options => [Service::class, 'method']`, hàm nhận `($request, $record)` và trả map giá trị → `['label' => tên thực]` (với `matrix`: đặc tả ma trận). Host phải lọc tenant/quyền và có thể loại chính record đang sửa. Cùng tập options được đọc lại khi validate ghi; không nhận foreign key ngoài scope dù tự sửa request. Giới hạn 1000 options; tìm trên client cho tập nhỏ, chưa phải AJAX relation picker. Không đặt tên class/query hoặc endpoint từ client trong schema.
 
-Bố cục dùng `sections()` (map key → labelKey/descriptionKey), `section` trên field và `formLayout()` trả `sections` hoặc `tabs`. Mặc định có section `main` và bố cục section. `span: full|half`, `rows`, `placeholderKey`, `helpKey`, `min/max/step`, `maxLength`, `maxItems`, `itemMaxLength` điều chỉnh input. Section không còn field sau lọc quyền được bỏ. Chuyển tab giữ draft; lỗi server mở tab chứa field lỗi. Bỏ thay đổi khôi phục cả mảng, input native và editor.
+Bố cục dùng `sections` của form (map key → `['labelKey' => …]`), `section` trên field và `layout` = `sections` hoặc `tabs`. Mặc định có section `main` và bố cục section. `span: full|half`, `rows`, `placeholder`, `help`, `step`, `maxItems`, `itemMaxLength` và `min:`/`max:` trong `rules` điều chỉnh input. Section không còn field sau lọc quyền được bỏ. Chuyển tab giữ draft; lỗi server mở tab chứa field lỗi. Bỏ thay đổi khôi phục cả mảng, input native và editor.
 
-List thêm renderer `image`, `link`, `boolean`, `number`, `date` bên cạnh text/badge. URL được kiểm tra trước xuất; cell không render HTML tùy ý. Number hỗ trợ `decimals` từ 0 đến 6; date hiển thị Y-m-d. Override `columnValue(key, Model, Request)` cho giá trị tính toán; vẫn cần khai field/column, quyền đọc và `sortable()` tường minh cho cột thật. Field tính toán nên `readOnly:true, persist:false`.
-
-Ví dụ hoàn chỉnh: [examples/CatalogResource.php](../examples/CatalogResource.php). Model, migration, Policy, dịch thuật và scope vẫn do project cung cấp. Ví dụ không tạo bảng hoặc đăng ký module tự động.
+List thêm renderer `image`, `link`, `boolean`, `number`, `date` bên cạnh text/badge. URL được kiểm tra trước xuất; cell không render HTML tùy ý. Number hỗ trợ `decimals` từ 0 đến 6; date hiển thị Y-m-d. Cột tính toán dùng `value => [Service::class, 'method']`; chỉ cột thật mới đưa vào `sort`.
 
 Hai theme dùng `components.input` và controller `app/views/input.ts` giống nhau; CRUD dùng `app/views/manager.ts` để quản lý draft, section và picker. Template chỉ chứa markup và binding. Tất cả nằm trong gói admin, source theme ở `resources/saola/admin/themes/{name}`.

@@ -6,14 +6,19 @@ namespace Saola\Admin\Resources;
 
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
 use Illuminate\Http\Request;
-use Saola\Admin\Pages\{Page, AuthorizesPage, NavigablePage, ResourceDocument};
+use Saola\Admin\Pages\ResourceDocument;
 
-/** Register one definition as a Page. The host owns model, scope, rules and domain hooks. */
-abstract class Resource implements Page, AuthorizesPage, NavigablePage
+/**
+ * Internal CRUD definition the list/form engine and theme run on. Projects do not extend it: they register arrays with
+ * Admin::list()/Admin::form(), which become a RegisteredResource. (Package tests drive the engine directly.)
+ */
+abstract class Resource
 {
     /** Built-in list cells; any other renderer name is the project's view admin.columns.{renderer} (HostViews). */
     public const RENDERERS = ['text', 'badge', 'image', 'link', 'boolean', 'number', 'date'];
 
+    abstract public function key(): string;
+    abstract public function titleKey(): string;
     abstract public function model(): string;
     abstract public function fields(): array;
     abstract public function query(Request $request): Builder;
@@ -44,7 +49,6 @@ abstract class Resource implements Page, AuthorizesPage, NavigablePage
         return $ability !== null && $gate->allows($this->abilityPrefix().'.'.$ability);
     }
     public function descriptionKey(): string { return ''; }
-    public function navigation(): array { return []; }
     public function searchable(): array { return []; }
     public function sortable(): array { return array_values(array_filter(array_column($this->columns(), 'key'), fn ($key) => $this->fields()[$key]['persist'] ?? true)); }
     public function columns(): array
@@ -56,6 +60,9 @@ abstract class Resource implements Page, AuthorizesPage, NavigablePage
         return $columns;
     }
     public function rules(Request $request, ?Model $record): array { return []; }
+    /** Validator messages ('field.rule' or 'rule' => text) and attribute names (field => label), already translated. */
+    public function messages(): array { return []; }
+    public function attributes(): array { return []; }
     public function prepareValues(array $values, Request $request, ?Model $record): array { return $values; }
     /** Saola core models always carry SoftDeletes; their deleteMode decides whether it is on. */
     public function supportsTrash(): bool
@@ -75,7 +82,7 @@ abstract class Resource implements Page, AuthorizesPage, NavigablePage
     public function beforeMutation(string $operation, Model $record, Request $request): void {}
 
     public function path(): string { return '/'.trim(config('saola-admin.panel.prefix', 'admin'), '/').'/'.$this->key(); }
-    public function endpoint(): string { return '/'.trim(config('saola-admin.panel.prefix', 'admin'), '/').'/_api/resources/'.$this->key(); }
+    public function endpoint(): string { return $this->path().'/_api'; }
     public function document(Request $request): ResourceDocument { return new ResourceDocument($this->titleKey(), $this->descriptionKey()); }
 
     /** Schema stays declarative; never execute class names, SQL or HTML from a request. */

@@ -4,9 +4,9 @@ Source hiện tại thuộc **gói saola/admin**. Giao diện nằm ở `resourc
 
 ## Ranh giới package và project
 
-Project cung cấp model, scope, Policy, Resource/Settings schema, nhãn và hook nghiệp vụ. CRUD thông thường không cần controller, `.sao`, JavaScript hoặc bản sao theme trong project. Package cung cấp list/form/trash/bulk, media, locale management và settings editor. Các trang nghiệp vụ đặc thù có thể triển khai Page riêng.
+Project cung cấp model, service, Policy, mảng list/form/Settings, nhãn và hook nghiệp vụ. CRUD thông thường chỉ cần một controller rỗng kế thừa `App\Http\Controllers\AdminController`; không cần `.sao`, JavaScript hoặc bản sao theme. Package cung cấp list/form/trash/bulk, media, locale management và settings editor. Các trang nghiệp vụ đặc thù dùng route/action/view riêng của module, shell và menu vẫn của gói.
 
-`ResourceDocument` vẫn là DTO chỉ đọc. `Resources\Resource` thêm schema field/cột, scope, rules, quyền và hooks cho mutation. SSR và page-data luôn project theo quyền trước khi render; giấu nút không thay kiểm tra backend. Không serialize toàn bộ model, relation, password hash hoặc token của host. Xem [Resource](RESOURCES.md).
+`ResourceDocument` vẫn là DTO chỉ đọc. Mảng list/form (`AdminRegistry`) mang field/cột, scope, rules, quyền và hooks cho mutation; `Resources\Resource` chỉ còn là định nghĩa nội bộ của engine. SSR và page-data luôn project theo quyền trước khi render; giấu nút không thay kiểm tra backend. Không serialize toàn bộ model, relation, password hash hoặc token của host. Xem [Resource](RESOURCES.md).
 
 ## Theme và tài nguyên
 

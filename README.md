@@ -2,15 +2,15 @@
 
 Source mới tổ chức UI thành [theme của package](docs/THEMES.md) trong `resources/saola/admin/themes/{name}/`: Classic giữ giao diện cũ, Material dùng distribution được cung cấp. Mỗi theme có app/views/assets và manifest riêng; `app/` giữ state, controller và guards, gọi qua `App.Admin` (kiểu ở `app/contracts/admin.ts`, danh mục ở [docs/API.md](docs/API.md)). Đổi `panel.theme` chọn view context và CSS.
 
-CRUD có [bộ input template dựng sẵn](docs/RESOURCES.md#input-template-và-bố-cục-dựng-sẵn), chia nhóm/tab, chọn quan hệ theo scope và media picker. Xem [CatalogResource mẫu](examples/CatalogResource.php); project khai schema và nghiệp vụ, các theme dùng chung JS.
+CRUD có [bộ input template dựng sẵn](docs/RESOURCES.md#input-template-và-bố-cục-dựng-sẵn), chia nhóm/tab, chọn quan hệ theo scope và media picker. Module khai menu/list/form bằng mảng qua `Saola\Admin\Admin` trong provider của mình ([cách làm](docs/RESOURCES.md#thêm-một-crud-vào-admin)); các theme dùng chung JS.
 
-Gói quản trị dùng chung cho ứng dụng Saola/Laravel: quản lý người dùng, phân quyền và thiết lập website; hỗ trợ đa ngôn ngữ và khai báo Resource/Settings để giảm viết lại giao diện `.sao`.
+Gói quản trị dùng chung cho ứng dụng Saola/Laravel: quản lý người dùng, phân quyền và thiết lập website; hỗ trợ đa ngôn ngữ và khai báo list/form/Settings bằng mảng để giảm viết lại giao diện `.sao`.
 
 **Alpha 0.1.0-alpha.1:** đã có shell responsive, Page/Resource renderer chỉ đọc, auth/Gate, lang DB, dictionary/JSON preview-draft-publish, install/publish/doctor và Settings schema/DB/API và form dùng chung có revision. [Danh sách user](docs/USERS.md) lấy model của guard host, scope/Policy, tìm kiếm/phân trang và dùng chung renderer. Chưa có mutation User/role, UI dịch/AI; phạm vi alpha xem [RELEASE](RELEASE.md).
 
 **Source đang phát triển (chưa phát hành):** thêm [quản lý ngôn ngữ](docs/LANGUAGE_MANAGEMENT.md) tại `/{prefix}/languages`: thêm locale, mặc định UI/fallback/nội dung trong DB, tải JSON tổng và upload preview → draft → publish. Có quyền riêng từng thao tác, session choice và dirty guard. AI chưa triển khai. Tag alpha.1 phía trên giữ nguyên phạm vi cũ.
 
-Source ngày 26/10 bổ sung [Resource CRUD và thùng rác dùng chung](docs/RESOURCES.md): list/search/sort/pagination, thêm/sửa, xóa mềm/khôi phục, bulk nguyên tử và purge opt-in. Project khai model/fields/scope/rules/Policy, không cần viết `.sao` riêng cho màn hình cơ bản. Đã nối User UUID thật của Gehihi; chưa có UI gán role hoặc nâng quyền chung.
+Source 28/10 (chưa phát hành): [CRUD và thùng rác dùng chung](docs/RESOURCES.md) khai bằng `Admin::list()`/`Admin::form()` từ module, ghi qua service của core: list/search/sort/pagination, thêm/sửa, xóa mềm/khôi phục, bulk nguyên tử và purge opt-in. Không còn class Page/Resource trong project.
 
 Đã có trên [Packagist](https://packagist.org/packages/saola/admin); [kiểm chứng phát hành](docs/RELEASE_VERIFICATION.md).
 

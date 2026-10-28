@@ -213,7 +213,9 @@ class EloquentResourceStore implements ResourceStore
                 'nullable' => (bool) ($field['nullable'] ?? false), 'helpKey' => $field['helpKey'] ?: ($record && $writeOnly && ($field['optionalOnUpdate'] ?? false) ? 'admin.resource.keep_password' : ''),
                 'tagText' => $type === 'tags' ? implode(', ', $value) : '', 'previewUrl' => $type === 'image' ? SafeUrlRule::safe($value) : '',
                 'commands' => in_array($type, ['markdown', 'richtext'], true) ? array_map(fn ($command) => ['key' => $command, 'labelKey' => 'admin.input.'.$command], ['bold', 'italic', 'heading', 'list', 'link', 'code']) : [],
-                'section' => $field['section'], 'span' => $field['span'], 'view' => $field['view'] ?? '', 'placeholderKey' => $field['placeholderKey'], 'rows' => $field['rows'],
+                'section' => $field['section'], 'span' => $field['span'], 'view' => $field['view'] ?? '',
+                // Front-end validation: the rules a browser checks itself and the message keys (backend still decides).
+                'rules' => $field['clientRules'] ?? [], 'messages' => $field['messageKeys'] ?? [], 'placeholderKey' => $field['placeholderKey'], 'rows' => $field['rows'],
                 'min' => $field['min'] ?? '', 'max' => $field['max'] ?? '', 'step' => $field['step'] ?? ($type === 'integer' ? 1 : 'any'),
                 'maxItems' => $field['maxItems'], 'itemMaxLength' => $field['itemMaxLength'], 'matrix' => $matrix ? Matrix::project($matrix, is_array($value) ? $value : []) : null,
                 'options' => array_map(fn ($option) => $option + ['selected' => is_array($value) ? in_array($option['value'], $value, true) : (string) $value === $option['value']], $options)];
@@ -247,7 +249,7 @@ class EloquentResourceStore implements ResourceStore
             $rules[$key] = [...$presence, ...(($field['nullable'] ?? false) ? ['nullable'] : []), ...$typeRules, ...($hostRules[$key] ?? [])];
             if (Input::multiple($type)) $rules[$key.'.*'] = ['string', 'distinct', 'max:'.$field['itemMaxLength'], ...($type === 'multiselect' ? [Rule::in(array_column($options, 'value'))] : [])];
         }
-        $validated = app('validator')->make($input, $rules)->validate();
+        $validated = \Saola\Core\Validators\Validator::make($input, $rules, $resource->messages(), $resource->attributes())->validate();
         foreach ($validated as $key => &$value) {
             if ($value === null) continue;
             $type = $schema[$key]['type'];

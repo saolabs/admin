@@ -4,7 +4,7 @@ Source hiện tại đã tách giao diện thành `admin/themes/{theme-name}/` t
 
 ## Chế độ nguồn gói — P4 chưa phát hành
 
-Với bộ core/client/builder/admin có P4, project mới không cần `admin:install` để chép nguồn frontend. Composer metadata `extra.saola.contexts.admin` trỏ tới `context.manifest.json`; builder tự nhận view, bundle, CSS, kiểu và theme từ gói đã cài. `sao.config.json` chỉ cần `contexts.admin: {}` nếu không đổi các mặc định. Các bước auth/Policy, Resource, migration và sync lang vẫn thực hiện tường minh như bên dưới.
+Với bộ core/client/builder/admin có P4, project mới không cần `admin:install` để chép nguồn frontend. Composer metadata `extra.saola.contexts.admin` trỏ tới `context.manifest.json`; builder tự nhận view, bundle, CSS, kiểu và theme từ gói đã cài. `sao.config.json` chỉ cần `contexts.admin: {}` nếu không đổi các mặc định. Các bước auth/Policy, đăng ký list/form, migration và sync lang vẫn thực hiện tường minh như bên dưới.
 
 Dùng Vite với plugin `@saolabs/builder/vite` chọn context `admin`. Plugin tự thêm entry/CSS/alias và manifest; chạy `sao-compile admin` trước typecheck, rồi `vite build`. TypeScript có thể extends `resources/js/saola/tsconfig.contexts.json`; giữ các alias context cụ thể nếu project khai lại `compilerOptions.paths`. Nguồn hiệu lực dưới `resources/js/saola/_sources/admin` là output sinh ra, không phải nơi tùy biến.
 
@@ -16,7 +16,7 @@ Cập nhật 27/10/2026. Đây là hướng dẫn tích hợp alpha `0.1.0-alpha
 
 Source sau alpha.1 bổ sung [màn hình Ngôn ngữ và mặc định DB](LANGUAGE_MANAGEMENT.md), chưa có trong tag alpha.1. Khi nâng lên bản có tính năng này cần migrate schema bổ sung, publish/build source và sync nhãn mới; cấu hình quyền riêng theo tài liệu.
 
-Source ngày 26/10 có [Resource list/form/thùng rác](RESOURCES.md). Đăng ký class Resource tại `panel.pages`, model/Policy/scope/migration của host; chạy migration package `create_resource_events`, publish/build và sync lang mới. Store Eloquent mặc định dùng connection mặc định cùng audit. `admin:doctor` kiểm renderer manager, schema/table/SoftDeletes và audit cho Resource đã đăng ký. Thêm Resource không cần chép controller hay view.
+Source 28/10 có [list/form/thùng rác khai bằng mảng](RESOURCES.md). `admin:install` trỏ `App\Http\Controllers\AdminController` sang `Saola\Admin\Http\AdminController` (tạo file nếu chưa có); module khai `Admin::menu/list/form` trong provider và route qua `XController::routes($m)`. Chạy migration package `create_resource_events`, publish/build và sync lang mới. `admin:doctor` kiểm lớp nền admin của project, renderer manager, schema/table/SoftDeletes và audit cho từng list đã đăng ký.
 
 Xem [NAMING.md](NAMING.md) cho tên view/client/bảng, prefix tùy chọn và nâng cấp từ source cũ.
 
@@ -141,6 +141,6 @@ Source 25/10 thêm dropdown ngôn ngữ và tài khoản. Sau publish/build và 
 
 ## Trang chủ và tích hợp project thật
 
-Source sau alpha.1 có `panel.home_page`, mặc định `workspace`. Host đặt key của Page đã đăng ký trong `panel.pages`, ví dụ `overview`; route gốc panel dùng Page đó, vẫn kiểm ability/AuthorizesPage như route trực tiếp. Key không có trả 404; thiếu quyền trả 403. Không cần fork PageController hoặc tạo màn thống kê nghiệp vụ trong package.
+`panel.home_page` là key một menu đã đăng ký (ví dụ `dashboard`): `/{prefix}` chuyển tới đó khi người dùng có ability của menu; nếu không, hoặc để `null`, hiện trang tổng quan của gói (tên site, ngôn ngữ, bản dịch đã xuất bản).
 
-Gehihi đã bắt đầu tích hợp trên Laravel 13/PostgreSQL, guard web và model User UUID, với host-owned Policy/scope/login/logout/Page. Xem [tích hợp Gehihi](../../gehihi-app/docs/ADMIN_INTEGRATION.md) và [ranh giới package/project](../../docs/ADMIN_PROJECT_BOUNDARY.md). Đây là source local chưa phát hành: dependency path dùng bản copy để phát triển; phải chuyển sang dist/lock cài độc lập trước production. Settings/lang/media mới chưa làm cho toàn bộ admin nghiệp vụ của host tự động được chuyển đổi.
+Gehihi đã bắt đầu tích hợp trên Laravel 13/PostgreSQL, guard web và model User UUID, với host-owned Policy/login/logout và list/form khai trong module. Xem [tích hợp Gehihi](../../gehihi-app/docs/ADMIN_INTEGRATION.md) và [ranh giới package/project](../../docs/ADMIN_PROJECT_BOUNDARY.md). Đây là source local chưa phát hành: dependency path dùng bản copy để phát triển; phải chuyển sang dist/lock cài độc lập trước production. Settings/lang/media mới chưa làm cho toàn bộ admin nghiệp vụ của host tự động được chuyển đổi.

@@ -47,7 +47,7 @@ Tên nhóm là slug; key field là tên ổn định không dấu chấm, không
 
 ## Giao diện từ schema
 
-Mở `/{prefix}/settings?group=general&content_locale=vi`, sau khi có quyền đọc group. Menu chỉ hiện Settings khi có ít nhất một group được đọc; tab nhóm cũng lọc Gate. Route editor là `saola.admin.settings.editor`, có SSR/SPA và dùng cùng shell/dictionary scoped. Key Page `settings` được dành riêng cho editor. Nhóm mới đăng ký như ví dụ trên tự có form, không cần `.sao` mới.
+Mở `/{prefix}/settings?group=general&content_locale=vi`, sau khi có quyền đọc group. Menu chỉ hiện Settings khi có ít nhất một group được đọc; tab nhóm cũng lọc Gate. Route editor là `saola.admin.settings.editor`, có SSR/SPA và dùng cùng shell/dictionary scoped. Key `settings` được dành riêng cho editor. Nhóm mới đăng ký như ví dụ trên tự có form, không cần `.sao` mới.
 
 Renderer có text, textarea, URL, select, checkbox boolean và number integer; nhãn/mô tả/thông báo lấy key DB. Group có bản dịch hiển thị selector nội dung; field dùng chung trong group đó có nhãn riêng. Group chỉ có field dùng chung không có selector, `contentLocale` rỗng, `contentLocales=[]`, không gọi content locale policy. Mặc định kế thừa không rỗng có gợi ý dưới field. Dữ liệu fallback chưa chạm không tự được ghi; tương tác với field thiếu là tạo giá trị riêng, kể cả rỗng hoặc bằng fallback. Nút **Bỏ thay đổi** chỉ phục hồi draft về snapshot đã đọc, không xóa giá trị DB hoặc reset fallback.
 

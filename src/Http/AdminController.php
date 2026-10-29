@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Saola\Admin\Registry\{AdminRegistry, RegisteredResource};
 use Saola\Admin\Resources\{Resource, ResourceStore};
 use Saola\Core\Http\Controllers\AdminController as CoreAdminController;
+use Saola\Core\Routing\Permission as Op;
 
 /**
  * The admin package's base for the admin context. A project points App\Http\Controllers\AdminController at it
@@ -31,10 +32,10 @@ abstract class AdminController extends CoreAdminController
      */
     public static function routes(?object $m = null): void
     {
-        $add = function (array|string $verbs, string $uri, string $action, string $name, bool $page = false) use ($m) {
+        $add = function (array|string $verbs, string $uri, string $action, string $name, array $permissions, bool $page = false) use ($m) {
             if ($m) {
                 $route = is_array($verbs) ? $m->match($verbs, $uri, $action) : $m->{$verbs}($uri, $action);
-                $route = $route->name($name);
+                $route = $route->name($name)->permission(...$permissions);
                 if ($page) $route->view('@BASE:pages.resource');
                 return;
             }
@@ -46,13 +47,15 @@ abstract class AdminController extends CoreAdminController
                 if (!$active) \Saola\Core\Support\SPA::inactive();
             }
         };
-        $add('get', '/', 'listPage', 'index', true);
-        $add('get', '/create', 'createPage', 'create', true);
-        $add('get', '/{record}/edit', 'editPage', 'edit', true);
-        $add('post', '/_api', 'apiRecords', 'api');
-        $add('post', '/_api/bulk', 'apiBulk', 'api.bulk');
-        $add('put', '/_api/{record}', 'apiRecord', 'api.item');
-        $add('post', '/_api/{record}/{operation}', 'apiTransition', 'api.state');
+        $add('get', '/', 'listPage', 'index', [Op::READ], true);
+        $add('get', '/create', 'createPage', 'create', [Op::READ, Op::CREATE], true);
+        // Editors also serve read-only records. Resource policies decide which fields/actions may change.
+        $add('get', '/{record}/edit', 'editPage', 'edit', [Op::READ], true);
+        $add('post', '/_api', 'apiRecords', 'api', [Op::READ, Op::CREATE]);
+        $add('post', '/_api/bulk', 'apiBulk', 'api.bulk', [Op::READ]);
+        $add('put', '/_api/{record}', 'apiRecord', 'api.item', [Op::READ, Op::UPDATE]);
+        // Bulk/state operations depend on the submitted operation; ResourceStore enforces delete/restore/purge per record.
+        $add('post', '/_api/{record}/{operation}', 'apiTransition', 'api.state', [Op::READ]);
     }
 
     /** Key of the registered list/form/menu this controller serves. */

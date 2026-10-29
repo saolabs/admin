@@ -1,3 +1,9 @@
+# saola/admin v0.1.0-alpha.8
+
+- CRUD routes declared through the System builder carry explicit READ/CREATE/UPDATE operations. Dynamic bulk/state endpoints retain per-record DELETE/RESTORE/FORCE_DELETE checks in ResourceStore.
+- Includes fixes since alpha.7 for list reload URLs, Material page headings/breadcrumbs/content, the website header link, empty lists and narrow tables.
+- Validation: 103 tests, 1,064 assertions. Requires the existing core ^2.5 API; Gehihi integration is checked against core 2.7 and compiler 3.0.
+
 # saola/admin v0.1.0-alpha.7
 
 Breaking: admin UI is registered as arrays, modules hold no UI classes. See docs/RESOURCES.md and docs/ADMIN_REGISTRY_PLAN.md.

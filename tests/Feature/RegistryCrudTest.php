@@ -131,6 +131,14 @@ class RegistryCrudTest extends TestCase
 
         $this->assertSame(['shop.items', 'api.item'], $registry->routeKey('admin.shop.items.api.item'));
         $this->assertSame('admin.shop.items.index', $registry->menuOf('shop.items')['route']);
+        $shopNode = collect(System::getContext('admin')->toArray()['children'])->firstWhere('slug', 'shop');
+        $itemsNode = collect($shopNode['children'])->firstWhere('slug', 'items');
+        $operations = array_column($itemsNode['children'], 'permission', 'as');
+        $this->assertSame(['read'], $operations['admin.shop.items.index']);
+        $this->assertSame(['read', 'create'], $operations['admin.shop.items.create']);
+        $this->assertSame(['read', 'create'], $operations['admin.shop.items.api']);
+        $this->assertSame(['read', 'update'], $operations['admin.shop.items.api.item']);
+        $this->assertSame(['read'], $operations['admin.shop.items.api.state']); // delete/restore depends on operation and record policy
         $shop = collect($registry->navigation(request()->setUserResolver(fn () => new GenericUser(['id' => 1]))))->firstWhere('key', 'shop');
         $this->assertSame(['shop.items'], array_column($shop['children'], 'key'));
         $this->assertSame('/control/shop/items', $shop['url']);

@@ -13,7 +13,7 @@ return ['admin' => [
         'settings' => 'Thiết lập tài khoản',
         'logout' => 'Đăng xuất',
         'title' => 'Quản trị', 'workspace' => 'Không gian quản trị', 'navigation' => 'Điều hướng', 'menu' => 'Menu',
-        'skip' => 'Đến nội dung', 'breadcrumb' => 'Vị trí trang', 'language' => 'Ngôn ngữ giao diện', 'unsaved' => 'Hãy lưu hoặc bỏ thay đổi trước khi đổi ngôn ngữ.',
+        'open_site' => 'Trang chủ', 'skip' => 'Đến nội dung', 'breadcrumb' => 'Vị trí trang', 'language' => 'Ngôn ngữ giao diện', 'unsaved' => 'Hãy lưu hoặc bỏ thay đổi trước khi đổi ngôn ngữ.',
         'language_error' => 'Không thể nạp ngôn ngữ này.',
     ],
     'workspace' => [

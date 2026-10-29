@@ -294,7 +294,8 @@ class PanelTest extends TestCase
                 file_put_contents($this->root.'/dictionary-'.$locale.'.json', $this->getJson('/saola/languages/admin/'.$locale)->assertOk()->getContent());
             }
             file_put_contents($this->root.'/users-page2-en.json', $this->getJson('/control/members?locale=en&per_page=10&page=2')->assertOk()->getContent());
-            file_put_contents($this->root.'/users-filtered-en.json', $this->getJson('/control/members?locale=en&per_page=10&q=Member%2002')->assertOk()->getContent());
+            file_put_contents($this->root.'/users-filtered-en.json', $this->getJson('/control/members?locale=en&per_page=10&q=Member%2002')->assertOk()
+                ->assertJsonCount(1, 'data.management.rows')->assertJsonPath('data.management.rows.0.values.name', 'Member 02')->getContent());
             file_put_contents($this->root.'/composer.json', json_encode(['name' => 'saola/admin-workbench', 'autoload' => ['psr-4' => ['Workbench\\' => 'app/']]], JSON_THROW_ON_ERROR));
             $runtimeConfig = [];
             foreach (['app', 'auth', 'database', 'cache', 'session', 'view', 'filesystems', 'logging', 'sao', 'saola-admin'] as $section) $runtimeConfig[$section] = config($section, []);
@@ -352,6 +353,7 @@ class MemberResource extends \Saola\Admin\Resources\Resource
     public function titleKey(): string { return 'admin.users.title'; }
     public function ability(): string { return 'view-categories'; }
     public function model(): string { return \Saola\Admin\Tests\Fixtures\DirectoryUser::class; }
+    public function searchable(): array { return ['name', 'email']; }
     public function query(Request $request): \Illuminate\Database\Eloquent\Builder { return \Saola\Admin\Tests\Fixtures\DirectoryUser::where('tenant_id', $request->user()->tenant_id); }
     public function fields(): array
     {

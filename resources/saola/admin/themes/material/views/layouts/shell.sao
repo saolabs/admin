@@ -70,6 +70,10 @@
                     <span @class({'hamburger-icon', 'open': compactView}) aria-hidden="true"><span></span><span></span><span></span></span>
                 </button>
                 <div class="sa-admin-header-actions">
+                    <a class="sa-admin-header-trigger sa-admin-site-link btn btn-ghost-secondary shadow-none" href="/" target="_blank" rel="noopener" aria-label="{{ __('admin.shell.open_site') }}">
+                        <svg class="sa-admin-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9.5h13V10"></path></svg>
+                        <span class="sa-admin-site-label">{{ __('admin.shell.open_site') }}</span>
+                    </a>
                     <div class="sa-admin-languages sa-admin-header-dropdown dropdown" aria-label="{{ __('admin.shell.language') }}">
                         <button id="admin-language-toggle" class="sa-admin-header-trigger btn btn-ghost-secondary shadow-none" type="button" aria-label="{{ __('admin.shell.language') }}" aria-expanded="{{ languageOpen ? 'true' : 'false' }}" aria-controls="admin-language-menu" @disabled(languageBusy) @click(toggleLanguage())>
                             <svg class="sa-admin-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><ellipse cx="12" cy="12" rx="4" ry="9"></ellipse><path d="M3 12h18"></path></svg>

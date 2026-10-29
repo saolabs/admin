@@ -458,3 +458,7 @@ body:has(.saola-admin) { margin: 0; }
 .sa-admin-matrix-depth-1 > .sa-admin-matrix-name { padding-inline-start: 22px; }
 .sa-admin-matrix-depth-2 > .sa-admin-matrix-name { padding-inline-start: 38px; }
 .sa-admin-matrix-depth-3 > .sa-admin-matrix-name { padding-inline-start: 54px; }
+
+.sa-admin-site-link { display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; padding: 0 10px; }
+.sa-admin-site-link:hover { text-decoration: none; opacity: .8; }
+@media (max-width: 560px) { .sa-admin-site-label { display: none; } }

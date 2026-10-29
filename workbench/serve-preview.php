@@ -8,7 +8,6 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Saola\Admin\AdminServiceProvider;
-use Saola\Admin\Pages\{Page, PageRegistry, ResourceDocument};
 
 $root = realpath(getenv('SAOLA_ADMIN_PREVIEW_DIR') ?: '/tmp/saola-admin-preview');
 if (!$root || !is_file($root.'/workbench-config.json') || !is_file($root.'/workbench.sqlite')) {
@@ -30,19 +29,6 @@ final class SaolaWorkbenchOperator
         return $next($request);
     }
 }
-final class SaolaWorkbenchCategory implements Page
-{
-    public function key(): string { return 'categories'; }
-    public function titleKey(): string { return 'admin.resource.records'; }
-    public function ability(): string { return 'view-categories'; }
-    public function document(Request $request): ResourceDocument
-    {
-        return new ResourceDocument($this->titleKey(), 'admin.workspace.description', [], [
-            ['key' => 'name', 'labelKey' => 'admin.workspace.website'],
-        ], [['name' => '<b>Category</b>']]);
-    }
-}
-
 $app = Application::configure(basePath: $root)
     ->withExceptions()
     ->withProviders([AdminServiceProvider::class])
@@ -66,6 +52,5 @@ $app->booted(function () use ($app) {
         Gate::define($ability, fn ($user) => $user->getAuthIdentifier() === 1);
     }
     Gate::define('viewAny', fn ($user, $model) => $user->getAuthIdentifier() === 1 && $model === \Saola\Admin\Tests\Fixtures\DirectoryUser::class);
-    $app->make(PageRegistry::class)->register(SaolaWorkbenchCategory::class);
 });
 $app->handleRequest(Request::capture());

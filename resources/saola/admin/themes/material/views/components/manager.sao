@@ -33,6 +33,13 @@
                     <a class="btn btn-success btn-sm btn-icon sa-admin-resource-primary sa-admin-icon-action" href="{{ data['createUrl'] }}" title="{{ __('admin.resource.create') }}" aria-label="{{ __('admin.resource.create') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></a>
                 @endif
             </div>
+                @if(data['listing']['total'] === 0 && !(data['listing']['filtered'] ?? false) && data['listing']['q'] === '')
+                    <div class="sa-admin-resource-empty sa-admin-resource-blank">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 5h16v14H4zM4 14h4l2 3h4l2-3h4" /></svg>
+                        <strong>{{ data['status'] === 'trash' ? text('admin.resource.trash_empty') : text('admin.resource.empty') }}</strong>
+                        @if(data['createUrl'] && data['status'] !== 'trash')<a class="btn btn-success btn-sm" href="{{ data['createUrl'] }}">{{ __('admin.resource.create') }}</a>@endif
+                    </div>
+                @else
                 <form class="sa-admin-list-filters sa-admin-resource-filters" action="{{ data['listing']['action'] }}" method="get" @submit.prevent(filter($event))>
                     <input type="hidden" name="status" value="{{ data['status'] }}">
                     <input type="hidden" name="locale" value="{{ data['listing']['locale'] }}">
@@ -157,6 +164,7 @@
                     @if(data['listing']['next'])<a rel="next" href="{{ data['listing']['next'] }}">{{ __('admin.resource.next') }}</a>@else<span class="sa-admin-page-disabled" aria-disabled="true">{{ __('admin.resource.next') }}</span>@endif
                 </nav>
                 </div>
+                @endif
             </section>
         @else
             <nav class="breadcrumb sa-admin-resource-breadcrumb" aria-label="{{ __('admin.resource.location') }}">

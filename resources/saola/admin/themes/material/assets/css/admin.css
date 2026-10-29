@@ -316,3 +316,12 @@
 .sa-admin-site-link { display: flex; align-items: center; gap: 6px; text-decoration: none; color: inherit; padding: 0 10px; }
 .sa-admin-site-link:hover { text-decoration: none; opacity: .8; }
 @media (max-width: 560px) { .sa-admin-site-label { display: none; } }
+
+/* Phones: the list table scrolls sideways inside its card, so cells stay on one line with the card's 16px gutter at both ends instead of wrapping into tall rows. */
+@media (max-width: 767.98px) {
+    .sa-admin-table > :is(thead, tbody) > tr > * { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+    .sa-admin-table > :is(thead, tbody) > tr > :first-child { padding-inline-start: 16px; }
+    .sa-admin-table > :is(thead, tbody) > tr > :last-child { padding-inline-end: 16px; }
+    .sa-admin-filter-toggle { background: none; border: 0; color: var(--sa-admin-primary, #405189); text-align: start; cursor: pointer; padding: 4px 0; }
+}
+.sa-admin-resource-blank { padding: 48px 16px; }

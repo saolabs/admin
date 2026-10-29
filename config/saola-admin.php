@@ -31,6 +31,8 @@ return [
         'table' => 'saola_media',
         'disk' => 'local',
         'directory' => 'saola/admin/media',
+        'kind_directories' => [], // Optional folders per image/video/audio/document kind.
+        'public_disks' => [], // Explicit opt-in: return filesystem URLs and store publicly on these disks.
         'max_bytes' => 20971520,
         'max_pixels' => 40000000,
         // Public website assets. Executable markup/SVG and archives are excluded.

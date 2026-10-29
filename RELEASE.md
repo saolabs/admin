@@ -1,3 +1,9 @@
+# saola/admin v0.1.0-alpha.9
+
+- Public website media can opt into filesystem URLs with `media.public_disks`; uploads on those disks use public visibility so web servers/CDNs serve the bytes directly.
+- `media.kind_directories` allows separate image, video, audio and document folders. Existing private disks and legacy content routes retain their behavior.
+- Validation: 104 tests, 1,071 assertions, including direct static URLs, folder selection and unchanged trash/restore links. Gehihi integration checks branding/SEO URLs and migration from legacy storage.
+
 # saola/admin v0.1.0-alpha.8
 
 - CRUD routes declared through the System builder carry explicit READ/CREATE/UPDATE operations. Dynamic bulk/state endpoints retain per-record DELETE/RESTORE/FORCE_DELETE checks in ResourceStore.

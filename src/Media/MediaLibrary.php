@@ -72,14 +72,15 @@ class MediaLibrary
             if (!$info || $info[0] * $info[1] > (int) config('saola-admin.media.max_pixels', 40000000)) $this->invalid('file');
             [$width, $height] = $info;
         }
-        $root = config('saola-admin.media.directory', 'saola/admin/media');
+        $kind = str_starts_with($mime, 'image/') ? 'image' : (str_starts_with($mime, 'video/') ? 'video' : (str_starts_with($mime, 'audio/') ? 'audio' : 'document'));
+        $root = config('saola-admin.media.kind_directories.'.$kind, config('saola-admin.media.directory', 'saola/admin/media'));
         if (!is_string($root) || !preg_match('~^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$~D', $root)) throw new \InvalidArgumentException('Invalid media directory.');
         $id = (string) Str::uuid(); $disk = config('saola-admin.media.disk', 'local');
         $path = $root.'/'.date('Y/m').'/'.$id.'.'.$types[$mime][0];
         $name = mb_substr(preg_replace('/[\x00-\x1f\x7f]/u', '', basename(str_replace('\\', '/', $file->getClientOriginalName()))) ?: 'file', 0, 200);
-        $kind = str_starts_with($mime, 'image/') ? 'image' : (str_starts_with($mime, 'video/') ? 'video' : (str_starts_with($mime, 'audio/') ? 'audio' : 'document'));
         $storage = Storage::disk($disk); $stream = fopen($file->getRealPath(), 'rb');
-        try { if (!$storage->put($path, $stream, ['visibility' => 'private'])) throw new \RuntimeException('Cannot store media.'); }
+        $public = in_array($disk, config('saola-admin.media.public_disks', []), true);
+        try { if (!$storage->put($path, $stream, ['visibility' => $public ? 'public' : 'private'])) throw new \RuntimeException('Cannot store media.'); }
         finally { if (is_resource($stream)) fclose($stream); }
         try {
             $now = now();
@@ -135,7 +136,9 @@ class MediaLibrary
             'filename' => $row->original_name, 'mime' => $row->mime, 'kind' => $row->kind, 'size' => (int) $row->size, 'sizeLabel' => number_format(ceil($row->size / 1024)).' KB',
             'width' => $row->width === null ? null : (int) $row->width, 'height' => $row->height === null ? null : (int) $row->height,
             'revision' => (int) $row->revision, 'trashed' => $row->deleted_at !== null, 'createdAt' => $row->created_at,
-            'url' => route('saola.media.content', ['media' => $row->id], false)];
+            'url' => in_array($row->disk, config('saola-admin.media.public_disks', []), true)
+                ? Storage::disk($row->disk)->url($row->path)
+                : route('saola.media.content', ['media' => $row->id], false)];
     }
 
     private function invalid(string $key): never { throw ValidationException::withMessages([$key => 'Invalid media value.']); }

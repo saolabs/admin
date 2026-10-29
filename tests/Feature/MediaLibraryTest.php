@@ -70,6 +70,20 @@ class MediaLibraryTest extends TestCase
             ->assertJsonPath('data.currentPage', 'media')->assertJsonPath('data.mediaEditor.initial.total', 2);
     }
 
+    public function test_public_disk_opt_in_returns_static_urls_and_uses_kind_folders(): void
+    {
+        config(['filesystems.disks.website.url' => '/static/contents', 'saola-admin.media.disk' => 'website',
+            'saola-admin.media.public_disks' => ['website'], 'saola-admin.media.kind_directories' => ['image' => 'media/images']]);
+        Storage::fake('website', ['url' => '/static/contents']);
+        $item = $this->upload();
+        $row = app('db')->table('saola_media')->first();
+        $this->assertStringStartsWith('media/images/', $row->path);
+        $this->assertSame('/static/contents/'.$row->path, $item['url']);
+        $this->assertSame('public', Storage::disk('website')->getVisibility($row->path));
+        $this->postJson('/control/_api/media/'.$item['id'].'/trash', ['revision' => 1])->assertOk()->assertJsonPath('item.url', $item['url']);
+        Storage::disk('website')->assertExists($row->path);
+    }
+
     public function test_metadata_cas_trash_restore_keep_identity_bytes_and_existing_links(): void
     {
         $item = $this->upload(); $url = '/control/_api/media/'.$item['id'];

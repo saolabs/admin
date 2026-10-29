@@ -23,6 +23,14 @@ URL ổn định `/saola/media/{uuid}` (`saola.media.content`) do controller str
 
 Metadata media hiện dùng chung ngôn ngữ. Alt cho từng lần sử dụng hoặc theo locale thuộc nội dung của module sử dụng; picker trả alt gợi ý, không ghi đè nội dung đã có.
 
+### Link tĩnh trực tiếp từ public disk
+
+Host có thể bật `media.public_disks = ['contents']`, chọn `media.disk = 'contents'` và khai Laravel disk có `root = public_path('static/contents')`, `url = '/static/contents'`. Upload trên disk đã opt-in dùng visibility public; projection `item.url` lấy từ filesystem thay cho route stream. Các bản ghi trên disk khác vẫn dùng URL route cũ. Không suy ra public từ tên disk và không nhận disk/path từ client.
+
+`media.kind_directories` cho phép ánh xạ server-side `image`, `video`, `audio`, `document` sang thư mục tương ứng, ví dụ `image => 'media/images'`; nhóm không cấu hình dùng `media.directory`. Tên file vẫn là UUID và được giữ khi sửa metadata hoặc đưa vào thùng rác.
+
+Web server/CDN của host chịu trách nhiệm MIME, cache, nosniff và phục vụ file trực tiếp. Khi chuyển bản ghi cũ, host sao chép/kiểm tra bytes rồi cập nhật disk/path và các URL đã lưu trong nội dung/settings. Package không tự di chuyển dữ liệu cũ hay sửa cấu hình web server. Bảo toàn thư mục runtime khi deploy với rsync/delete; dữ liệu upload không thuộc assets build.
+
 ## Tích hợp ở module hoặc theme
 
 `AdminUI.createMediaLibrary(editor, imageOnly)` tạo instance theo view. Editor do `MediaController::editor($request)` project endpoint, CSRF, permission, accept, maxBytes và initial list. Không chia sẻ draft/selection/actor trong singleton.
@@ -70,7 +78,7 @@ Web session, CSRF cho mọi write; upload có throttle 30/phút. Edit/trash/rest
 
 MIME được đọc từ bytes, đối chiếu extension allowlist; ảnh raster cần header kích thước hợp lệ. Mặc định nhận JPEG/PNG/GIF/WebP/ICO, PDF, MP3/OGG/WAV, MP4/WebM; loại thực tế còn phụ thuộc MIME detector máy chủ. Không nhận SVG/HTML/script/archive. Tối đa 20 MiB/tệp, 40 triệu pixel/ảnh, có thể giảm bằng config. Giới hạn PHP/nginx (`upload_max_filesize`, `post_max_size`, request body) cũng phải đủ; package không tự đổi cấu hình máy chủ. Dùng UUID tránh ghi đè tên gốc. Nếu ghi DB thất bại sau lưu storage, gỡ tệp mới.
 
-Không có crop/resize, chuyển mã video/audio, biến thể thumbnail, CDN, folders, purge hoặc metadata đa ngôn ngữ trong bản đầu. Ảnh lưới dùng lazy load bản gốc. Những phần này có thể thêm sau qua adapter và jobs, giữ UUID/URL/picker contract.
+Không có crop/resize, chuyển mã video/audio, biến thể thumbnail, tích hợp CDN riêng, giao diện quản lý folders, purge hoặc metadata đa ngôn ngữ trong bản đầu. Ảnh lưới dùng lazy load bản gốc. Những phần này có thể thêm sau qua adapter và jobs, giữ UUID/URL/picker contract.
 
 ## Cài/nâng cấp và kiểm tra
 

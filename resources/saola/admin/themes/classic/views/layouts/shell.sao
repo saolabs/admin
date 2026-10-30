@@ -1,7 +1,7 @@
 @viewtype('layout')
 <script setup lang="ts">
     @vars(navigation: any[] = [], currentPage: string = '', brand: string = '', branding: any = {}, locales: any[] = [], dictionaryPattern: string = '', uiLocale: string = '', account: any = {})
-    @state(menuOpen: boolean = false, sidebarCompact: boolean = false, compactView: boolean = false, mobileView: boolean = false, flyoutKey: string = '', flyoutTop: number = 0, notice: string = '', navItems: any[] = navigation, languageOpen: boolean = false, accountOpen: boolean = false, selectedLocale: string = uiLocale, languageBusy: boolean = false)
+    @state(menuOpen: boolean = false, sidebarCompact: boolean = false, compactView: boolean = false, mobileView: boolean = false, flyoutKey: string = '', flyoutTop: number = 0, navItems: any[] = navigation, languageOpen: boolean = false, accountOpen: boolean = false, selectedLocale: string = uiLocale, languageBusy: boolean = false)
 
     App.Admin.controllers.shell($view, () => ({navigation, currentPage, brand, locales, dictionaryPattern, uiLocale, account}));
 </script>
@@ -132,9 +132,6 @@
                 </div>
             </header>
             <main id="admin-content" class="sa-admin-content" tabindex="-1">
-                @if(notice !== '')
-                    <p class="sa-admin-alert" role="alert">{{ text(notice) }}</p>
-                @endif
                 @useBlock('content')
             </main>
         </div>

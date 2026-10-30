@@ -1,7 +1,7 @@
 import type {} from '../contracts/admin';
 import type { Application, View } from '@saolabs/client';
 import { bindViewState } from './binding';
-import {noticeKind} from '../feedback';
+import {noticeFeedback} from '../feedback';
 export interface LanguagesProps {
     editor: any;
 }
@@ -16,15 +16,13 @@ export interface LanguagesState {
     selectedLocale: string;
     baseline: string;
     fileName: string;
-    notice: string;
-    noticeKind: string;
-    details: string;
     preview: any;
     changes: any[];
 }
 /** Shared actions and lifecycle; each binding owns its own draft and subscriptions. */
 export function bindLanguages(view: View, App: Application, readProps: () => LanguagesProps) {
     const binding = bindViewState<LanguagesState>(view);
+    const feedback = noticeFeedback(App);
     let form: any;
     let active = false;
     let disposers: Array<() => void> = [];
@@ -41,13 +39,12 @@ export function bindLanguages(view: View, App: Application, readProps: () => Lan
         binding.set("selectedLocale", form.selectedLocale);
         binding.set("baseline", form.baseline);
         binding.set("fileName", form.fileName);
-        binding.set("notice", form.notice);
-        binding.set('noticeKind', noticeKind(form.notice));
-        binding.set("details", form.details);
+        feedback(form.notice, undefined, form.details);
         binding.set("preview", form.preview);
         binding.set("changes", form.changes);
     }
     function canLeave() {
+        feedback('');
         if (form.canLeave())
             return true;
         form.notice = 'admin.languages.unsaved';

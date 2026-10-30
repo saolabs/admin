@@ -1,25 +1,12 @@
 <script setup lang="ts">
     @vars(resource: any = {})
-    @state(data: any = resource, fields: any[] = resource['fields'] ?? [], rows: any[] = resource['rows'] ?? [], fieldEpoch: number = 0, busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', errors: any = {}, selectedCount: number = 0, allSelected: boolean = false, canTrash: boolean = false, canRestore: boolean = false, locked: boolean = false, canSelect: boolean = resource['selectable'] ?? false, partiallySelected: boolean = false, noticeKind: string = 'error', errorList: any[] = [], filtersOpen: boolean = false, sections: any[] = resource['groups'] ?? [], activeSection: string = resource['firstSection'] ?? 'main', mediaOpen: boolean = false, imageOnly: boolean = false)
+    @state(data: any = resource, fields: any[] = resource['fields'] ?? [], rows: any[] = resource['rows'] ?? [], fieldEpoch: number = 0, busy: boolean = false, dirty: boolean = false, canSave: boolean = false, errors: any = {}, selectedCount: number = 0, allSelected: boolean = false, canTrash: boolean = false, canRestore: boolean = false, locked: boolean = false, canSelect: boolean = resource['selectable'] ?? false, partiallySelected: boolean = false, filtersOpen: boolean = false, sections: any[] = resource['groups'] ?? [], activeSection: string = resource['firstSection'] ?? 'main', mediaOpen: boolean = false, imageOnly: boolean = false)
 
     const {changeValue, openMedia, closeMedia, selectMedia} = App.Admin.controllers.manager($view, () => ({resource}));
 </script>
 
 <template>
     <div class="sa-admin-resource-manager" aria-busy="{{ busy ? 'true' : 'false' }}">
-        @if(notice !== '')
-            <div id="resource-notice" class="sa-admin-alert sa-admin-resource-notice" data-kind="{{ noticeKind }}" role="status" tabindex="-1">
-                <p>{{ text(notice) }}</p>
-                @if(errorList.length > 0)
-                    <ul>
-                        @foreach(errorList as error)
-                            @key(error['key'])
-                            <li>{{ error['message'] }}</li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-        @endif
         @if(data['mode'] === 'list')
             <section class="sa-admin-card" aria-label="{{ __('admin.resource.records') }}">
             <div class="sa-admin-resource-toolbar">

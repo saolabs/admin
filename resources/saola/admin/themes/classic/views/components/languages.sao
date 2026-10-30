@@ -1,17 +1,11 @@
 <script setup lang="ts">
     @vars(editor: any = {})
-    @state(localeDoc: any = editor['document'], permissions: any = editor['permissions'], batches: any[] = editor['batches'], busy: boolean = false, dirty: boolean = false, canSave: boolean = false, canPublish: boolean = false, selectedLocale: string = '', baseline: string = '', fileName: string = '', notice: string = '', noticeKind: string = 'error', details: string = '', preview: any = null, changes: any[] = [])
+    @state(localeDoc: any = editor['document'], permissions: any = editor['permissions'], batches: any[] = editor['batches'], busy: boolean = false, dirty: boolean = false, canSave: boolean = false, canPublish: boolean = false, selectedLocale: string = '', baseline: string = '', fileName: string = '', preview: any = null, changes: any[] = [])
 
     App.Admin.controllers.languages($view, () => ({editor}));
 </script>
 
 <template>
-    @if(notice !== '')
-        <p id="language-notice" data-kind="{{ noticeKind }}" class="sa-admin-alert" role="status">{{ text(notice) }}</p>
-    @endif
-    @if(details !== '')
-        <pre class="sa-admin-alert sa-admin-language-errors" data-kind="error" role="alert">{{ details }}</pre>
-    @endif
     <section class="sa-admin-card">
         <h2>{{ __('admin.languages.defaults') }}</h2>
         <form @submit.prevent(save())>

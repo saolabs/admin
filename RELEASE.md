@@ -1,3 +1,10 @@
+# saola/admin v0.1.0-alpha.11
+
+- Shared `App.Admin.notify(message, kind)` toast feedback replaces transient content banners in Settings, CRUD, media, languages and shell for Classic and Material.
+- Success/info notices expire after six seconds and pause while hovered or focused; warnings/errors remain dismissible. Duplicate results replace each other, retained form state does not announce twice, and leaving the shell clears notifications.
+- Field validation remains next to its input with focus and accessibility links intact. Saving admin appearance carries its success notice through the shell reload.
+- Validation: package PHP suite, 9 theme/runtime tests and TypeScript; Gehihi integration builds web/admin and passes 74 UI tests, including 8 feedback tests and local browser checks for fixed-position toasts without layout shifts.
+
 # saola/admin v0.1.0-alpha.10
 
 - Separate admin branding settings support normal, dark and compact logos, optional text beside the logo, and custom brand text with website fallbacks.

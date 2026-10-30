@@ -17,7 +17,6 @@ export interface ShellState {
     mobileView: boolean;
     flyoutKey: string;
     flyoutTop: number;
-    notice: string;
     navItems: any[];
     languageOpen: boolean;
     accountOpen: boolean;
@@ -130,6 +129,7 @@ export function bindShell(view: View, App: Application, readProps: () => ShellPr
         }
     }
     function releasePage() {
+        App.Admin?.clearNotifications();
         active = false;
         ++languageGeneration;
         presentation.deactivate?.();
@@ -230,7 +230,6 @@ export function bindShell(view: View, App: Application, readProps: () => ShellPr
         if (!(App.Admin?.canChangeLanguage() ?? true)) {
             event.preventDefault();
             closeHeaderMenus();
-            binding.set("notice", 'admin.shell.unsaved');
         }
     }
     async function changeLanguage(locale: string) {
@@ -242,7 +241,6 @@ export function bindShell(view: View, App: Application, readProps: () => ShellPr
         }
         const generation = ++languageGeneration;
         binding.set("languageBusy", true);
-        binding.set("notice", '');
         try {
             const changed = await App.Helper.changeLanguage(locale, async (code: string) => {
                 const response = await fetch(readProps().dictionaryPattern.replace('_locale_', encodeURIComponent(code)), { credentials: 'same-origin', headers: { Accept: 'application/json' } });
@@ -251,15 +249,12 @@ export function bindShell(view: View, App: Application, readProps: () => ShellPr
                 return response.json();
             }, () => App.Admin?.canChangeLanguage() ?? true);
             if (active && generation === languageGeneration) {
-                if (!changed)
-                    binding.set("notice", 'admin.shell.unsaved');
-                else
-                    binding.set("selectedLocale", App.Helper.getLocale());
+                if (changed) binding.set("selectedLocale", App.Helper.getLocale());
             }
         }
         catch {
             if (active && generation === languageGeneration)
-                binding.set("notice", 'admin.shell.language_error');
+                App.Admin.notify(App.Helper.text('admin.shell.language_error'), 'error');
         }
         finally {
             if (active && generation === languageGeneration) {

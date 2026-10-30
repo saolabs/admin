@@ -1,6 +1,6 @@
 <script setup lang="ts">
     @vars(editor: any = {})
-    @state(fields: any[] = editor['fields'], busy: boolean = false, dirty: boolean = false, canSave: boolean = false, canUpdate: boolean = editor['canUpdate'], notice: string = '', noticeKind: string = 'error', errors: any = {}, mediaOpen: boolean = false, fieldEpoch: number = 0)
+    @state(fields: any[] = editor['fields'], busy: boolean = false, dirty: boolean = false, canSave: boolean = false, canUpdate: boolean = editor['canUpdate'], errors: any = {}, mediaOpen: boolean = false, fieldEpoch: number = 0)
 
     const {selectMedia, closeMedia} = App.Admin.controllers.settings($view, () => ({editor}));
 </script>
@@ -30,9 +30,6 @@
             </div>
             @else
                 <div class="sa-admin-form-toolbar"><span class="sa-admin-muted">{{ __('admin.settings.shared') }}</span></div>
-            @endif
-            @if(notice !== '')
-                <p id="settings-notice" tabindex="-1" data-kind="{{ noticeKind }}" class="sa-admin-alert" role="status">{{ text(notice) }}</p>
             @endif
             @if(!canUpdate)
                 <p class="sa-admin-empty">{{ __('admin.settings.read_only') }}</p>

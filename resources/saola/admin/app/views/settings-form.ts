@@ -1,7 +1,7 @@
 import type {} from '../contracts/admin';
 import type { Application, View } from '@saolabs/client';
 import { bindViewState } from './binding';
-import {noticeKind} from '../feedback';
+import {noticeFeedback, rememberNotice} from '../feedback';
 export interface SettingsProps {
     editor: any;
 }
@@ -11,15 +11,14 @@ export interface SettingsState {
     dirty: boolean;
     canSave: boolean;
     canUpdate: boolean;
-    notice: string;
     errors: any;
     mediaOpen: boolean;
-    noticeKind: string;
     fieldEpoch: number;
 }
 /** Shared actions and lifecycle; each binding owns its own draft and subscriptions. */
 export function bindSettings(view: View, App: Application, readProps: () => SettingsProps) {
     const binding = bindViewState<SettingsState>(view);
+    const feedback = noticeFeedback(App);
     let form: any;
     let formIdentity = '';
     let mediaField = '';
@@ -68,10 +67,10 @@ export function bindSettings(view: View, App: Application, readProps: () => Sett
         binding.set("canSave", form.canSave);
         binding.set("canUpdate", form.canUpdate);
         binding.set("errors", { ...form.errors });
-        binding.set("notice", form.notice);
-        binding.set('noticeKind', noticeKind(form.notice));
+        feedback(form.notice);
     }
     function canLeave() {
+        feedback('');
         if (form.canLeave())
             return true;
         form.notice = 'admin.settings.unsaved';
@@ -169,16 +168,17 @@ export function bindSettings(view: View, App: Application, readProps: () => Sett
         const pending = form.save();
         refresh();
         await pending;
-        refresh();
         // The shell sits above this form; reload its request projection after changing panel identity.
         if (active && form.notice === 'admin.settings.saved' && readProps().editor['group'] === 'admin-appearance') {
+            rememberNotice(App.Helper.text(form.notice), 'success');
             window.location.reload();
             return;
         }
+        refresh();
         if (active && Object.keys(form.errors).length > 0) {
             const field = form.fields.find((field: any) => form.errors[field.key]);
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                if (active) (field ? document.getElementById('setting-' + field.key) : document.getElementById('settings-notice'))?.focus();
+                if (active) (field ? document.getElementById('setting-' + field.key) : null)?.focus();
             }));
         }
     }

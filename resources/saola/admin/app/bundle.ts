@@ -13,12 +13,20 @@ import {bindLanguages} from './views/languages';
 import {bindMediaLibrary} from './views/media-library';
 import {bindInput} from './views/input';
 import {bindUi} from './views/ui';
+import {AdminToasts, restoreNotice, type NoticeKind} from './feedback';
 
 /** Forms register a guard on mount and dispose it on pause/destroy. No model or auth state here. */
 export class AdminUI {
     readonly controllers: AdminControllers;
 
-    constructor(app: Application) {
+    private toasts = new AdminToasts();
+
+    notify(message: string, kind: NoticeKind = 'info'): () => void {
+        return this.toasts.show(message, kind, this.app.Helper.text('admin.media.close'));
+    }
+
+    constructor(private app: Application) {
+        restoreNotice((message, kind) => this.notify(message, kind));
         const bind = <F extends (view: View, app: Application, ...rest: any[]) => any>(fn: F) =>
             ((view: View, ...rest: any[]) => fn(view, app, ...rest));
         this.controllers = {
@@ -33,6 +41,8 @@ export class AdminUI {
 
     createLanguageForm(editor: LanguageEditor): LanguageForm { return new LanguageForm(editor); }
     createMediaLibrary(editor: MediaEditor, imageOnly = false): MediaLibraryForm { return new MediaLibraryForm(editor, imageOnly); }
+
+    clearNotifications(): void { this.toasts.clear(); }
 
     private guards = new Map<symbol, () => boolean>();
     private pageKey = '';
@@ -57,7 +67,7 @@ export class AdminUI {
     }
 
     canChangeLanguage(): boolean { return [...this.guards.values()].every(guard => guard()); }
-    reset(): void { this.guards.clear(); }
+    reset(): void { this.guards.clear(); this.toasts.clear(); }
 }
 
 // Một instance MỖI Application (không phải mỗi module): `Admin` và `AdminUI` là

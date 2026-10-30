@@ -1,7 +1,7 @@
 import type {} from '../contracts/admin';
 import type { Application, View } from '@saolabs/client';
 import { bindViewState } from './binding';
-import {noticeKind} from '../feedback';
+import {noticeFeedback} from '../feedback';
 export interface MediaLibraryProps {
     editor: any;
     picker: boolean;
@@ -18,8 +18,6 @@ export interface MediaLibraryState {
     busy: boolean;
     dirty: boolean;
     canSave: boolean;
-    notice: string;
-    noticeKind: string;
     progress: string;
     total: number;
     page: number;
@@ -31,6 +29,7 @@ export interface MediaLibraryState {
 /** Shared actions and lifecycle; each binding owns its own draft and subscriptions. */
 export function bindMediaLibrary(view: View, App: Application, readProps: () => MediaLibraryProps) {
     const binding = bindViewState<MediaLibraryState>(view);
+    const feedback = noticeFeedback(App);
     let form: any;
     let active = false;
     let disposers: Array<() => void> = [];
@@ -46,8 +45,7 @@ export function bindMediaLibrary(view: View, App: Application, readProps: () => 
         binding.set("busy", form.busy);
         binding.set("dirty", form.dirty);
         binding.set("canSave", form.canSave);
-        binding.set("notice", form.notice);
-        binding.set('noticeKind', noticeKind(form.notice));
+        feedback(form.notice);
         binding.set("progress", form.progress);
         binding.set("total", form.total);
         binding.set("page", form.page);
@@ -55,6 +53,7 @@ export function bindMediaLibrary(view: View, App: Application, readProps: () => 
         binding.set("status", form.status);
     }
     function canLeave() {
+        feedback('');
         if (form.canLeave())
             return true;
         form.notice = 'admin.media.unsaved';

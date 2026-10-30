@@ -40,16 +40,22 @@ export interface AdminControllers {
  *
  * Contract 1. Mỗi `create*` trả instance RIÊNG của view gọi nó (draft, lỗi,
  * lựa chọn dòng, upload); service không giữ trạng thái đó. Trạng thái dùng chung
- * duy nhất là page đang mở và các guard đổi ngôn ngữ, sống trong một Application.
+ * gồm page đang mở, các guard đổi ngôn ngữ và toast, sống trong một Application.
  */
 export interface AdminApi {
     /** Controller nối view của theme vào gói. */
     readonly controllers: AdminControllers;
 
+    /** Floating feedback shared by all admin pages; returns a dismiss function. */
+    notify(message: string, kind?: import('../feedback').NoticeKind): () => void;
+
     createResourceManager(resource: Management): ResourceManager;
     createSettingsForm(editor: Editor): SettingsForm;
     createLanguageForm(editor: LanguageEditor): LanguageForm;
     createMediaLibrary(editor: MediaEditor, imageOnly?: boolean): MediaLibraryForm;
+
+    /** Clear floating feedback when leaving the admin shell. */
+    clearNotifications(): void;
 
     /** Ghi page đang mở; shell theo dõi qua `watchCurrentPage`. */
     setCurrentPage(key: string): void;

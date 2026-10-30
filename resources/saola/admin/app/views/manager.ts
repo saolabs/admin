@@ -1,3 +1,4 @@
+import {noticeFeedback} from '../feedback';
 import type {} from '../contracts/admin';
 import type { Application, View } from '@saolabs/client';
 import { bindViewState } from './binding';
@@ -13,7 +14,6 @@ export interface ManagerState {
     busy: boolean;
     dirty: boolean;
     canSave: boolean;
-    notice: string;
     errors: any;
     selectedCount: number;
     allSelected: boolean;
@@ -22,8 +22,6 @@ export interface ManagerState {
     locked: boolean;
     canSelect: boolean;
     partiallySelected: boolean;
-    noticeKind: string;
-    errorList: any[];
     filtersOpen: boolean;
     sections: any[];
     activeSection: string;
@@ -33,6 +31,7 @@ export interface ManagerState {
 /** Shared actions and lifecycle; each binding owns its own draft and subscriptions. */
 export function bindManager(view: View, App: Application, readProps: () => ManagerProps) {
     const binding = bindViewState<ManagerState>(view);
+    const feedback = noticeFeedback(App);
     let manager: any;
     let identity = '';
     let active = false;
@@ -50,11 +49,9 @@ export function bindManager(view: View, App: Application, readProps: () => Manag
         binding.set("rows", manager.rows);
         binding.set("busy", manager.busy);
         binding.set("locked", manager.locked);
-        binding.set("noticeKind", manager.noticeKind);
-        binding.set("errorList", Object.entries(manager.errors).map(([key, message]) => ({ key, message })));
         binding.set("dirty", manager.dirty);
         binding.set("canSave", manager.canSave);
-        binding.set("notice", manager.notice);
+        feedback(manager.notice, manager.noticeKind, Object.values(manager.errors).join('\n'));
         binding.set("errors", { ...manager.errors });
         binding.set("selectedCount", manager.selectedCount);
         binding.set("canTrash", manager.canBulk('trash'));
@@ -65,6 +62,7 @@ export function bindManager(view: View, App: Application, readProps: () => Manag
         binding.set("partiallySelected", manager.selectedCount > 0 && manager.selectedCount < selectable.length);
     }
     function canLeave() {
+        feedback('');
         if (manager.canLeave())
             return true;
         manager.notice = 'admin.resource.unsaved';
@@ -189,7 +187,7 @@ export function bindManager(view: View, App: Application, readProps: () => Manag
             const field = manager.fields.find((field: any) => field.key === key);
             if (field) binding.set('activeSection', field.section || 'main');
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                if (active) (key ? document.getElementById('resource-field-' + key) : document.getElementById('resource-notice'))?.focus();
+                if (active) (key ? document.getElementById('resource-field-' + key) : null)?.focus();
             }));
         }
         if (active && manager.redirect)

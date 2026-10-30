@@ -1,6 +1,6 @@
 <script setup lang="ts">
     @vars(editor: any = {}, picker: boolean = false, imageOnly: boolean = false, onSelect: any = null, onClose: any = null)
-    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, notice: string = '', noticeKind: string = 'error', progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active', dragging: boolean = false)
+    @state(items: any[] = editor['initial']['items'] ?? [], selected: any = null, title: string = '', alt: string = '', caption: string = '', busy: boolean = false, dirty: boolean = false, canSave: boolean = false, progress: string = '', total: number = editor['initial']['total'] ?? 0, page: number = 1, query: string = '', kind: string = imageOnly ? 'image' : 'all', status: string = 'active', dragging: boolean = false)
 
     App.Admin.controllers.mediaLibrary($view, () => ({editor, picker, imageOnly, onSelect, onClose}));
 </script>
@@ -11,6 +11,7 @@
             <div class="sa-admin-media-heading"><h2 class="card-header fs-15">{{ __('admin.media.choose') }}</h2><button class="btn btn-light" type="button" @disabled(busy) @click(close())>{{ __('admin.media.close') }}</button></div>
         @endif
         <div class="sa-admin-media-toolbar">
+            <span class="sa-admin-media-loading" role="status" aria-live="polite">{{ busy ? text('admin.media.loading') : '' }} {{ busy ? progress : '' }}</span>
             <form class="sa-admin-media-search" @submit.prevent(search())>
                 <div class="sa-admin-media-query">
                 <input class="form-control" type="search" aria-label="{{ __('admin.resource.search') }}" placeholder="{{ __('admin.media.search') }}" maxlength="100" value="{{ query }}" @disabled(busy) @input(updateQuery($event))>
@@ -32,12 +33,6 @@
             </form>
         </div>
         <p class="sa-admin-media-public-hint">{{ __('admin.media.public_hint') }}</p>
-        @if(notice !== '')
-            <p class="alert sa-admin-alert" data-kind="{{ noticeKind }}" role="status">{{ text(notice) }}</p>
-        @endif
-        @if(busy)
-            <p class="sa-admin-media-loading" role="status">{{ __('admin.media.loading') }} {{ progress }}</p>
-        @endif
         <div @class({'sa-admin-media-body', 'is-dragging': dragging}) @dragover.prevent(dragOver()) @dragleave(dragLeave($event)) @drop.prevent(dropFiles($event))>
             <div class="sa-admin-media-main">
                 @if(editor['permissions']['upload'])

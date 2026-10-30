@@ -14,11 +14,14 @@
             <button class="sa-admin-sidebar-backdrop" type="button" aria-label="{{ __('admin.shell.close_menu') }}" @click(closeMenu())></button>
         @endif
         <aside id="sa-admin-navigation" @class({'sa-admin-sidebar', 'is-open': menuOpen})>
-            <div class="sa-admin-brand">
+            <div @class({'sa-admin-brand', 'has-brand-text': branding['showBrandText'] ?? true})>
                 @if((branding['logoUrl'] ?? '') !== '')
                     <img class="sa-admin-brand-image sa-admin-brand-full" src="{{ branding['logoUrl'] }}" alt="{{ brand }}">
                 @else
-                    <span class="sa-admin-mark sa-admin-brand-full" aria-hidden="true">{{ branding['initials'] ?? '' }}</span><span class="sa-admin-brand-label">{{ brand }}</span>
+                    <span class="sa-admin-mark sa-admin-brand-full" aria-hidden="true">{{ branding['initials'] ?? '' }}</span>
+                @endif
+                @if(branding['showBrandText'] ?? true)
+                    <span class="sa-admin-brand-label" title="{{ brand }}">{{ brand }}</span>
                 @endif
                 @if((branding['compactLogoUrl'] ?? '') !== '')
                     <img class="sa-admin-brand-image sa-admin-brand-small" src="{{ branding['compactLogoUrl'] }}" alt="{{ brand }}">

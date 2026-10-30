@@ -1,3 +1,10 @@
+# saola/admin v0.1.0-alpha.10
+
+- Separate admin branding settings support normal, dark and compact logos, optional text beside the logo, and custom brand text with website fallbacks.
+- Website settings include company/legal details, support contacts and website information. Admin branding remains private and uses system settings permissions.
+- Classic and Material keep the logo text toggle and content together and refresh branding after saving.
+- Validation: 106 PHP tests, 1,098 assertions, 9 theme build tests and TypeScript checks.
+
 # saola/admin v0.1.0-alpha.9
 
 - Public website media can opt into filesystem URLs with `media.public_disks`; uploads on those disks use public visibility so web servers/CDNs serve the bytes directly.

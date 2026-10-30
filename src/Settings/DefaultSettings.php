@@ -21,15 +21,29 @@ final class DefaultSettings
             'website_name' => ['labelKey' => 'admin.settings.website_name', 'placeholderKey' => 'admin.settings.placeholders.website_name', 'type' => 'text', 'localized' => true, 'public' => true, 'default' => (string) config('app.name', 'Saola'), 'maxLength' => 200],
             'description' => ['labelKey' => 'admin.settings.description', 'placeholderKey' => 'admin.settings.placeholders.description', 'type' => 'textarea', 'localized' => true, 'public' => true, 'default' => ''],
             'tagline' => $text('tagline', true, 'text', 200),
+            'short_name' => $text('short_name', true, 'text', 60),
             'website_url' => $text('website_url', false, 'url'),
+            'about_url' => $text('about_url', false, 'url') + ['relative' => true],
+            'privacy_policy_url' => $text('privacy_policy_url', false, 'url') + ['relative' => true],
+            'terms_url' => $text('terms_url', false, 'url') + ['relative' => true],
             'copyright' => $text('copyright', true, 'richtext', 4000),
             // Preserve the alpha.1 private key/API; no contact field in the default UI.
             'contact' => ['labelKey' => 'admin.settings.contact', 'type' => 'text', 'public' => false, 'hidden' => true, 'default' => ''],
         ]));
+        $registry->register(new SettingsGroup('company', 'admin.settings.groups_company', $siteRead, $siteWrite, [
+            'company_name' => $text('company_name', true, 'text', 200),
+            'company_legal_name' => $text('company_legal_name', false, 'text', 300),
+            'tax_code' => $text('tax_code', false, 'text', 50),
+            'business_registration_number' => $text('business_registration_number', false, 'text', 100),
+            'legal_representative' => $text('legal_representative', false, 'text', 200),
+            'company_url' => $text('company_url', false, 'url'),
+        ]));
         $registry->register(new SettingsGroup('contact', 'admin.settings.groups_contact', $siteRead, $siteWrite, [
             'contact_email' => $text('contact_email', false, 'text', 200),
+            'support_email' => $text('support_email', false, 'text', 200),
             'contact_phone' => $text('contact_phone', false, 'text', 50),
             'address' => $text('address', true, 'textarea', 500),
+            'business_hours' => $text('business_hours', true, 'text', 200),
             'facebook_url' => $text('facebook_url', false, 'url'), 'x_url' => $text('x_url', false, 'url'), 'youtube_url' => $text('youtube_url', false, 'url'),
             'linkedin_url' => $text('linkedin_url', false, 'url'), 'tiktok_url' => $text('tiktok_url', false, 'url'),
         ]));
@@ -48,6 +62,19 @@ final class DefaultSettings
         $registry->register(new SettingsGroup('system', 'admin.settings.groups_system', $systemRead, $systemWrite, [
             'maintenance_mode' => ['labelKey' => 'admin.settings.fields.maintenance_mode', 'type' => 'boolean', 'default' => false],
             'maintenance_message' => ['labelKey' => 'admin.settings.fields.maintenance_message', 'placeholderKey' => 'admin.settings.placeholders.maintenance_message', 'type' => 'textarea', 'default' => '', 'maxLength' => 1000],
+        ], category: 'system', categoryTitleKey: 'admin.settings.categories.system'));
+        // Admin identity is private to the panel and independent of public website branding.
+        $adminText = static fn (string $key, string $type = 'text', int $max = 2048) => [
+            'labelKey' => 'admin.settings.fields.'.$key, 'placeholderKey' => 'admin.settings.placeholders.'.$key,
+            'type' => $type, 'default' => '', 'maxLength' => $max,
+        ];
+        $adminImage = static fn (string $key) => $adminText($key, 'url') + ['relative' => true, 'media' => true];
+        $registry->register(new SettingsGroup('admin-appearance', 'admin.settings.groups_admin_appearance', $systemRead, $systemWrite, [
+            'admin_logo_url' => $adminImage('admin_logo_url'),
+            'admin_logo_dark_url' => $adminImage('admin_logo_dark_url'),
+            'admin_compact_logo_url' => $adminImage('admin_compact_logo_url'),
+            'show_brand_text' => ['labelKey' => 'admin.settings.fields.show_brand_text', 'type' => 'boolean', 'default' => true],
+            'brand_text' => $adminText('brand_text', 'text', 200),
         ], category: 'system', categoryTitleKey: 'admin.settings.categories.system'));
         $zones = \DateTimeZone::listIdentifiers();
         $timezone = (string) config('app.timezone', 'UTC');

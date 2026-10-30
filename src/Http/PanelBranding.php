@@ -6,7 +6,7 @@ namespace Saola\Admin\Http;
 
 use Saola\Admin\Settings\{SettingsRegistry, SettingsStore};
 
-/** Public website identity for the dark sidebar; resolved for each request/locale. */
+/** Panel identity, falling back to website identity; resolved for each request/locale. */
 final class PanelBranding
 {
     public function project(string $locale): array
@@ -23,11 +23,20 @@ final class PanelBranding
                 $values = array_replace($values, $store->values($group, $contentLocale, publicOnly: true));
             }
         }
-        $brand = trim((string) ($values['website_name'] ?? ''));
+        $admin = [];
+        foreach (app(SettingsRegistry::class)->all() as $group) {
+            if ($group->key === 'admin-appearance') $admin = app(SettingsStore::class)->values($group);
+        }
+        $brand = trim((string) ($admin['brand_text'] ?? '')) ?: trim((string) ($values['website_name'] ?? ''));
         if ($brand === '') $brand = (string) (config('saola-admin.panel.brand') ?: config('app.name', 'Saola Admin'));
+        $logo = $this->image($admin['admin_logo_dark_url'] ?? '') ?: $this->image($admin['admin_logo_url'] ?? '')
+            ?: $this->image($values['logo_dark_url'] ?? '') ?: $this->image($values['logo_url'] ?? '');
         return ['brand' => $brand, 'branding' => [
-            'logoUrl' => $this->image($values['logo_dark_url'] ?? '') ?: $this->image($values['logo_url'] ?? ''),
-            'compactLogoUrl' => $this->image($values['favicon_url'] ?? ''),
+            'logoUrl' => $logo,
+            'compactLogoUrl' => $this->image($admin['admin_compact_logo_url'] ?? '')
+                ?: ($this->image($admin['admin_logo_dark_url'] ?? '') ?: $this->image($admin['admin_logo_url'] ?? ''))
+                ?: $this->image($values['favicon_url'] ?? ''),
+            'showBrandText' => (bool) ($admin['show_brand_text'] ?? true),
             'initials' => mb_strtoupper(mb_substr($brand, 0, 1)),
         ]];
     }

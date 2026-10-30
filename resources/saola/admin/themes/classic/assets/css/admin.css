@@ -442,6 +442,8 @@ body:has(.saola-admin) { margin: 0; }
 /* Website identity is supplied by settings, including the compact/favicon variant. */
 .sa-admin-brand-image { object-fit: contain; max-width: 100%; max-height: 40px; }
 .sa-admin-brand-full { min-width: 0; }
+.sa-admin-brand-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.has-brand-text .sa-admin-brand-image.sa-admin-brand-full { max-width: 72px; flex: 0 1 auto; }
 .sa-admin-brand-small { display: none; }
 .is-sidebar-compact .sa-admin-brand-full { display: none; }
 .is-sidebar-compact .sa-admin-brand-small { display: inline-flex; width: 30px; height: 30px; }
@@ -471,3 +473,13 @@ body:has(.saola-admin) { margin: 0; }
     .sa-admin-filter-toggle { background: none; border: 0; color: var(--sa-admin-primary, #405189); text-align: start; cursor: pointer; padding: 4px 0; }
 }
 .sa-admin-resource-blank { padding: 48px 16px; }
+
+/* Keep the logo text switch and its content together below the image fields. */
+[data-settings-group="admin-appearance"] .sa-admin-form-field:has(#setting-show_brand_text),
+[data-settings-group="admin-appearance"] .sa-admin-form-field:has(#setting-brand_text) { grid-column: 1 / -1; }
+[data-settings-group="admin-appearance"] .sa-admin-form-field:has(#setting-show_brand_text) {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+    padding-top: 16px; border-top: 1px solid var(--sa-admin-border);
+}
+[data-settings-group="admin-appearance"] .sa-admin-form-field:has(#setting-show_brand_text) .form-check { margin-bottom: 0; }
+[data-settings-group="admin-appearance"] .sa-admin-form-field:has(#setting-brand_text) { max-width: 640px; width: 100%; }

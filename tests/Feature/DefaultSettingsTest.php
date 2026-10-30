@@ -64,16 +64,16 @@ class DefaultSettingsTest extends TestCase
     public function test_default_groups_are_nested_and_system_permissions_are_independent(): void
     {
         $this->getJson('/control/settings')->assertOk()->assertJsonCount(2, 'data.editor.categories')
-            ->assertJsonCount(4, 'data.editor.categories.0.groups')->assertJsonCount(2, 'data.editor.categories.1.groups')
-            ->assertJsonPath('data.currentPage', 'settings.website')->assertJsonPath('data.editor.category', 'website')->assertJsonCount(4, 'data.editor.tabs');
+            ->assertJsonCount(5, 'data.editor.categories.0.groups')->assertJsonCount(3, 'data.editor.categories.1.groups')
+            ->assertJsonPath('data.currentPage', 'settings.website')->assertJsonPath('data.editor.category', 'website')->assertJsonCount(5, 'data.editor.tabs');
         $this->getJson('/control/settings?group=system')->assertOk()->assertJsonPath('data.currentPage', 'settings.system')
-            ->assertJsonCount(2, 'data.editor.tabs')->assertJsonPath('data.navigation.1.children.1.active', true)
+            ->assertJsonCount(3, 'data.editor.tabs')->assertJsonPath('data.navigation.1.children.1.active', true)
             ->assertJsonPath('data.navigation.1.open', true)->assertJsonPath('data.navigation.1.active', true);
         $navigation = $this->getJson('/control/settings?group=seo')->assertOk()->json('data.navigation');
         $this->assertTrue($navigation[1]['active']); $this->assertTrue($navigation[1]['children'][0]['active']);
         $this->assertNotEmpty($navigation[1]['iconPath']);
         $this->actingAs(new GenericUser(['id' => 2]));
-        $this->getJson('/control/settings')->assertOk()->assertJsonCount(1, 'data.editor.categories')->assertJsonCount(4, 'data.editor.groups')
+        $this->getJson('/control/settings')->assertOk()->assertJsonCount(1, 'data.editor.categories')->assertJsonCount(5, 'data.editor.groups')
             ->assertJsonCount(1, 'data.navigation.1.children')->assertJsonPath('data.navigation.1.children.0.key', 'settings.website');
         $this->getJson('/control/settings/system')->assertForbidden();
         $this->getJson('/control/settings?group=system')->assertForbidden();
@@ -134,12 +134,58 @@ class DefaultSettingsTest extends TestCase
     {
         $group = app(SettingsRegistry::class)->get('general'); $store = app(SettingsStore::class);
         $store->update($group, 0, ['values' => ['contact' => 'Preserved legacy value'], 'localized' => ['vi' => ['website_name' => 'Tên cũ']]]);
-        $this->getJson('/control/settings?group=general&content_locale=vi')->assertOk()->assertJsonCount(5, 'data.editor.fields')
+        $this->getJson('/control/settings?group=general&content_locale=vi')->assertOk()->assertJsonCount(9, 'data.editor.fields')
             ->assertJsonPath('data.editor.fields.0.value', 'Tên cũ')->assertJsonPath('data.editor.fields.1.type', 'textarea');
         $store->update($group, 1, ['localized' => ['en' => ['tagline' => 'New tagline']]]);
         $this->assertSame('Preserved legacy value', $store->read($group)['values']['contact']);
         $this->assertArrayNotHasKey('contact', $store->values($group, 'vi', true));
-        $this->assertSame(6, count(app(SettingsRegistry::class)->all()));
+        $this->assertSame(8, count(app(SettingsRegistry::class)->all()));
+    }
+
+    public function test_admin_identity_is_independent_private_and_uses_system_permissions(): void
+    {
+        $this->putJson('/control/settings/branding', ['revision' => 0, 'patch' => ['values' => ['logo_url' => '/website.png']]])->assertOk();
+        $patch = ['revision' => 0, 'patch' => ['values' => [
+            'admin_logo_url' => '/admin.png', 'admin_logo_dark_url' => '/admin-dark.png',
+            'admin_compact_logo_url' => '/admin-icon.png', 'show_brand_text' => false, 'brand_text' => 'Operations <HQ>',
+        ]]];
+        $this->actingAs(new GenericUser(['id' => 2])); // Website-only editor.
+        $this->getJson('/control/settings/admin-appearance')->assertForbidden();
+        $this->putJson('/control/settings/admin-appearance', $patch)->assertForbidden();
+        $this->actingAs(new GenericUser(['id' => 1]));
+        $this->putJson('/control/settings/admin-appearance', $patch)->assertOk()->assertJsonPath('data.revision', 1);
+        $this->getJson('/control/settings?group=admin-appearance')->assertOk()
+            ->assertJsonPath('data.brand', 'Operations <HQ>')->assertJsonPath('data.branding.logoUrl', '/admin-dark.png')
+            ->assertJsonPath('data.branding.compactLogoUrl', '/admin-icon.png')->assertJsonPath('data.branding.showBrandText', false)
+            ->assertJsonPath('data.editor.fields.0.media', true);
+        $store = app(SettingsStore::class); $group = app(SettingsRegistry::class)->get('admin-appearance');
+        $this->assertSame([], $store->values($group, publicOnly: true));
+        $this->assertSame('/website.png', $store->values(app(SettingsRegistry::class)->get('branding'))['logo_url']);
+        $this->putJson('/control/settings/admin-appearance', $patch)->assertConflict();
+        foreach ([['show_brand_text' => 'false'], ['admin_logo_url' => 'javascript:alert(1)'], ['brand_text' => str_repeat('a', 201)]] as $bad) {
+            $this->putJson('/control/settings/admin-appearance', ['revision' => 1, 'patch' => ['values' => $bad]])->assertUnprocessable();
+        }
+        $this->putJson('/control/settings/admin-appearance', ['revision' => 1, 'patch' => ['values' => [
+            'admin_logo_dark_url' => '', 'admin_compact_logo_url' => '', 'brand_text' => '', 'show_brand_text' => true,
+        ]]])->assertOk();
+        $this->getJson('/control/settings')->assertOk()->assertJsonPath('data.branding.logoUrl', '/admin.png')
+            ->assertJsonPath('data.branding.compactLogoUrl', '/admin.png')->assertJsonPath('data.branding.showBrandText', true);
+    }
+
+    public function test_company_and_website_details_preserve_localized_names_and_shared_legal_details(): void
+    {
+        $this->putJson('/control/settings/company', ['revision' => 0, 'patch' => [
+            'localized' => ['en' => ['company_name' => 'Saola Labs'], 'vi' => ['company_name' => 'Công ty Saola']],
+            'values' => ['company_legal_name' => 'Saola Labs Ltd', 'tax_code' => '0123456789',
+                'business_registration_number' => 'REG-001', 'legal_representative' => 'Nguyen A', 'company_url' => 'https://example.test'],
+        ]])->assertOk();
+        $store = app(SettingsStore::class); $group = app(SettingsRegistry::class)->get('company');
+        $this->assertSame('Công ty Saola', $store->values($group, 'vi')['company_name']);
+        $this->assertSame('0123456789', $store->values($group, 'en')['tax_code']);
+        $this->putJson('/control/settings/general', ['revision' => 0, 'patch' => ['values' => [
+            'about_url' => '/about', 'privacy_policy_url' => '/privacy', 'terms_url' => 'https://example.test/terms',
+        ], 'localized' => ['en' => ['short_name' => 'Saola']]]])->assertOk();
+        $this->putJson('/control/settings/general', ['revision' => 1, 'patch' => ['values' => ['terms_url' => '//evil.test']]])->assertUnprocessable();
     }
 
     public function test_richtext_settings_are_sanitized_before_they_are_stored(): void

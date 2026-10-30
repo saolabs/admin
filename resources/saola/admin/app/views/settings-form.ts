@@ -170,6 +170,11 @@ export function bindSettings(view: View, App: Application, readProps: () => Sett
         refresh();
         await pending;
         refresh();
+        // The shell sits above this form; reload its request projection after changing panel identity.
+        if (active && form.notice === 'admin.settings.saved' && readProps().editor['group'] === 'admin-appearance') {
+            window.location.reload();
+            return;
+        }
         if (active && Object.keys(form.errors).length > 0) {
             const field = form.fields.find((field: any) => form.errors[field.key]);
             requestAnimationFrame(() => requestAnimationFrame(() => {

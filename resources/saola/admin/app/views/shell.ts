@@ -235,6 +235,11 @@ export function bindShell(view: View, App: Application, readProps: () => ShellPr
     async function changeLanguage(locale: string) {
         if (binding.get("languageBusy"))
             return;
+        if (!(App.Admin?.canChangeLanguage() ?? true)) {
+            App.Admin.notify(App.Helper.text('admin.settings.unsaved'), 'warning');
+            closeHeaderMenus();
+            return;
+        }
         if (locale === App.Helper.getLocale()) {
             closeHeaderMenus();
             return;

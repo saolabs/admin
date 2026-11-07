@@ -1,3 +1,9 @@
+# saola/admin v0.1.0-alpha.12
+
+- New Website settings group `pwa`: enable switch, name/short name/description (per language), theme and background colors, display mode, start URL and 192/512/maskable icons. Empty fields fall back to website name, description and favicon.
+- The package serves `/manifest.webmanifest` and `/sw.js` from those settings (404 while PWA is off). Hosts add `{!! \Saola\Admin\Pwa::headTags() !!}` to `<head>`. The worker only makes the app installable; it does not cache offline.
+- Validation: 107 PHP tests, 1,117 assertions. Gehihi integration: routes registered; layout tag verified with PWA off.
+
 # saola/admin v0.1.0-alpha.11
 
 - Shared `App.Admin.notify(message, kind)` toast feedback replaces transient content banners in Settings, CRUD, media, languages and shell for Classic and Material.

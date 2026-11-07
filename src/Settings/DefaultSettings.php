@@ -59,6 +59,20 @@ final class DefaultSettings
             'og_image_url' => $url('og_image_url'),
             'indexable' => ['labelKey' => 'admin.settings.fields.indexable', 'type' => 'boolean', 'public' => true, 'default' => true],
         ]));
+        $registry->register(new SettingsGroup('pwa', 'admin.settings.groups_pwa', $siteRead, $siteWrite, [
+            'enabled' => ['labelKey' => 'admin.settings.fields.pwa_enabled', 'type' => 'boolean', 'public' => true, 'default' => false],
+            'name' => $text('pwa_name', true, 'text', 100),
+            'short_name' => $text('pwa_short_name', true, 'text', 30),
+            'description' => $text('pwa_description', true, 'textarea', 300),
+            'theme_color' => array_replace($text('pwa_theme_color', false, 'text', 7), ['default' => '#ffffff']),
+            'background_color' => array_replace($text('pwa_background_color', false, 'text', 7), ['default' => '#ffffff']),
+            'display' => ['labelKey' => 'admin.settings.fields.pwa_display', 'type' => 'select', 'public' => true, 'default' => 'standalone',
+                'options' => ['standalone' => 'Standalone', 'minimal-ui' => 'Minimal UI', 'fullscreen' => 'Fullscreen', 'browser' => 'Browser']],
+            'start_url' => array_replace($text('pwa_start_url', false, 'url'), ['relative' => true, 'default' => '/']),
+            'icon_192_url' => $url('pwa_icon_192_url'),
+            'icon_512_url' => $url('pwa_icon_512_url'),
+            'icon_maskable_url' => $url('pwa_icon_maskable_url'),
+        ]));
         $registry->register(new SettingsGroup('system', 'admin.settings.groups_system', $systemRead, $systemWrite, [
             'maintenance_mode' => ['labelKey' => 'admin.settings.fields.maintenance_mode', 'type' => 'boolean', 'default' => false],
             'maintenance_message' => ['labelKey' => 'admin.settings.fields.maintenance_message', 'placeholderKey' => 'admin.settings.placeholders.maintenance_message', 'type' => 'textarea', 'default' => '', 'maxLength' => 1000],

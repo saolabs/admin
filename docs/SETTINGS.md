@@ -13,6 +13,7 @@ Các nhóm mặc định được khai báo tại `DefaultSettings`, dùng cùng
 | Website / `general` | Tên website, mô tả, khẩu hiệu, địa chỉ website, bản quyền | Văn bản theo locale; URL dùng chung |
 | Website / `branding` | Logo, logo nền tối, favicon | Dùng chung |
 | Website / `seo` | Meta title/description/keywords, tiêu đề/mô tả/ảnh chia sẻ, cho phép lập chỉ mục | Văn bản theo locale; ảnh và cờ lập chỉ mục dùng chung |
+| Website / `pwa` | Bật PWA, tên/tên ngắn/mô tả, màu chủ đạo/nền, kiểu hiển thị, URL khởi chạy, biểu tượng 192/512/maskable | Văn bản theo locale; còn lại dùng chung |
 | Hệ thống / `system` | Chế độ và thông báo bảo trì | Duy nhất, không theo locale |
 | Hệ thống / `system-display` | Múi giờ, định dạng ngày/giờ, số mục mỗi trang | Duy nhất, không theo locale |
 
@@ -102,3 +103,7 @@ Mỗi group vẫn có một row/document và revision duy nhất. Với group sh
 `SettingsStore::values` hiện nhận `?string $locale = null`; adapter override cần cập nhật chữ ký và semantics nhóm shared. Trường URL chỉ nhận http/https hoặc rỗng; `relative:true` cho phép đường dẫn bắt đầu bằng một `/` cho asset, không nhận `//`, javascript/data URL. Select khai báo `options` là map string value → string label, default phải nằm trong map, dữ liệu gửi lên được kiểm theo options; textarea vẫn lưu string và bảo toàn xuống dòng/rỗng. Constraint min/max/maxLength được kiểm ở server.
 
 Đã đối chiếu các schema `siteinfo/system` của ai-services và m-ai, chỉ giữ phần thông tin website/SEO/nhận diện cần chung. Bộ test có phân quyền từng cụm, một giá trị hệ thống qua en/vi, chặn ghi theo locale, URL/option/range sai, giữ dữ liệu alpha.1, SSR và hydrate/form/guard.
+
+## PWA
+
+Nhóm `pwa` điều khiển `GET /manifest.webmanifest` và `GET /sw.js` (404 khi chưa bật). Trường trống rơi về `general`/`branding` (tên, mô tả, favicon). Host chèn `{!! \Saola\Admin\Pwa::headTags() !!}` vào `<head>` (rỗng khi tắt): link manifest, `theme-color` và đăng ký service worker. Worker chỉ để cài được, không cache offline; thêm chiến lược cache khi host cần.

@@ -76,6 +76,7 @@ final class AdminServiceProvider extends ServiceProvider
     {
         // Website assets must remain deliverable even when the admin panel is disabled.
         $this->app->booted(fn () => $this->registerMediaDelivery());
+        if (!$this->app->routesAreCached()) $this->registerPwaRoutes();
         $this->app['router']->aliasMiddleware('saola.locale', \Saola\Admin\Http\ResolveUiLocale::class);
         $this->app->make(LanguageSources::class)->register(
             'saola/admin', __DIR__.'/../lang', ['admin', 'common'],
@@ -107,6 +108,17 @@ final class AdminServiceProvider extends ServiceProvider
                 ->where(['scope' => '[A-Za-z0-9_-]+', 'locale' => '[A-Za-z]{2,3}(?:[_-][A-Za-z0-9]{2,8})*'])
                 ->name('saola.language.dictionary');
         }
+    }
+
+    private function registerPwaRoutes(): void
+    {
+        // Public like media delivery; both 404 until `pwa.enabled` is switched on in Settings.
+        Route::middleware('web')->group(function () {
+            Route::get('manifest.webmanifest', fn () => abort_unless(Pwa::enabled(), 404)
+                ?: response()->json(Pwa::manifest(), 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES))->name('saola.pwa.manifest');
+            Route::get('sw.js', fn () => abort_unless(Pwa::enabled(), 404)
+                ?: response(Pwa::serviceWorker(), 200, ['Content-Type' => 'text/javascript', 'Cache-Control' => 'no-cache', 'Service-Worker-Allowed' => '/']))->name('saola.pwa.sw');
+        });
     }
 
     private function registerMediaDelivery(): void

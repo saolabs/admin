@@ -64,8 +64,8 @@ class DefaultSettingsTest extends TestCase
     public function test_default_groups_are_nested_and_system_permissions_are_independent(): void
     {
         $this->getJson('/control/settings')->assertOk()->assertJsonCount(2, 'data.editor.categories')
-            ->assertJsonCount(5, 'data.editor.categories.0.groups')->assertJsonCount(3, 'data.editor.categories.1.groups')
-            ->assertJsonPath('data.currentPage', 'settings.website')->assertJsonPath('data.editor.category', 'website')->assertJsonCount(5, 'data.editor.tabs');
+            ->assertJsonCount(6, 'data.editor.categories.0.groups')->assertJsonCount(3, 'data.editor.categories.1.groups')
+            ->assertJsonPath('data.currentPage', 'settings.website')->assertJsonPath('data.editor.category', 'website')->assertJsonCount(6, 'data.editor.tabs');
         $this->getJson('/control/settings?group=system')->assertOk()->assertJsonPath('data.currentPage', 'settings.system')
             ->assertJsonCount(3, 'data.editor.tabs')->assertJsonPath('data.navigation.1.children.1.active', true)
             ->assertJsonPath('data.navigation.1.open', true)->assertJsonPath('data.navigation.1.active', true);
@@ -73,7 +73,7 @@ class DefaultSettingsTest extends TestCase
         $this->assertTrue($navigation[1]['active']); $this->assertTrue($navigation[1]['children'][0]['active']);
         $this->assertNotEmpty($navigation[1]['iconPath']);
         $this->actingAs(new GenericUser(['id' => 2]));
-        $this->getJson('/control/settings')->assertOk()->assertJsonCount(1, 'data.editor.categories')->assertJsonCount(5, 'data.editor.groups')
+        $this->getJson('/control/settings')->assertOk()->assertJsonCount(1, 'data.editor.categories')->assertJsonCount(6, 'data.editor.groups')
             ->assertJsonCount(1, 'data.navigation.1.children')->assertJsonPath('data.navigation.1.children.0.key', 'settings.website');
         $this->getJson('/control/settings/system')->assertForbidden();
         $this->getJson('/control/settings?group=system')->assertForbidden();
@@ -139,7 +139,7 @@ class DefaultSettingsTest extends TestCase
         $store->update($group, 1, ['localized' => ['en' => ['tagline' => 'New tagline']]]);
         $this->assertSame('Preserved legacy value', $store->read($group)['values']['contact']);
         $this->assertArrayNotHasKey('contact', $store->values($group, 'vi', true));
-        $this->assertSame(8, count(app(SettingsRegistry::class)->all()));
+        $this->assertSame(9, count(app(SettingsRegistry::class)->all()));
     }
 
     public function test_admin_identity_is_independent_private_and_uses_system_permissions(): void

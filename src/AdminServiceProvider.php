@@ -103,10 +103,10 @@ final class AdminServiceProvider extends ServiceProvider
         }
         if (config('saola-admin.language.dictionary.enabled', true) && !$this->app->routesAreCached()) {
             Route::middleware(config('saola-admin.language.dictionary.middleware', ['web', 'throttle:60,1']))
-                ->prefix(config('saola-admin.language.dictionary.prefix', 'saola/languages'))
+                ->prefix(config('saola-admin.language.dictionary.prefix', 'system/languages'))
                 ->get('{scope}/{locale}', DictionaryController::class)
                 ->where(['scope' => '[A-Za-z0-9_-]+', 'locale' => '[A-Za-z]{2,3}(?:[_-][A-Za-z0-9]{2,8})*'])
-                ->name('saola.language.dictionary');
+                ->name('system.language.dictionary');
         }
     }
 

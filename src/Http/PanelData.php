@@ -56,7 +56,7 @@ final class PanelData
         return [...app(PanelBranding::class)->project($locale), 'currentPage' => $currentPage, 'navigation' => $navigation,
             'locales' => array_map(fn ($row) => array_replace($row, ['name' => $row['name'] !== $row['code'] ? $row['name'] : (['en' => 'English', 'vi' => 'Tiếng Việt'][$row['code']] ?? $row['code'])]), $locales), 'uiLocale' => $locale,
             'account' => app(HeaderAccount::class)->project($request),
-            'dictionaryPattern' => route('saola.language.dictionary', ['scope' => $scope, 'locale' => '_locale_'])];
+            'dictionaryPattern' => route('system.language.dictionary', ['scope' => $scope, 'locale' => '_locale_'])];
     }
 
     public function groups(Request $request): array

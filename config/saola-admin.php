@@ -63,7 +63,7 @@ return [
         'exchange' => ['max_bytes' => 2097152, 'max_keys' => 10000, 'ttl' => 604800],
         'dictionary' => [
             'enabled' => true,
-            'prefix' => 'saola/languages',
+            'prefix' => 'system/languages',
             'middleware' => ['web', 'throttle:60,1'],
         ],
     ],

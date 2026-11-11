@@ -39,7 +39,7 @@ php artisan admin:lang:apply IMPORT_UUID --publish
 
 CLI export xuất đủ cây, dùng source làm mẫu cho key chưa dịch; UUID baseline nằm ở stderr. Import tạo preview, apply giữ draft và `--publish` mới cập nhật runtime. Giữ source chưa dịch, chuỗi rỗng, key không gửi và chặn conflict/placeholder/duplicate key. UI mới dùng lại `LanguageExchange`; cách thêm ngôn ngữ và đặt mặc định xem [hướng dẫn quản lý](docs/LANGUAGE_MANAGEMENT.md).
 
-Dictionary `GET /saola/languages/{scope}/{locale}` chỉ trả allowlist `sao.i18n.client_scopes`. Scope public phải khai báo rõ; private cần user và Gate ability. SSR dùng `ClientCatalogs` cùng projection, client đổi locale qua `Helper.changeLanguage` có guard. Xem [hướng dẫn tích hợp](docs/INSTALLATION.md) và hợp đồng chung về cấu hình, cache, giới hạn import và trạng thái triển khai.
+Dictionary `GET /system/languages/{scope}/{locale}` chỉ trả allowlist `sao.i18n.client_scopes`. Scope public phải khai báo rõ; private cần user và Gate ability. SSR dùng `ClientCatalogs` cùng projection, client đổi locale qua `Helper.changeLanguage` có guard. Xem [hướng dẫn tích hợp](docs/INSTALLATION.md) và hợp đồng chung về cấu hình, cache, giới hạn import và trạng thái triển khai.
 
 Hướng dẫn [cài đặt/nâng cấp](docs/INSTALLATION.md), [hợp đồng shell/renderer](docs/UI_CONTRACT.md), [Settings schema/DB/form](docs/SETTINGS.md) và [inventory tài nguyên](docs/ASSET_INVENTORY.md). Panel tắt mặc định; host chọn guard/login/Gate/prefix, migrate/sync và build trước khi bật. Install chỉ publish frontend vào root admin, giữ bootstrap có sẵn và báo phần cần merge; không tự cấu hình tài khoản hoặc ghi DB.
 

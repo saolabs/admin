@@ -26,7 +26,7 @@ resources/saola/admin/
 | Context / prefix URL | `admin` / `/admin` (prefix URL có cấu hình) |
 | View logical | `admin.pages.settings`, `admin.layouts.shell`, `admin.components.settings-form` |
 | Client bootstrap | `app/bootstrap.ts` import `./bundle` |
-| Dictionary scope / endpoint | `admin` / `/saola/languages/admin/{locale}` (scope có cấu hình) |
+| Dictionary scope / endpoint | `admin` / `/system/languages/admin/{locale}` (scope có cấu hình) |
 | Gate vào panel | `access-admin` (ability có cấu hình, không tự cấp grant) |
 | Bảng chung | `saola_settings`, `saola_locales`, `saola_translation_keys`, `saola_translation_values`, `saola_language_batches`, `saola_language_settings` |
 

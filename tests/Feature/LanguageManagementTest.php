@@ -112,7 +112,7 @@ class LanguageManagementTest extends TestCase
         foreach ($base['locales'] as &$row) if ($row['code'] === 'vi') { $row['uiEnabled'] = false; $row['contentEnabled'] = false; }
         unset($row);
         $this->putJson($this->api, $base)->assertOk();
-        $this->getJson('/saola/languages/admin/vi')->assertNotFound();
+        $this->getJson('/system/languages/admin/vi')->assertNotFound();
         $this->assertSame('Người dùng', app(DatabaseLanguageStore::class)->snapshot('vi')['messages']['admin']['users']['title']);
     }
 
@@ -136,7 +136,7 @@ class LanguageManagementTest extends TestCase
         $this->actingAs(new GenericUser(['id' => 1])); Gate::define('publish-admin-languages', fn () => true);
         $this->postJson($path, ['publish' => true])->assertOk()->assertJsonPath('preview.status', 'published');
         $this->postJson($path, ['publish' => true])->assertOk()->assertJsonPath('preview.result_revision', 1);
-        $this->getJson('/saola/languages/admin/ja')->assertOk()->assertJsonPath('messages.admin.users.title', 'ユーザー');
+        $this->getJson('/system/languages/admin/ja')->assertOk()->assertJsonPath('messages.admin.users.title', 'ユーザー');
         $this->putJson($this->api, $this->configuration(['uiDefault' => 'ja']))->assertOk();
         app(TextResolver::class)->forget();
         $this->getJson('/control?locale=ja')->assertOk()->assertJsonPath('i18n.locale', 'ja')->assertJsonPath('i18n.fallbackLocale', 'en');

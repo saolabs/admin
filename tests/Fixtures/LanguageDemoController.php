@@ -19,7 +19,7 @@ final class LanguageDemoController extends BaseWebController
         app()->setLocale($locale);
         $request->attributes->set('saola.i18n', app(ClientCatalogs::class)->clientConfig('language-demo', $locale));
         return $this->response([
-            'dictionaryBase' => str_replace('_locale_', '', route('saola.language.dictionary', ['scope' => 'language-demo', 'locale' => '_locale_'])),
+            'dictionaryBase' => str_replace('_locale_', '', route('system.language.dictionary', ['scope' => 'language-demo', 'locale' => '_locale_'])),
         ]);
     }
 }

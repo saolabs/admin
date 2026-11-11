@@ -119,7 +119,7 @@ status, raw, _ = request(api + '/batches/' + batch, 'POST', {'publish': True}, t
 assert status == 200 and json.loads(raw)['preview']['status'] == 'published'
 status, raw, _ = request('/control/languages?locale=vi', accept='text/html')
 assert status == 200 and batch.encode() in raw and 'Đã công bố'.encode() in raw, ('SSR with language history', status)
-status, raw, _ = request('/saola/languages/admin/ja')
+status, raw, _ = request('/system/languages/admin/ja')
 assert status == 200 and json.loads(raw)['messages']['admin']['users']['title'] == 'ユーザー'
 body = configuration(document); body.update({'uiDefault': 'ja', 'uiFallback': 'vi'})
 status, raw, _ = request(api, 'PUT', body, token)

@@ -291,7 +291,7 @@ class PanelTest extends TestCase
                 file_put_contents($this->root.'/media-api.json', $this->getJson('/control/_api/media')->assertOk()->getContent());
                 file_put_contents($this->root.'/branding-api.json', $this->getJson('/control/settings/branding')->assertOk()->getContent());
                 file_put_contents($this->root.'/settings-api.json', $this->getJson('/control/settings/general')->assertOk()->getContent());
-                file_put_contents($this->root.'/dictionary-'.$locale.'.json', $this->getJson('/saola/languages/admin/'.$locale)->assertOk()->getContent());
+                file_put_contents($this->root.'/dictionary-'.$locale.'.json', $this->getJson('/system/languages/admin/'.$locale)->assertOk()->getContent());
             }
             file_put_contents($this->root.'/users-page2-en.json', $this->getJson('/control/members?locale=en&per_page=10&page=2')->assertOk()->getContent());
             file_put_contents($this->root.'/users-filtered-en.json', $this->getJson('/control/members?locale=en&per_page=10&q=Member%2002')->assertOk()

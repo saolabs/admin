@@ -111,16 +111,16 @@ class LanguageWorkflowTest extends TestCase
         $config = $this->app->make(ClientCatalogs::class)->clientConfig('web', 'en');
         $this->assertObjectNotHasProperty('admin', $config['catalogs']['en']['messages']);
         $this->assertSame('Save', $config['catalogs']['en']['messages']->save);
-        $response = $this->getJson('/saola/languages/web/en')->assertOk()->assertJsonPath('messages.save', 'Save')->assertJsonMissingPath('messages.admin');
-        $this->getJson('/saola/languages/web/en', ['If-None-Match' => $response->headers->get('ETag')])->assertStatus(304);
-        $this->getJson('/saola/languages/admin/en')->assertForbidden();
-        $this->getJson('/saola/languages/unknown/en')->assertNotFound();
-        $this->getJson('/saola/languages/web/ja')->assertNotFound();
+        $response = $this->getJson('/system/languages/web/en')->assertOk()->assertJsonPath('messages.save', 'Save')->assertJsonMissingPath('messages.admin');
+        $this->getJson('/system/languages/web/en', ['If-None-Match' => $response->headers->get('ETag')])->assertStatus(304);
+        $this->getJson('/system/languages/admin/en')->assertForbidden();
+        $this->getJson('/system/languages/unknown/en')->assertNotFound();
+        $this->getJson('/system/languages/web/ja')->assertNotFound();
         Gate::define('read-language-admin', fn ($user) => $user->getAuthIdentifier() === 1);
         $this->actingAs(new GenericUser(['id' => 1]));
-        $private = $this->getJson('/saola/languages/admin/en')->assertOk()->assertJsonPath('messages.admin.common.save', 'Save');
+        $private = $this->getJson('/system/languages/admin/en')->assertOk()->assertJsonPath('messages.admin.common.save', 'Save');
         $this->actingAs(new GenericUser(['id' => 2]));
-        $this->getJson('/saola/languages/admin/en', ['If-None-Match' => $private->headers->get('ETag')])->assertForbidden();
+        $this->getJson('/system/languages/admin/en', ['If-None-Match' => $private->headers->get('ETag')])->assertForbidden();
     }
 
     public function test_cli_import_only_previews_until_apply_and_publish_are_requested(): void

@@ -1,3 +1,7 @@
+# saola/admin v0.1.0-alpha.13
+
+The dictionary route is named `system.language.dictionary` and defaults to `GET /system/languages/{scope}/{locale}`. Applications with a published config can set `saola-admin.language.dictionary.prefix` to `system/languages` to adopt the new URL. Laravel callers should generate dictionary URLs using the new route name. The dictionary keeps its existing authorization and ETag behavior.
+
 # saola/admin v0.1.0-alpha.12
 
 - New Website settings group `pwa`: enable switch, name/short name/description (per language), theme and background colors, display mode, start URL and 192/512/maskable icons. Empty fields fall back to website name, description and favicon.

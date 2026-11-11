@@ -42,9 +42,9 @@ class StarterLanguageDemoTest extends TestCase
         $response = $this->getJson('/language-demo?locale=vi')->assertOk();
         $response->assertJsonPath('i18n.locale', 'vi')->assertJsonPath('i18n.catalogs.vi.messages.save', 'Lưu')
             ->assertJsonMissingPath('i18n.catalogs.vi.messages.admin');
-        $dictionary = $this->getJson('/saola/languages/language-demo/vi')->assertOk();
+        $dictionary = $this->getJson('/system/languages/language-demo/vi')->assertOk();
         $this->assertSame($response->json('i18n.catalogs.vi'), $dictionary->json());
-        $this->assertStringEndsWith('/saola/languages/language-demo/', $response->json('data.dictionaryBase'));
+        $this->assertStringEndsWith('/system/languages/language-demo/', $response->json('data.dictionaryBase'));
         $this->app->setLocale('vi');
         $this->assertSame('Lưu', text('save'));
         $this->assertSame('Bản dịch từ cơ sở dữ liệu', text('language_demo.title'));

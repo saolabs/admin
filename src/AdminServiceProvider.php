@@ -39,6 +39,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->scoped(\Saola\Admin\Media\MediaLibrary::class);
         $this->app->bind(\Saola\Admin\Media\MediaScope::class, \Saola\Admin\Media\GlobalMediaScope::class);
         $this->app->singleton(\Saola\Admin\Settings\SettingsRegistry::class);
+        $this->app->singleton(\Saola\Admin\Settings\PublicSettings::class);
         $this->app->scoped(\Saola\Admin\Language\LocaleManager::class, fn ($app) => new \Saola\Admin\Language\LocaleManager(
             $app['db']->connection(config('saola-admin.language.connection')), config('saola-admin.language.table_prefix', 'saola_'),
             ['uiDefault' => config('app.locale', 'en'), 'uiFallback' => config('app.fallback_locale', 'en'),
@@ -86,7 +87,17 @@ final class AdminServiceProvider extends ServiceProvider
         $this->publishes([__DIR__.'/../lang' => $this->app->langPath('vendor/admin')], 'saola-admin-lang');
         $this->publishes([__DIR__.'/../config/saola-admin.php' => config_path('saola-admin.php')], 'saola-admin-config');
         $this->commands([SyncLanguageCommand::class, ExportLanguageCommand::class, ImportLanguageCommand::class, ApplyLanguageCommand::class,
-            PublishAdminCommand::class, InstallAdminCommand::class, DoctorAdminCommand::class]);
+            PublishAdminCommand::class, InstallAdminCommand::class, DoctorAdminCommand::class, \Saola\Admin\Console\RefreshSiteCommand::class]);
+        // `__site` mặc định = nhóm thiết lập công khai; dự án đã tự đăng ký SiteProvider thì giữ của dự án.
+        if (config('saola-admin.settings.site_provider', true)) {
+            $this->app->booted(function () {
+                $views = $this->app->make(ViewContextManager::class);
+                if (!$views->hasSiteProvider()) $views->provideSite($this->app->make(\Saola\Admin\Settings\PublicSettings::class));
+            });
+            \Illuminate\Support\Facades\Event::listen(\Saola\Admin\Settings\SettingsUpdated::class, function ($event) {
+                if (\Saola\Admin\Settings\PublicSettings::isPublic($event->group)) app(\Saola\Admin\Settings\PublicSettings::class)->refresh();
+            });
+        }
         $scope = config('saola-admin.panel.language_scope', 'admin');
         if (config('sao.i18n.client_scopes.'.$scope) === null) {
             config(['sao.i18n.client_scopes.'.$scope => ['keys' => ['admin'], 'ability' => config('saola-admin.panel.ability'), 'guard' => config('saola-admin.panel.guard')]]);

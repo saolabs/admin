@@ -4,33 +4,19 @@ declare(strict_types=1);
 
 namespace Saola\Admin;
 
-use Saola\Admin\Settings\{SettingsRegistry, SettingsStore};
+use Saola\Admin\Settings\PublicSettings;
 
 /** Builds the web manifest, service worker and <head> tags from the public `pwa` settings (falling back to general/branding). */
 final class Pwa
 {
     public static function settings(?string $locale = null): array
     {
-        $values = [];
-        try {
-            $registry = app(SettingsRegistry::class);
-            $store = app(SettingsStore::class);
-            foreach (['general', 'branding', 'pwa'] as $key) {
-                $group = $registry->get($key);
-                $loc = null;
-                if ($group->hasLocalizedFields()) {
-                    $document = $store->read($group);
-                    $want = $locale ?? app()->getLocale();
-                    $loc = in_array($want, $document['contentLocales'], true) ? $want : $document['defaultLocale'];
-                }
-                // pwa.* wins over general.* on shared names, so prefix after the fact.
-                $v = $store->values($group, $loc, publicOnly: true);
-                $values += $key === 'pwa' ? array_combine(array_map(fn ($k) => 'pwa_'.$k, array_keys($v)), $v) : $v;
-            }
-        } catch (\Throwable) {
-            // Settings table may not exist yet: PWA stays off.
-        }
-        return $values;
+        // Cùng nguồn đã cache với `__site`: không query lại ở mỗi trang.
+        $site = app(PublicSettings::class)->data($locale ?? app()->getLocale());
+        $pwa = $site['pwa'] ?? [];
+        // pwa.* thắng general.* ở tên trùng, nên đặt tiền tố.
+        return ($site['general'] ?? []) + ($site['branding'] ?? [])
+            + array_combine(array_map(fn ($k) => 'pwa_'.$k, array_keys($pwa)), $pwa);
     }
 
     public static function enabled(): bool

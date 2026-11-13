@@ -56,7 +56,7 @@ final class DatabaseSettingsStore implements SettingsStore
         // Rich text is stored in its sanitized form, so what the response projects is what readers get.
         foreach ($patch['values'] ?? [] as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'richtext') $patch['values'][$key] = RichText::clean($value);
         foreach ($patch['localized'] ?? [] as $locale => $fields) foreach ($fields as $key => $value) if (($group->fields[$key]['type'] ?? '') === 'richtext') $patch['localized'][$locale][$key] = RichText::clean($value);
-        return $this->db->transaction(function () use ($group, $revision, $patch) {
+        $document = $this->db->transaction(function () use ($group, $revision, $patch) {
             $this->db->table($this->table)->insertOrIgnore(['group_key' => $group->key, 'schema_version' => $group->version,
                 'revision' => 0, 'document' => '{}']);
             $current = $this->read($group);
@@ -82,6 +82,10 @@ final class DatabaseSettingsStore implements SettingsStore
             foreach ($patch['localized'] ?? [] as $locale => $fields) $translated[$locale] = array_replace($translated[$locale] ?? [], $fields);
             return array_replace($current, ['revision' => $revision + 1, 'values' => $projected, 'localized' => $translated]);
         });
+        // Sau commit: listener (vd. PublicSettings) đọc lại được bản vừa ghi.
+        event(new SettingsUpdated($group));
+
+        return $document;
     }
 
     public function values(SettingsGroup $group, ?string $locale = null, bool $publicOnly = false): array

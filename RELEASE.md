@@ -1,3 +1,9 @@
+# Saola Admin (chưa phát hành, cần saola/core ≥ 2.12)
+
+`PublicSettings` becomes the default `__site` provider: every settings group with `public` fields, public fields only, resolved per content locale. Cached per version in the worker and in the Laravel cache, so a page costs one cache read and no queries. `DatabaseSettingsStore::update()` dispatches `SettingsUpdated`; saving a group with public fields bumps the version on every worker. `php artisan saola:site-refresh` does the same after seeds or manual DB edits. Disable with `saola-admin.settings.site_provider = false` when the application provides its own `SiteProvider`. `Pwa` reads the same cached source.
+
+Validation: 111 tests.
+
 # saola/admin v0.1.0-alpha.13
 
 The dictionary route is named `system.language.dictionary` and defaults to `GET /system/languages/{scope}/{locale}`. Applications with a published config can set `saola-admin.language.dictionary.prefix` to `system/languages` to adopt the new URL. Laravel callers should generate dictionary URLs using the new route name. The dictionary keeps its existing authorization and ETag behavior.

@@ -13,6 +13,8 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 final class LocaleManager
 {
     private ?string $fallback = null;
+    /** Derived from the policy row alone, whose only writer is update(): safe to hold like $fallback. */
+    private ?array $content = null;
     public function __construct(private readonly ConnectionInterface $db, private readonly string $prefix, private readonly array $defaults, private readonly bool $detectBrowser = false) {}
 
     public function state(): array
@@ -32,10 +34,12 @@ final class LocaleManager
             'contentDefault' => $policy['contentDefault'], 'locales' => array_values($locales)];
     }
 
+    /** Every localized settings read asks for this; without the memo one page costs two queries per settings group. */
     public function contentPolicy(): array
     {
+        if ($this->content) return $this->content;
         $state = $this->state();
-        return ['locales' => array_column(array_filter($state['locales'], fn ($item) => $item['contentEnabled']), 'code'), 'default' => $state['contentDefault']];
+        return $this->content = ['locales' => array_column(array_filter($state['locales'], fn ($item) => $item['contentEnabled']), 'code'), 'default' => $state['contentDefault']];
     }
 
     public function uiLocales(): array { return array_values(array_filter($this->state()['locales'], fn ($row) => $row['uiEnabled'] && $row['revision'] > 0)); }
@@ -73,7 +77,7 @@ final class LocaleManager
 
     public function update(int $revision, array $input): array
     {
-        $this->fallback = null;
+        $this->fallback = null; $this->content = null;
         app('validator')->make($input, [
             'uiDefault' => ['required', 'string'], 'uiFallback' => ['required', 'string'], 'contentDefault' => ['required', 'string'],
             'locales' => ['required', 'array', 'max:100'], 'locales.*' => ['required', 'array:code,name,country,currency,uiEnabled,contentEnabled'],

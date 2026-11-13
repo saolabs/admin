@@ -42,6 +42,9 @@ return [
     ],
     'settings' => [
         'register_defaults' => true,
+        // Nhóm thiết lập có field `public` thành biến hệ thống `__site` ở mọi view
+        // (PublicSettings, cache theo phiên bản). Tắt khi dự án tự cung cấp SiteProvider.
+        'site_provider' => true,
         'read_ability' => 'view-site-settings',
         'write_ability' => 'update-site-settings',
         'system_read_ability' => 'view-system-settings',

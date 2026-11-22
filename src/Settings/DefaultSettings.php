@@ -48,7 +48,11 @@ final class DefaultSettings
             'linkedin_url' => $text('linkedin_url', false, 'url'), 'tiktok_url' => $text('tiktok_url', false, 'url'),
         ]));
         $registry->register(new SettingsGroup('branding', 'admin.settings.groups_branding', $siteRead, $siteWrite, [
-            'logo_url' => $url('logo_url'), 'logo_dark_url' => $url('logo_dark_url'), 'favicon_url' => $url('favicon_url'),
+            'logo_url' => $url('logo_url'), 'logo_dark_url' => $url('logo_dark_url'),
+            // Chữ cạnh logo của website (cùng cặp với brand_text/show_brand_text của trang quản trị). Trống: site dùng tên website.
+            'logo_text' => $text('logo_text', true, 'text', 60),
+            'show_logo_text' => ['labelKey' => 'admin.settings.fields.show_logo_text', 'type' => 'boolean', 'public' => true, 'default' => true],
+            'favicon_url' => $url('favicon_url'),
         ]));
         $registry->register(new SettingsGroup('seo', 'admin.settings.groups_seo', $siteRead, $siteWrite, [
             'meta_title' => $text('meta_title', true, 'text', 200),

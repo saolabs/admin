@@ -6,13 +6,15 @@
 </script>
 
 <template>
-    <div class="sa-admin-settings-layout">
+    <div @class({'sa-admin-settings-layout': true, 'has-nav': editor['tabs'].length > 1})>
     @if(editor['tabs'].length > 1)
-        <nav id="settings-group-navigation" class="sa-admin-settings-tabs" aria-label="{{ __('admin.settings.groups') }}">
+        <nav id="settings-group-navigation" class="card sa-admin-settings-nav" aria-label="{{ __('admin.settings.groups') }}">
+            <div class="nav nav-pills flex-column">
             @foreach(editor['tabs'] as group)
                 @key(group['key'])
-                <a href="{{ group['url'] }}" @class({'is-active': group['key'] === editor['group']}) aria-current="{{ group['key'] === editor['group'] ? 'page' : 'false' }}">{{ text(group['titleKey']) }}</a>
+                <a href="{{ group['url'] }}" @class({'nav-link': true, 'active': group['key'] === editor['group']}) aria-current="{{ group['key'] === editor['group'] ? 'page' : 'false' }}">{{ text(group['titleKey']) }}</a>
             @endforeach
+            </div>
         </nav>
     @endif
     <section class="card sa-admin-card">

@@ -112,7 +112,7 @@ class DefaultSettingsTest extends TestCase
         $this->assertSame('English title', $store->values($group, 'en')['meta_title']);
         $this->assertSame('/images/share.png', $store->values($group, 'vi')['og_image_url']);
         $this->getJson('/control/settings?group=seo&content_locale=en')->assertOk()->assertJsonPath('data.editor.localizedGroup', true);
-        $this->getJson('/control/settings?group=branding&content_locale=unknown')->assertOk()->assertJsonPath('data.editor.localizedGroup', false);
+        $this->getJson('/control/settings?group=system&content_locale=unknown')->assertOk()->assertJsonPath('data.editor.localizedGroup', false);
         $this->putJson('/control/settings/seo', ['revision' => 0, 'patch' => ['values' => ['indexable' => true]]])->assertConflict();
     }
 

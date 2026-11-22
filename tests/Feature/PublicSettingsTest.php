@@ -47,6 +47,8 @@ class PublicSettingsTest extends TestCase
         $site = $settings->data('en');
         $this->assertArrayHasKey('website_name', $site['general']);
         $this->assertArrayHasKey('logo_url', $site['branding']);
+        $this->assertSame('', $site['branding']['logo_text']);
+        $this->assertTrue($site['branding']['show_logo_text']);
         $this->assertArrayHasKey('icon_192_url', $site['pwa']);
         // Nhóm không có field public, và field private, không bao giờ lọt ra.
         foreach (['system', 'admin-appearance', 'system-display'] as $private) $this->assertArrayNotHasKey($private, $site);

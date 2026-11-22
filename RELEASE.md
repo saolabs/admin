@@ -1,3 +1,11 @@
+# saola/admin v0.1.0-alpha.15
+
+- Branding (renamed "Logo & identity") gains `logo_text` (per language, empty means the website name) and `show_logo_text`, public like the other branding fields, so the logo image and the text beside it are set in one group. Applications that registered their own logo-text group can move its values into branding and drop it.
+- SEO labels: OG title and description are labelled as homepage sharing fields; the OG image as the default sharing image for every page.
+- Material settings page: groups are a vertical pill menu beside the form (Velzon `nav-pills`), a scrolling pill row below 992px. The resource list status tabs keep `.sa-admin-settings-tabs`.
+
+Requires `saola/core` ^2.12. Validation: 111 tests, 1140 assertions; `composer validate --strict`. Gehihi and Lam Son: full suites green (917 tests each) and the Material settings page checked in the browser at desktop and 375px.
+
 # saola/admin v0.1.0-alpha.14
 
 `PublicSettings` becomes the default `__site` provider: every settings group with `public` fields, public fields only, resolved per content locale. Cached per version in the worker and in the Laravel cache, so a page costs one cache read and no queries. `DatabaseSettingsStore::update()` dispatches `SettingsUpdated`; saving a group with public fields bumps the version on every worker. `php artisan saola:site-refresh` does the same after seeds or manual DB edits. Disable with `saola-admin.settings.site_provider = false` when the application provides its own `SiteProvider`. `Pwa` reads the same cached source.

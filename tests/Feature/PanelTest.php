@@ -224,7 +224,7 @@ class PanelTest extends TestCase
         Gate::define('update-system-settings', fn () => true);
         $this->getJson('/control/settings?content_locale=vi')->assertOk()
             ->assertJsonPath('view', 'admin.themes.classic.pages.settings')
-            ->assertJsonPath('data.editor.contentLocale', 'vi')->assertJsonPath('data.editor.fields.0.value', 'Workbench')
+            ->assertJsonPath('data.editor.contentLocale', 'vi')->assertJsonPath('data.editor.fields.0.value', '')->assertJsonPath('data.editor.fields.0.inherited', 'Workbench') // vi chưa dịch: ô trống, bản mượn chỉ là placeholder
             ->assertJsonPath('data.editor.canUpdate', true)->assertJsonCount(3, 'data.navigation'); // overview, members, settings
         foreach (['view', 'manage', 'export', 'import', 'publish'] as $operation) Gate::define($operation.'-admin-languages', fn () => true);
         app(\Saola\Core\View\Services\ViewHelperService::class)->reset();

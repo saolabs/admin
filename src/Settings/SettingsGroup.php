@@ -31,7 +31,7 @@ final readonly class SettingsGroup
                 || !is_string($field['placeholderKey'] ?? '')
                 || !is_bool($field['localized'] ?? false) || !is_bool($field['public'] ?? false)
                 || ($type === 'secret' && (($field['localized'] ?? false) || ($field['public'] ?? false)))
-                || !is_bool($field['hidden'] ?? false) || !is_bool($field['relative'] ?? false) || !is_bool($field['media'] ?? false)
+                || !is_bool($field['localeFallback'] ?? true) || !is_bool($field['hidden'] ?? false) || !is_bool($field['relative'] ?? false) || !is_bool($field['media'] ?? false)
                 || ($field['media'] ?? false) && $type !== 'url'
                 || !array_key_exists('default', $field)) throw new InvalidArgumentException('Invalid settings field: '.(string) $name);
             if (isset($field['maxLength']) && (!is_int($field['maxLength']) || $field['maxLength'] < 1 || $field['maxLength'] > 16384)

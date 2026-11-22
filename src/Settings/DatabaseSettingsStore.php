@@ -98,7 +98,8 @@ final class DatabaseSettingsStore implements SettingsStore
             if ($field['type'] === 'secret') { $values[$key] = $this->secret($group, $key) ?? $field['default']; continue; }
             if ($field['localized'] ?? false) {
                 // Empty string is an intentional translation. Fallback never writes data.
-                $values[$key] = $document['localized'][$locale][$key] ?? $document['localized'][$document['defaultLocale']][$key] ?? $field['default'];
+                // localeFallback=false: a language without its own value gets the field default, never another language's text.
+                $values[$key] = $document['localized'][$locale][$key] ?? (($field['localeFallback'] ?? true) ? $document['localized'][$document['defaultLocale']][$key] ?? null : null) ?? $field['default'];
             } else $values[$key] = $document['values'][$key] ?? $field['default'];
         }
         return $values;

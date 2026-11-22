@@ -73,6 +73,21 @@ class PublicSettingsTest extends TestCase
         $this->assertSame('Mới', $settings->data('xx')['general']['website_name']);
     }
 
+    public function test_logo_text_is_per_language_and_never_borrows_the_default_language(): void
+    {
+        $this->putJson('/control/settings/general', ['revision' => 0, 'patch' => ['localized' => ['en' => ['website_name' => 'Site']]]])->assertOk();
+        $this->putJson('/control/settings/branding', ['revision' => 0, 'patch' => ['localized' => ['en' => ['logo_text' => 'Logo EN']]]])->assertOk();
+        $settings = app(PublicSettings::class);
+        $this->assertSame('Logo EN', $settings->data('en')['branding']['logo_text']);
+        // vi chưa có chữ logo: để trống (site dùng tên website của vi), còn tên website vẫn mượn bản en như cũ.
+        $this->assertSame('', $settings->data('vi')['branding']['logo_text']);
+        $this->assertSame('Site', $settings->data('vi')['general']['website_name']);
+        $field = collect($this->getJson('/control/settings?group=branding&content_locale=vi')->assertOk()->json('data.editor.fields'))->firstWhere('key', 'logo_text');
+        $this->assertSame(['', ''], [$field['value'], $field['inherited']]);
+        $field = collect($this->getJson('/control/settings?group=general&content_locale=vi')->assertOk()->json('data.editor.fields'))->firstWhere('key', 'website_name');
+        $this->assertSame(['', 'Site'], [$field['value'], $field['inherited']], 'Ô chưa dịch để trống, bản mượn chỉ làm chữ mờ.');
+    }
+
     public function test_saving_a_private_group_keeps_the_version(): void
     {
         Gate::define('view-system-settings', fn () => true);

@@ -40,10 +40,12 @@ final class SettingsEditorController extends BaseWebController
             if ($field['hidden'] ?? false) continue;
             $localized = $field['localized'] ?? false;
             $values = $localized ? ($document['localized'][$locale] ?? []) : $document['values'];
-            $fallback = $localized ? ($document['localized'][$document['defaultLocale']][$name] ?? $field['default']) : $field['default'];
+            $fallback = $localized && ($field['localeFallback'] ?? true) ? ($document['localized'][$document['defaultLocale']][$name] ?? $field['default']) : $field['default'];
             $present = array_key_exists($name, $values);
+            // Ô chữ chưa dịch để trống, bản mượn chỉ hiện mờ (placeholder): không trông như đã lưu cho ngôn ngữ này.
+            $inherited = !$present && $localized && in_array($field['type'], ['text', 'textarea', 'url'], true) ? (string) $fallback : '';
             $fields[] = ['key' => $name, 'labelKey' => $field['labelKey'], 'placeholderKey' => $field['placeholderKey'] ?? '', 'type' => $field['type'], 'localized' => $localized,
-                'value' => $field['type'] === 'secret' ? '' : ($present ? $values[$name] : $fallback), 'present' => $present, 'media' => $field['media'] ?? false,
+                'value' => $field['type'] === 'secret' ? '' : ($present ? $values[$name] : ($inherited !== '' ? '' : $fallback)), 'inherited' => $inherited, 'present' => $present, 'media' => $field['media'] ?? false,
                 'options' => array_map(fn ($value, $label) => ['value' => $value, 'label' => $label], array_keys($field['options'] ?? []), array_values($field['options'] ?? [])),
                 'maxLength' => $field['maxLength'] ?? 2048, 'min' => $field['min'] ?? '', 'max' => $field['max'] ?? ''];
         }

@@ -1,3 +1,10 @@
+# saola/admin v0.1.0-alpha.16
+
+- Settings form: a localized text, textarea or URL field with no value of its own in the selected content language is left empty and shows the borrowed text as a greyed placeholder, with a hint that it is not set for this language. Before, the borrowed text was prefilled as the value and looked saved. Editor fields gain `inherited`.
+- New field flag `localeFallback` (default `true`). With `false`, a language without its own value gets the field default instead of the default language's text. Branding `logo_text` uses it, so an unset language shows its own website name rather than another language's logo text.
+
+Requires `saola/core` ^2.12. Validation: 112 tests, 1150 assertions; `tsc`, theme build tests (9). Gehihi and Lam Son settings/site suites green.
+
 # saola/admin v0.1.0-alpha.15
 
 - Branding (renamed "Logo & identity") gains `logo_text` (per language, empty means the website name) and `show_logo_text`, public like the other branding fields, so the logo image and the text beside it are set in one group. Applications that registered their own logo-text group can move its values into branding and drop it.

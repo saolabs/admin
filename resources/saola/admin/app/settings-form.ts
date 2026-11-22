@@ -1,6 +1,6 @@
 export type SettingValue = string | boolean | number;
 export type Field = {key: string; labelKey: string; placeholderKey?: string; type: 'text' | 'textarea' | 'richtext' | 'url' | 'select' | 'integer' | 'boolean' | 'secret'; localized: boolean; media?: boolean; options?: Array<{value: string; label: string}>;
-    value: SettingValue; present: boolean; maxLength: number; min: number | ''; max: number | ''};
+    value: SettingValue; inherited?: string; present: boolean; maxLength: number; min: number | ''; max: number | ''};
 export type SettingsDocument = {group: string; schemaVersion: number; revision: number; values: Record<string, SettingValue>;
     localized: Record<string, Record<string, SettingValue>>; contentLocales: string[]; defaultLocale: string};
 export type Editor = {group: string; document: SettingsDocument; fields: Field[]; contentLocale: string; endpoint: string; csrfToken: string; canUpdate: boolean};
@@ -118,14 +118,16 @@ export class SettingsForm {
             const schema = result.schema.fields[previous.key];
             if (!schema || schema.type !== previous.type || Boolean(schema.localized) !== previous.localized) throw new Error('Settings schema changed');
             const source = previous.localized ? (doc.localized[this.editor.contentLocale] ?? {}) : doc.values;
-            const fallback = previous.localized ? (doc.localized[doc.defaultLocale]?.[previous.key] ?? schema.default) : schema.default;
-            const value = source[previous.key] ?? fallback;
+            const fallback = previous.localized && schema.localeFallback !== false ? (doc.localized[doc.defaultLocale]?.[previous.key] ?? schema.default) : schema.default;
+            const present = Object.prototype.hasOwnProperty.call(source, previous.key);
+            const inherited = !present && previous.localized && ['text', 'textarea', 'url'].includes(previous.type) && typeof fallback === 'string' ? fallback : '';
+            const value = present ? source[previous.key] : inherited !== '' ? '' : fallback;
             if (!isMap(source) || (previous.type === 'boolean' ? typeof value !== 'boolean' : previous.type === 'integer' ? !Number.isSafeInteger(value) : typeof value !== 'string')) {
                 throw new Error('Invalid settings value');
             }
             const options = previous.type === 'select' && isMap(schema.options) ? Object.entries(schema.options).map(([value, label]) => ({value, label: String(label)})) : previous.options;
             if (previous.type === 'select' && !options?.some(option => option.value === value)) throw new Error('Invalid select option');
-            return {...previous, options, present: Object.prototype.hasOwnProperty.call(source, previous.key), value};
+            return {...previous, options, present, inherited, value};
         });
         this.editor = {...this.editor, fields, document: doc}; this.fields = fields.map(field => ({...field}));
         this.canUpdate = result.canUpdate; this.changes.clear(); this.requiresReload = false;
